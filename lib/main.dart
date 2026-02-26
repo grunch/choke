@@ -12,7 +12,11 @@ void main() async {
 
   // Initialize KeyManager
   final keyManager = KeyManager();
-  await keyManager.initialize();
+  try {
+    await keyManager.initialize();
+  } catch (e, st) {
+    debugPrint('KeyManager initialization failed: $e\n$st');
+  }
 
   runApp(
     ProviderScope(

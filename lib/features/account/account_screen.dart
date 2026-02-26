@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../services/key_management/key_manager.dart';
 
@@ -131,6 +132,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
     final keyManager = ref.read(keyManagerProvider);
     final success = await keyManager.importFromNsec(nsec);
+
+    if (!mounted) return;
 
     setState(() => _isImporting = false);
 
@@ -510,13 +513,26 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 color: BJJColors.white,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Icon(
-                Icons.qr_code,
+              child: QrImageView(
+                data: data,
                 size: 200,
-                color: BJJColors.navy,
+                backgroundColor: BJJColors.white,
+                foregroundColor: BJJColors.navy,
               ),
             ),
             const SizedBox(height: 16),
+            Text(
+              data,
+              style: const TextStyle(
+                color: BJJColors.grey,
+                fontSize: 11,
+                fontFamily: 'monospace',
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
             const Text(
               'Scan this QR code to share your public key',
               style: TextStyle(color: BJJColors.grey, fontSize: 12),

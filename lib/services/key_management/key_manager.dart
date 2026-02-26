@@ -15,14 +15,13 @@ class KeyManager {
   String? _cachedPublicKey;
 
   KeyManager({FlutterSecureStorage? secureStorage})
-    : _secureStorage =
-          secureStorage ??
-          const FlutterSecureStorage(
-            aOptions: AndroidOptions(encryptedSharedPreferences: true),
-            iOptions: IOSOptions(
-              accessibility: KeychainAccessibility.first_unlock_this_device,
-            ),
-          );
+      : _secureStorage = secureStorage ??
+            const FlutterSecureStorage(
+              aOptions: AndroidOptions(encryptedSharedPreferences: true),
+              iOptions: IOSOptions(
+                accessibility: KeychainAccessibility.first_unlock_this_device,
+              ),
+            );
 
   /// Initialize the key manager
   /// Generates a new keypair if none exists
@@ -49,15 +48,11 @@ class KeyManager {
     }
 
     // Convert to hex string
-    final privateKeyHex = privateKeyBytes
-        .map((b) => b.toRadixString(16).padLeft(2, '0'))
-        .join();
+    final privateKeyHex =
+        privateKeyBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
 
-    // For now, we'll use a simple derivation or store just the private key
-    // and derive public key when needed using a proper library
-    // TODO: Implement proper secp256k1 public key derivation
-    final publicKeyHex =
-        privateKeyHex; // Placeholder - should derive from private key
+    // Derive public key from private key using secp256k1
+    final publicKeyHex = _derivePublicKeyHex(privateKeyHex);
 
     // Store securely
     await _secureStorage.write(key: _privateKeyKey, value: privateKeyHex);
@@ -108,8 +103,8 @@ class KeyManager {
         return false;
       }
 
-      // TODO: Derive public key from private key using secp256k1
-      final publicKeyHex = privateKeyHex; // Placeholder
+      // Derive public key from private key using secp256k1
+      final publicKeyHex = _derivePublicKeyHex(privateKeyHex);
 
       // Store new keys (replaces existing)
       await _secureStorage.write(key: _privateKeyKey, value: privateKeyHex);
@@ -147,20 +142,38 @@ class KeyManager {
     debugPrint('KeyManager: All keys deleted');
   }
 
+  /// Derive secp256k1 public key from private key (x-only hex for Nostr).
+  String _derivePublicKeyHex(String privateKeyHex) {
+    // TODO: Implement proper secp256k1 public key derivation
+    // For now, throw to indicate this needs implementation before release
+    throw UnimplementedError(
+      'secp256k1 public key derivation not implemented. '
+      'Install pointycastle or secp256k1 package and implement derivation.',
+    );
+  }
+
   // NIP-19 Encoding/Decoding - Simplified implementation
 
   /// Encode hex public key to npub (NIP-19)
   String _encodeNpub(String hexPublicKey) {
-    // Simplified: just add npub prefix for now
-    // TODO: Implement proper bech32 encoding
-    return 'npub1${hexPublicKey.substring(0, 20)}...';
+    // Validate input
+    if (hexPublicKey.length != 64 ||
+        !RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(hexPublicKey)) {
+      throw ArgumentError('Invalid public key hex: must be 64 hex characters');
+    }
+    // Return full hex with prefix (until proper bech32 is implemented)
+    return 'npub1$hexPublicKey';
   }
 
   /// Encode hex private key to nsec (NIP-19)
   String _encodeNsec(String hexPrivateKey) {
-    // Simplified: just add nsec prefix for now
-    // TODO: Implement proper bech32 encoding
-    return 'nsec1${hexPrivateKey.substring(0, 20)}...';
+    // Validate input
+    if (hexPrivateKey.length != 64 ||
+        !RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(hexPrivateKey)) {
+      throw ArgumentError('Invalid private key hex: must be 64 hex characters');
+    }
+    // Return full hex with prefix (until proper bech32 is implemented)
+    return 'nsec1$hexPrivateKey';
   }
 
   /// Decode nsec to hex private key
@@ -169,9 +182,13 @@ class KeyManager {
       // Basic validation
       if (!nsec.toLowerCase().startsWith('nsec1')) return null;
 
-      // Simplified: remove prefix for now
-      // TODO: Implement proper bech32 decoding
-      return nsec.substring(5); // Remove 'nsec1' prefix
+      // Extract the full hex suffix
+      final raw = nsec.substring(5).toLowerCase();
+
+      // Validate: must be 64 hex characters
+      if (!RegExp(r'^[0-9a-f]{64}$').hasMatch(raw)) return null;
+
+      return raw;
     } catch (e) {
       debugPrint('KeyManager: nsec decode error: $e');
       return null;

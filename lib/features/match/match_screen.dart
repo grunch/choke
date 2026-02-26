@@ -32,7 +32,9 @@ class MatchScreen extends StatelessWidget {
                       children: [
                         Text(
                           'Active Match',
-                          style: Theme.of(context).textTheme.headlineSmall
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
                               ?.copyWith(
                                 color: BJJColors.white,
                                 fontWeight: FontWeight.bold,
@@ -82,7 +84,9 @@ class MatchScreen extends StatelessWidget {
                         children: [
                           Text(
                             '04:32',
-                            style: Theme.of(context).textTheme.headlineLarge
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineLarge
                                 ?.copyWith(
                                   color: BJJColors.white,
                                   fontSize: 48,
@@ -200,9 +204,9 @@ class MatchScreen extends StatelessWidget {
                       Text(
                         'Score Points',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: BJJColors.navy,
-                          fontWeight: FontWeight.bold,
-                        ),
+                              color: BJJColors.navy,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 16),
 
@@ -307,9 +311,8 @@ class MatchScreen extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isDestructive
-                    ? const Color(0xFFD32F2F)
-                    : BJJColors.white,
+                color:
+                    isDestructive ? const Color(0xFFD32F2F) : BJJColors.white,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -351,9 +354,9 @@ class MatchScreen extends StatelessWidget {
           Text(
             score,
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              color: isLeading ? BJJColors.green : BJJColors.navy,
-              fontWeight: FontWeight.bold,
-            ),
+                  color: isLeading ? BJJColors.green : BJJColors.navy,
+                  fontWeight: FontWeight.bold,
+                ),
           ),
           const SizedBox(height: 8),
           Row(

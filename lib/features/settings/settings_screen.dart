@@ -115,9 +115,9 @@ class SettingsScreen extends StatelessWidget {
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: BJJColors.grey,
-          letterSpacing: 1.5,
-        ),
+              color: BJJColors.grey,
+              letterSpacing: 1.5,
+            ),
       ),
     );
   }
