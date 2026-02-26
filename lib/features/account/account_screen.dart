@@ -526,17 +526,20 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 color: BJJColors.white,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: QrImageView(
-                data: data,
-                size: 200,
-                backgroundColor: BJJColors.white,
-                eyeStyle: const QrEyeStyle(
-                  eyeShape: QrEyeShape.square,
-                  color: BJJColors.navy,
-                ),
-                dataModuleStyle: const QrDataModuleStyle(
-                  dataModuleShape: QrDataModuleShape.square,
-                  color: BJJColors.navy,
+              child: SizedBox(
+                width: 200,
+                height: 200,
+                child: QrImageView(
+                  data: data,
+                  backgroundColor: BJJColors.white,
+                  eyeStyle: const QrEyeStyle(
+                    eyeShape: QrEyeShape.square,
+                    color: BJJColors.navy,
+                  ),
+                  dataModuleStyle: const QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.square,
+                    color: BJJColors.navy,
+                  ),
                 ),
               ),
             ),
