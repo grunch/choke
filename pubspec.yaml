@@ -26,7 +26,7 @@ dependencies:
 
   # QR
   qr_flutter: ^4.1.0
-  qr_code_scanner: ^1.0.1
+  mobile_scanner: ^6.0.2
 
   # Utils
   freezed_annotation: ^2.4.4
