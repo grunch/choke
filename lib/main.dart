@@ -5,10 +5,21 @@ import 'features/home/home_screen.dart';
 import 'features/match/match_screen.dart';
 import 'features/account/account_screen.dart';
 import 'features/settings/settings_screen.dart';
+import 'services/key_management/key_manager.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ProviderScope(child: ChokeApp()));
+
+  // Initialize KeyManager
+  final keyManager = KeyManager();
+  await keyManager.initialize();
+
+  runApp(
+    ProviderScope(
+      overrides: [keyManagerProvider.overrideWithValue(keyManager)],
+      child: const ChokeApp(),
+    ),
+  );
 }
 
 class ChokeApp extends StatelessWidget {
