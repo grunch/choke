@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:nostr_tools/nostr_tools.dart';
 
 /// Service for managing Nostr keypairs
 /// Handles generation, storage, and recovery of keys
@@ -142,53 +143,52 @@ class KeyManager {
     debugPrint('KeyManager: All keys deleted');
   }
 
-  /// Derive secp256k1 public key from private key (x-only hex for Nostr).
+  /// Derive secp256k1 public key from private key using nostr_tools.
   String _derivePublicKeyHex(String privateKeyHex) {
-    // TODO: Implement proper secp256k1 public key derivation
-    // For now, throw to indicate this needs implementation before release
-    throw UnimplementedError(
-      'secp256k1 public key derivation not implemented. '
-      'Install pointycastle or secp256k1 package and implement derivation.',
-    );
+    try {
+      final keyApi = KeyApi();
+      return keyApi.getPublicKey(privateKeyHex);
+    } catch (e) {
+      debugPrint('KeyManager: Error deriving public key: $e');
+      rethrow;
+    }
   }
 
-  // NIP-19 Encoding/Decoding - Simplified implementation
+  // NIP-19 Encoding/Decoding using nostr_tools
 
-  /// Encode hex public key to npub (NIP-19)
+  /// Encode hex public key to npub (NIP-19 bech32)
   String _encodeNpub(String hexPublicKey) {
-    // Validate input
-    if (hexPublicKey.length != 64 ||
-        !RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(hexPublicKey)) {
-      throw ArgumentError('Invalid public key hex: must be 64 hex characters');
+    try {
+      final nip19 = Nip19();
+      return nip19.npubEncode(hexPublicKey);
+    } catch (e) {
+      debugPrint('KeyManager: Error encoding npub: $e');
+      rethrow;
     }
-    // Return full hex with prefix (until proper bech32 is implemented)
-    return 'npub1$hexPublicKey';
   }
 
-  /// Encode hex private key to nsec (NIP-19)
+  /// Encode hex private key to nsec (NIP-19 bech32)
   String _encodeNsec(String hexPrivateKey) {
-    // Validate input
-    if (hexPrivateKey.length != 64 ||
-        !RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(hexPrivateKey)) {
-      throw ArgumentError('Invalid private key hex: must be 64 hex characters');
+    try {
+      final nip19 = Nip19();
+      return nip19.nsecEncode(hexPrivateKey);
+    } catch (e) {
+      debugPrint('KeyManager: Error encoding nsec: $e');
+      rethrow;
     }
-    // Return full hex with prefix (until proper bech32 is implemented)
-    return 'nsec1$hexPrivateKey';
   }
 
   /// Decode nsec to hex private key
   String? _decodeNsec(String nsec) {
     try {
-      // Basic validation
-      if (!nsec.toLowerCase().startsWith('nsec1')) return null;
+      final nip19 = Nip19();
+      final decoded = nip19.decode(nsec);
 
-      // Extract the full hex suffix
-      final raw = nsec.substring(5).toLowerCase();
+      // Validate type is 'nsec'
+      if (decoded['type'] != 'nsec') return null;
 
-      // Validate: must be 64 hex characters
-      if (!RegExp(r'^[0-9a-f]{64}$').hasMatch(raw)) return null;
-
-      return raw;
+      // Return the hex data
+      return decoded['data'] as String?;
     } catch (e) {
       debugPrint('KeyManager: nsec decode error: $e');
       return null;

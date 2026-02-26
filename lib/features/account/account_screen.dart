@@ -253,17 +253,23 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              _buildActionButton(
-                                icon: Icons.copy,
-                                label: 'Copy',
-                                onTap: () =>
-                                    _copyToClipboard(npub ?? '', 'Public key'),
-                              ),
-                              _buildActionButton(
-                                icon: Icons.qr_code,
-                                label: 'Show QR',
-                                onTap: () => _showQRCode(context, npub ?? ''),
-                              ),
+                              if (npub != null) ...[
+                                _buildActionButton(
+                                  icon: Icons.copy,
+                                  label: 'Copy',
+                                  onTap: () =>
+                                      _copyToClipboard(npub, 'Public key'),
+                                ),
+                                _buildActionButton(
+                                  icon: Icons.qr_code,
+                                  label: 'Show QR',
+                                  onTap: () => _showQRCode(context, npub),
+                                ),
+                              ] else
+                                const Text(
+                                  'Key unavailable',
+                                  style: TextStyle(color: BJJColors.grey),
+                                ),
                             ],
                           ),
                         ],
