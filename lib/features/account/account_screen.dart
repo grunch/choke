@@ -15,8 +15,6 @@ class AccountScreen extends ConsumerStatefulWidget {
 class _AccountScreenState extends ConsumerState<AccountScreen> {
   bool _isNsecVisible = false;
   final _importController = TextEditingController();
-  bool _isImporting = false;
-  String? _importError;
 
   @override
   void dispose() {
@@ -38,123 +36,132 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Future<void> _showImportDialog() async {
+    String? dialogError;
+    bool dialogImporting = false;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: BJJColors.navyDark,
-        title: const Text(
-          'Import Private Key',
-          style: TextStyle(color: BJJColors.white),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Warning: Importing a new private key will replace your current identity. This action cannot be undone.',
-              style: TextStyle(color: BJJColors.grey),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _importController,
-              style: const TextStyle(color: BJJColors.white),
-              decoration: InputDecoration(
-                hintText: 'Enter nsec...',
-                hintStyle: TextStyle(
-                  color: BJJColors.grey.withValues(alpha: 0.6),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: BJJColors.greyDark),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: BJJColors.greyDark),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: BJJColors.green),
-                ),
-                errorText: _importError,
-                errorStyle: const TextStyle(color: Colors.red),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: BJJColors.navyDark,
+          title: const Text(
+            'Import Private Key',
+            style: TextStyle(color: BJJColors.white),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Warning: Importing a new private key will replace your current identity. This action cannot be undone.',
+                style: TextStyle(color: BJJColors.grey),
               ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _importController,
+                style: const TextStyle(color: BJJColors.white),
+                decoration: InputDecoration(
+                  hintText: 'Enter nsec...',
+                  hintStyle: TextStyle(
+                    color: BJJColors.grey.withValues(alpha: 0.6),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: BJJColors.greyDark),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: BJJColors.greyDark),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: BJJColors.green),
+                  ),
+                  errorText: dialogError,
+                  errorStyle: const TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _importController.clear();
+              },
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: BJJColors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: dialogImporting
+                  ? null
+                  : () async {
+                      final nsec = _importController.text.trim();
+                      if (nsec.isEmpty) {
+                        setDialogState(
+                          () => dialogError = 'Please enter an nsec',
+                        );
+                        return;
+                      }
+
+                      if (!nsec.toLowerCase().startsWith('nsec1')) {
+                        setDialogState(
+                          () => dialogError =
+                              'Invalid nsec format (should start with nsec1)',
+                        );
+                        return;
+                      }
+
+                      setDialogState(() {
+                        dialogImporting = true;
+                        dialogError = null;
+                      });
+
+                      final keyManager = ref.read(keyManagerProvider);
+                      final success = await keyManager.importFromNsec(nsec);
+
+                      if (!mounted) return;
+
+                      setDialogState(() => dialogImporting = false);
+
+                      if (success) {
+                        Navigator.pop(dialogContext);
+                        _importController.clear();
+                        ref.invalidate(npubProvider);
+                        ref.invalidate(nsecProvider);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content:
+                                  Text('Private key imported successfully'),
+                              backgroundColor: BJJColors.green,
+                            ),
+                          );
+                        }
+                      } else {
+                        setDialogState(
+                          () => dialogError =
+                              'Failed to import key. Please check the format.',
+                        );
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: BJJColors.gold,
+                foregroundColor: BJJColors.navy,
+              ),
+              child: dialogImporting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Import'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _importController.clear();
-              setState(() => _importError = null);
-            },
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: BJJColors.grey),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: _isImporting ? null : _handleImport,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: BJJColors.gold,
-              foregroundColor: BJJColors.navy,
-            ),
-            child: _isImporting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Import'),
-          ),
-        ],
       ),
     );
-  }
-
-  Future<void> _handleImport() async {
-    final nsec = _importController.text.trim();
-    if (nsec.isEmpty) {
-      setState(() => _importError = 'Please enter an nsec');
-      return;
-    }
-
-    if (!nsec.toLowerCase().startsWith('nsec1')) {
-      setState(
-        () => _importError = 'Invalid nsec format (should start with nsec1)',
-      );
-      return;
-    }
-
-    setState(() {
-      _isImporting = true;
-      _importError = null;
-    });
-
-    final keyManager = ref.read(keyManagerProvider);
-    final success = await keyManager.importFromNsec(nsec);
-
-    if (!mounted) return;
-
-    setState(() => _isImporting = false);
-
-    if (success) {
-      Navigator.pop(context);
-      _importController.clear();
-      ref.invalidate(npubProvider);
-      ref.invalidate(nsecProvider);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Private key imported successfully'),
-            backgroundColor: BJJColors.green,
-          ),
-        );
-      }
-    } else {
-      setState(
-        () => _importError = 'Failed to import key. Please check the format.',
-      );
-    }
   }
 
   @override
@@ -523,7 +530,14 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 data: data,
                 size: 200,
                 backgroundColor: BJJColors.white,
-                foregroundColor: BJJColors.navy,
+                eyeStyle: const QrEyeStyle(
+                  eyeShape: QrEyeShape.square,
+                  color: BJJColors.navy,
+                ),
+                dataModuleStyle: const QrDataModuleStyle(
+                  dataModuleShape: QrDataModuleShape.square,
+                  color: BJJColors.navy,
+                ),
               ),
             ),
             const SizedBox(height: 16),
