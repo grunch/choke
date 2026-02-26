@@ -18,29 +18,96 @@ Choke lets you create, score, and publish Brazilian Jiu-Jitsu matches in real ti
 ## Tech Stack
 
 - **Mobile**: Flutter (Android & iOS)
-- **Protocol**: Nostr (NIP-1 addressable events, NIP-19, NIP-40)
-- **Relays**: `wss://relay.mostro.network`, `wss://nos.lol`
+- **State Management**: Riverpod
+- **Protocol**: Nostr (nostr_tools)
+- **Security**: flutter_secure_storage for key management
+- **Design**: Custom BJJ-inspired theme
 
-## Scoring (IBJJF Rules)
+## Brand Colors
 
-| Action | Points |
-|--------|--------|
-| Takedown | 2 |
-| Sweep | 2 |
-| Knee on Belly | 2 |
-| Guard Pass | 3 |
-| Back Take | 4 |
-| Mount | 4 |
+| Color | HEX | Usage |
+|-------|-----|-------|
+| Navy Black | `#121A2E` | Backgrounds |
+| BJJ Green | `#1BA34E` | Actions & CTAs |
+| Championship Gold | `#F5B800` | Accents & Awards |
+| Pure White | `#FFFFFF` | Text & Cards |
 
-**Score = pt2×2 + pt3×3 + pt4×4**
+See [BJJ_STYLE_GUIDE.md](BJJ_STYLE_GUIDE.md) for complete style guide.
 
-## Development
+## Getting Started
+
+### Prerequisites
+
+- Flutter SDK (^3.11.0)
+- Dart SDK (^3.11.0)
+- Android Studio / Xcode (for mobile builds)
+
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/grunch/choke.git
+cd choke
+
+# Install dependencies
 flutter pub get
+
+# Run code generation (if needed)
+flutter pub run build_runner build
+
+# Run the app
 flutter run
 ```
 
+### Build for Production
+
+```bash
+# Android
+flutter build apk --release
+flutter build appbundle --release
+
+# iOS
+flutter build ios --release
+```
+
+## Architecture
+
+```
+lib/
+├── features/       # Feature-based modules
+├── data/          # Models and repositories
+├── services/      # Nostr and key management
+└── shared/        # Theme, widgets, utilities
+```
+
+## Nostr Integration
+
+Choke uses NIP-25 events for match data and NIP-59 gift wrap for private communications between scorers.
+
+### Event Kinds
+
+- `31925` — Match events (addressable)
+- `1059` — Gift wrap (encrypted)
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+See [AGENTS.md](AGENTS.md) for development conventions.
+
 ## License
 
-TBD
+MIT License — see LICENSE file for details.
+
+## Connect
+
+- GitHub: [@grunch/choke](https://github.com/grunch/choke)
+- Nostr: `npub14e8x7ggcvgy4j0wcsqh6kv4pfmtax7rkryenux9u7ytemjcuce7q9qpjtk`
+
+---
+
+Built with 🥋 and ⚡ by the BJJ & Bitcoin community.
