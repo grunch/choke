@@ -27,7 +27,9 @@ class HomeScreen extends ConsumerWidget {
                         children: [
                           Text(
                             'Choke',
-                            style: Theme.of(context).textTheme.headlineMedium
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
                                 ?.copyWith(
                                   color: BJJColors.white,
                                   fontWeight: FontWeight.bold,
@@ -36,7 +38,9 @@ class HomeScreen extends ConsumerWidget {
                           const SizedBox(height: 4),
                           Text(
                             'Score your BJJ matches',
-                            style: Theme.of(context).textTheme.bodyMedium
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
                                 ?.copyWith(color: BJJColors.grey),
                           ),
                         ],
@@ -112,7 +116,9 @@ class HomeScreen extends ConsumerWidget {
                         children: [
                           Text(
                             'Match Types',
-                            style: Theme.of(context).textTheme.titleLarge
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
                                 ?.copyWith(
                                   color: BJJColors.navy,
                                   fontWeight: FontWeight.bold,
@@ -166,7 +172,9 @@ class HomeScreen extends ConsumerWidget {
                         children: [
                           Text(
                             'Gyms Near You',
-                            style: Theme.of(context).textTheme.titleLarge
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
                                 ?.copyWith(
                                   color: BJJColors.navy,
                                   fontWeight: FontWeight.bold,
@@ -205,9 +213,9 @@ class HomeScreen extends ConsumerWidget {
                       Text(
                         'Quick Start',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: BJJColors.navy,
-                          fontWeight: FontWeight.bold,
-                        ),
+                              color: BJJColors.navy,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 16),
                       _buildQuickActionButton(
