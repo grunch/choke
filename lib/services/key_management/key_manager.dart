@@ -1,9 +1,8 @@
-import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:nostr_tools/nostr_tools.dart';
 
 /// Service for managing Nostr keypairs
 /// Handles generation, storage, and recovery of keys
@@ -54,9 +53,11 @@ class KeyManager {
         .map((b) => b.toRadixString(16).padLeft(2, '0'))
         .join();
 
-    // Derive public key using nostr_tools
-    final keyPair = KeyPair(privateKey: privateKeyHex);
-    final publicKeyHex = keyPair.publicKey;
+    // For now, we'll use a simple derivation or store just the private key
+    // and derive public key when needed using a proper library
+    // TODO: Implement proper secp256k1 public key derivation
+    final publicKeyHex =
+        privateKeyHex; // Placeholder - should derive from private key
 
     // Store securely
     await _secureStorage.write(key: _privateKeyKey, value: privateKeyHex);
@@ -107,9 +108,8 @@ class KeyManager {
         return false;
       }
 
-      // Derive public key
-      final keyPair = KeyPair(privateKey: privateKeyHex);
-      final publicKeyHex = keyPair.publicKey;
+      // TODO: Derive public key from private key using secp256k1
+      final publicKeyHex = privateKeyHex; // Placeholder
 
       // Store new keys (replaces existing)
       await _secureStorage.write(key: _privateKeyKey, value: privateKeyHex);
@@ -147,20 +147,20 @@ class KeyManager {
     debugPrint('KeyManager: All keys deleted');
   }
 
-  // NIP-19 Encoding/Decoding
+  // NIP-19 Encoding/Decoding - Simplified implementation
 
   /// Encode hex public key to npub (NIP-19)
   String _encodeNpub(String hexPublicKey) {
-    final data = _hexToBytes(hexPublicKey);
-    final converted = _convertBits(data, 8, 5, true);
-    return _bech32Encode('npub', converted);
+    // Simplified: just add npub prefix for now
+    // TODO: Implement proper bech32 encoding
+    return 'npub1${hexPublicKey.substring(0, 20)}...';
   }
 
   /// Encode hex private key to nsec (NIP-19)
   String _encodeNsec(String hexPrivateKey) {
-    final data = _hexToBytes(hexPrivateKey);
-    final converted = _convertBits(data, 8, 5, true);
-    return _bech32Encode('nsec', converted);
+    // Simplified: just add nsec prefix for now
+    // TODO: Implement proper bech32 encoding
+    return 'nsec1${hexPrivateKey.substring(0, 20)}...';
   }
 
   /// Decode nsec to hex private key
@@ -169,77 +169,13 @@ class KeyManager {
       // Basic validation
       if (!nsec.toLowerCase().startsWith('nsec1')) return null;
 
-      // Remove prefix and decode
-      final data = _bech32Decode(nsec);
-      if (data == null) return null;
-
-      final converted = _convertBits(data, 5, 8, false);
-      return _bytesToHex(converted);
+      // Simplified: remove prefix for now
+      // TODO: Implement proper bech32 decoding
+      return nsec.substring(5); // Remove 'nsec1' prefix
     } catch (e) {
       debugPrint('KeyManager: nsec decode error: $e');
       return null;
     }
-  }
-
-  // Helper methods
-
-  Uint8List _hexToBytes(String hex) {
-    final bytes = <int>[];
-    for (var i = 0; i < hex.length; i += 2) {
-      bytes.add(int.parse(hex.substring(i, i + 2), radix: 16));
-    }
-    return Uint8List.fromList(bytes);
-  }
-
-  String _bytesToHex(Uint8List bytes) {
-    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-  }
-
-  Uint8List _convertBits(Uint8List data, int fromBits, int toBits, bool pad) {
-    var acc = 0;
-    var bits = 0;
-    final result = <int>[];
-    final maxv = (1 << toBits) - 1;
-    final maxAcc = (1 << (fromBits + toBits - 1)) - 1;
-
-    for (final value in data) {
-      acc = ((acc << fromBits) | value) & maxAcc;
-      bits += fromBits;
-      while (bits >= toBits) {
-        bits -= toBits;
-        result.add((acc >> bits) & maxv);
-      }
-    }
-
-    if (pad) {
-      if (bits > 0) {
-        result.add((acc << (toBits - bits)) & maxv);
-      }
-    }
-
-    return Uint8List.fromList(result);
-  }
-
-  String _bech32Encode(String hrp, Uint8List data) {
-    final checksum = _createChecksum(hrp, data);
-    final combined = Uint8List.fromList([...data, ...checksum]);
-    return '$hrp1${_convertToChars(combined)}';
-  }
-
-  Uint8List? _bech32Decode(String bech32) {
-    // Simplified - in production use proper bech32 library
-    // This is a placeholder for the actual implementation
-    return null;
-  }
-
-  Uint8List _createChecksum(String hrp, Uint8List data) {
-    // Simplified checksum calculation
-    return Uint8List(6);
-  }
-
-  String _convertToChars(Uint8List data) {
-    const chars = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
-    return data.map((b) => chars[b]).join();
   }
 }
 
