@@ -124,6 +124,7 @@ class RelayConnection {
   WebSocketChannel? _channel;
   final _messageController = StreamController<NostrEvent>.broadcast();
   final _connectionController = StreamController<bool>.broadcast();
+  final _okController = StreamController<List<dynamic>>.broadcast();
   Timer? _reconnectTimer;
   final Set<String> _activeSubscriptions = {};
   final Map<String, Filter> _subscriptionFilters = {};
@@ -178,7 +179,9 @@ class RelayConnection {
 
   void _handleMessage(dynamic data) {
     try {
-      final message = jsonDecode(data as String) as List<dynamic>;
+      final raw = data as String;
+      debugPrint('NostrService: [$url] received: ${raw.length > 200 ? '${raw.substring(0, 200)}...' : raw}');
+      final message = jsonDecode(raw) as List<dynamic>;
       if (message.isEmpty) return;
 
       final type = message[0] as String;
@@ -186,6 +189,12 @@ class RelayConnection {
         final eventData = message[2] as Map<String, dynamic>;
         final event = NostrEvent.fromJson(eventData);
         _messageController.add(event);
+      } else if (type == 'OK' && message.length >= 3) {
+        // ["OK", <event_id>, <accepted>, <message>]
+        debugPrint('NostrService: [$url] OK: eventId=${message[1]}, accepted=${message[2]}, msg=${message.length > 3 ? message[3] : ""}');
+        _okController.add(message);
+      } else if (type == 'NOTICE' && message.length >= 2) {
+        debugPrint('NostrService: [$url] NOTICE: ${message[1]}');
       }
     } catch (e) {
       debugPrint('NostrService: Error parsing message: $e');
@@ -234,14 +243,35 @@ class RelayConnection {
     _channel?.sink.add(message);
   }
 
-  Future<void> publish(NostrEvent event) async {
+  /// Publish an event and wait for OK confirmation from the relay.
+  /// Returns true if relay accepted, false if rejected.
+  /// Throws on connection error or timeout.
+  Future<bool> publish(NostrEvent event) async {
     final channel = _channel;
     if (!isConnected || channel == null) {
       throw Exception('Not connected to relay $url');
     }
 
     final message = jsonEncode(['EVENT', event.toJson()]);
+    debugPrint('NostrService: [$url] publishing event ${event.id}');
+
+    // Listen for OK response matching this event ID
+    final okFuture = _okController.stream
+        .where((msg) => msg.length >= 3 && msg[1] == event.id)
+        .first
+        .timeout(const Duration(seconds: 10), onTimeout: () {
+      throw TimeoutException('No OK response from $url for event ${event.id}');
+    });
+
     channel.sink.add(message);
+
+    final okMsg = await okFuture;
+    final accepted = okMsg[2] as bool;
+    if (!accepted) {
+      final reason = okMsg.length > 3 ? okMsg[3] as String : 'unknown reason';
+      debugPrint('NostrService: [$url] rejected event ${event.id}: $reason');
+    }
+    return accepted;
   }
 
   void disconnect() {
@@ -254,6 +284,7 @@ class RelayConnection {
     disconnect();
     _messageController.close();
     _connectionController.close();
+    _okController.close();
   }
 }
 
@@ -389,26 +420,37 @@ class NostrService {
     _eventController.add(event);
   }
 
-  /// Publish a signed event to all connected relays
+  /// Publish a signed event to all connected relays.
+  /// Waits for OK confirmation from each relay.
   Future<void> publishEvent(NostrEvent event) async {
     final connectedRelays = _relays.values.where((r) => r.isConnected).toList();
 
-    if (connectedRelays.length < 2) {
-      throw Exception('Need at least 2 connected relays for redundancy');
+    debugPrint('NostrService: publishing event ${event.id} (kind ${event.kind}) to ${connectedRelays.length} relays');
+    debugPrint('NostrService: event JSON: ${jsonEncode(event.toJson())}');
+
+    if (connectedRelays.isEmpty) {
+      throw Exception('No connected relays');
     }
 
-    // Publish to all relays and track results
+    // Publish to all relays and wait for OK confirmations
     final results = await Future.wait(
-      connectedRelays.map(
-        (relay) =>
-            relay.publish(event).then((_) => true).catchError((_) => false),
-      ),
+      connectedRelays.map((relay) async {
+        try {
+          final accepted = await relay.publish(event);
+          debugPrint('NostrService: [${relay.url}] accepted=$accepted');
+          return accepted;
+        } catch (e) {
+          debugPrint('NostrService: [${relay.url}] publish error: $e');
+          return false;
+        }
+      }),
     );
+
     final successCount = results.where((r) => r).length;
-    if (successCount < 2) {
-      throw Exception(
-        'Published to only $successCount relays, need at least 2',
-      );
+    debugPrint('NostrService: published to $successCount/${connectedRelays.length} relays');
+
+    if (successCount == 0) {
+      throw Exception('Event rejected by all relays');
     }
   }
 
@@ -442,20 +484,21 @@ class NostrService {
       pubkey: publicKey,
     );
 
-    // Calculate hash and sign using nostr_tools
+    // Sign event using nostr_tools (calculates id + signature)
     final eventApi = nostr.EventApi();
-    final id = eventApi.getEventHash(nostrEvent);
-    final sig = eventApi.signEvent(nostrEvent, privateKey);
+    final finishedEvent = eventApi.finishEvent(nostrEvent, privateKey);
+    debugPrint('NostrService: event id: ${finishedEvent.id}');
+    debugPrint('NostrService: event sig: ${finishedEvent.sig.substring(0, 16)}...');
+    debugPrint('NostrService: event pubkey: ${finishedEvent.pubkey}');
 
-    final event = NostrEvent(
-      id: id,
-      pubkey: publicKey,
-      createdAt: createdAt,
-      kind: 31415,
-      tags: tags,
-      content: content,
-      sig: sig,
-    );
+    // Verify the signature before publishing
+    final isValid = eventApi.verifySignature(finishedEvent);
+    debugPrint('NostrService: signature valid: $isValid');
+    if (!isValid) {
+      throw Exception('Event signature verification failed');
+    }
+
+    final event = NostrEvent.fromNostrToolsEvent(finishedEvent);
 
     await publishEvent(event);
   }
