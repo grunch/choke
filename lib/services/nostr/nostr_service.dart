@@ -255,17 +255,32 @@ class RelayConnection {
     final message = jsonEncode(['EVENT', event.toJson()]);
     debugPrint('NostrService: [$url] publishing event ${event.id}');
 
-    // Listen for OK response matching this event ID
-    final okFuture = _okController.stream
+    // Listen for OK response matching this event ID.
+    // Use manual subscription + completer to avoid stale listener leak on timeout.
+    final completer = Completer<List<dynamic>>();
+    final subscription = _okController.stream
         .where((msg) => msg.length >= 3 && msg[1] == event.id)
-        .first
-        .timeout(const Duration(seconds: 10), onTimeout: () {
-      throw TimeoutException('No OK response from $url for event ${event.id}');
+        .listen((msg) {
+      if (!completer.isCompleted) completer.complete(msg);
+    });
+
+    final timer = Timer(const Duration(seconds: 10), () {
+      if (!completer.isCompleted) {
+        completer.completeError(
+          TimeoutException('No OK response from $url for event ${event.id}'),
+        );
+      }
     });
 
     channel.sink.add(message);
 
-    final okMsg = await okFuture;
+    List<dynamic> okMsg;
+    try {
+      okMsg = await completer.future;
+    } finally {
+      timer.cancel();
+      await subscription.cancel();
+    }
     final accepted = okMsg[2] as bool;
     if (!accepted) {
       final reason = okMsg.length > 3 ? okMsg[3] as String : 'unknown reason';
@@ -425,8 +440,7 @@ class NostrService {
   Future<void> publishEvent(NostrEvent event) async {
     final connectedRelays = _relays.values.where((r) => r.isConnected).toList();
 
-    debugPrint('NostrService: publishing event ${event.id} (kind ${event.kind}) to ${connectedRelays.length} relays');
-    debugPrint('NostrService: event JSON: ${jsonEncode(event.toJson())}');
+    debugPrint('NostrService: publishing event ${event.id} (kind ${event.kind}, content ${event.content.length} chars) to ${connectedRelays.length} relays');
 
     if (connectedRelays.isEmpty) {
       throw Exception('No connected relays');
