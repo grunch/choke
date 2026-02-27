@@ -23,6 +23,8 @@ void main() async {
   final nostrService = NostrService(keyManager);
   try {
     await nostrService.initialize();
+    // Subscribe to user's match events
+    await nostrService.subscribeToUserEvents();
   } catch (e, st) {
     debugPrint('NostrService initialization failed: $e\n$st');
   }

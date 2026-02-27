@@ -2,101 +2,87 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/theme/app_theme.dart';
 import '../match/create_match_screen.dart';
+import '../match/match_control_screen.dart';
+import '../match/models/match.dart';
+import '../match/providers/match_control_provider.dart';
+import 'providers/home_providers.dart';
+
+/// Parse hex color string (#RRGGBB) to Color with fallback
+Color _hexToColor(String hex) {
+  try {
+    final h = hex.replaceFirst('#', '');
+    if (h.length != 6) return BJJColors.grey;
+    return Color(int.parse('FF$h', radix: 16));
+  } catch (_) {
+    return BJJColors.grey;
+  }
+}
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final filteredMatches = ref.watch(filteredMatchListProvider);
+    final statusFilter = ref.watch(statusFilterProvider);
+
     return Scaffold(
       backgroundColor: BJJColors.navy,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const CreateMatchScreen()),
+          );
+        },
+        backgroundColor: BJJColors.green,
+        child: const Icon(Icons.add, color: BJJColors.white),
+      ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Section
+            // Header
             Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Choke',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium
-                                ?.copyWith(
-                                  color: BJJColors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Score your BJJ matches',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(color: BJJColors.grey),
-                          ),
-                        ],
+                      Text(
+                        'Choke',
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineMedium
+                            ?.copyWith(
+                              color: BJJColors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: BJJColors.navyDark,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(
-                          Icons.notifications_outlined,
-                          color: BJJColors.white,
-                        ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Score your BJJ matches',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(color: BJJColors.grey),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 24),
-                  // Search Bar
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: BJJColors.navyDark,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.search, color: BJJColors.grey),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            style: const TextStyle(color: BJJColors.white),
-                            decoration: InputDecoration(
-                              hintText: 'Search matches or gyms...',
-                              hintStyle: TextStyle(
-                                color: BJJColors.grey.withValues(alpha: 0.6),
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ],
               ),
             ),
 
-            // Bottom Sheet Content
+            // Filter chips
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: _buildFilterChips(ref, statusFilter),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Match list
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
@@ -106,44 +92,19 @@ class HomeScreen extends ConsumerWidget {
                     topRight: Radius.circular(32),
                   ),
                 ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Quick Actions
-                      Text(
-                        'Quick Start',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: BJJColors.navy,
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildQuickActionButton(
-                        context,
-                        icon: Icons.add_circle,
-                        title: 'Create New Match',
-                        subtitle: 'Start scoring a match now',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const CreateMatchScreen(),
-                            ),
+                child: filteredMatches.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(20),
+                        itemCount: filteredMatches.length,
+                        itemBuilder: (context, index) {
+                          final match = filteredMatches[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _buildMatchCard(context, ref, match),
                           );
                         },
                       ),
-                      const SizedBox(height: 12),
-                      _buildQuickActionButton(
-                        context,
-                        icon: Icons.qr_code_scanner,
-                        title: 'Join Match',
-                        subtitle: 'Scan QR to join as scorer',
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
-                ),
               ),
             ),
           ],
@@ -152,61 +113,291 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQuickActionButton(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildFilterChips(WidgetRef ref, Set<MatchStatus> selected) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: MatchStatus.values.map((status) {
+        final isSelected = selected.contains(status);
+        return FilterChip(
+          label: Text(_statusLabel(status)),
+          selected: isSelected,
+          onSelected: (value) {
+            final current = Set<MatchStatus>.from(
+                ref.read(statusFilterProvider));
+            if (value) {
+              current.add(status);
+            } else {
+              current.remove(status);
+            }
+            ref.read(statusFilterProvider.notifier).state = current;
+          },
+          selectedColor: _statusColor(status).withOpacity(0.2),
+          checkmarkColor: _statusColor(status),
+          labelStyle: TextStyle(
+            color: isSelected ? _statusColor(status) : BJJColors.grey,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 12,
+          ),
+          backgroundColor: BJJColors.navyDark,
+          side: BorderSide(
+            color: isSelected
+                ? _statusColor(status).withOpacity(0.5)
+                : BJJColors.greyDark.withOpacity(0.3),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('🥋', style: TextStyle(fontSize: 64)),
+          const SizedBox(height: 16),
+          const Text(
+            'No matches yet',
+            style: TextStyle(
+              color: BJJColors.navy,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Create a new one!',
+            style: TextStyle(
+              color: BJJColors.greyDark,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMatchCard(BuildContext context, WidgetRef ref, Match match) {
+    final f1Color = _hexToColor(match.f1Color);
+    final f2Color = _hexToColor(match.f2Color);
+
     return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      onTap: () {
+        ref.read(activeMatchProvider.notifier).state = match;
+        ref.invalidate(matchControlProvider);
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => MatchControlScreen(match: match),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: BJJColors.navy,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: BJJColors.green.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(icon, color: BJJColors.green),
+          color: BJJColors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: BJJColors.navy.withOpacity(0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: BJJColors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+          ],
+        ),
+        child: Column(
+          children: [
+            // Top row: match ID + status badge
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '#${match.id}',
+                  style: TextStyle(
+                    color: BJJColors.greyDark,
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _statusColor(match.status).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _statusLabel(match.status),
+                    style: TextStyle(
+                      color: _statusColor(match.status),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(color: BJJColors.grey, fontSize: 13),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Score row
+            Row(
+              children: [
+                // Fighter 1
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: f1Color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    match.f1Name,
+                    style: const TextStyle(
+                      color: BJJColors.navy,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  '${match.f1Score}',
+                  style: TextStyle(
+                    color: match.f1Score > match.f2Score
+                        ? BJJColors.green
+                        : BJJColors.navy,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    'vs',
+                    style: TextStyle(
+                      color: BJJColors.greyDark,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${match.f2Score}',
+                  style: TextStyle(
+                    color: match.f2Score > match.f1Score
+                        ? BJJColors.green
+                        : BJJColors.navy,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    match.f2Name,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      color: BJJColors.navy,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: f2Color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+
+            // Advantages/Penalties row
+            if (match.f1Adv > 0 ||
+                match.f2Adv > 0 ||
+                match.f1Pen > 0 ||
+                match.f2Pen > 0) ...[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      if (match.f1Adv > 0)
+                        _buildSmallBadge(
+                            'A:${match.f1Adv}', BJJColors.gold),
+                      if (match.f1Pen > 0) ...[
+                        const SizedBox(width: 4),
+                        _buildSmallBadge(
+                            'P:${match.f1Pen}', BJJColors.error),
+                      ],
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      if (match.f2Adv > 0)
+                        _buildSmallBadge(
+                            'A:${match.f2Adv}', BJJColors.gold),
+                      if (match.f2Pen > 0) ...[
+                        const SizedBox(width: 4),
+                        _buildSmallBadge(
+                            'P:${match.f2Pen}', BJJColors.error),
+                      ],
+                    ],
                   ),
                 ],
               ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: BJJColors.grey,
-              size: 16,
-            ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildSmallBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Color _statusColor(MatchStatus status) {
+    return switch (status) {
+      MatchStatus.waiting => BJJColors.gold,
+      MatchStatus.inProgress => BJJColors.green,
+      MatchStatus.finished => BJJColors.info,
+      MatchStatus.canceled => BJJColors.error,
+    };
+  }
+
+  String _statusLabel(MatchStatus status) {
+    return switch (status) {
+      MatchStatus.waiting => 'Waiting',
+      MatchStatus.inProgress => 'In Progress',
+      MatchStatus.finished => 'Finished',
+      MatchStatus.canceled => 'Canceled',
+    };
   }
 }

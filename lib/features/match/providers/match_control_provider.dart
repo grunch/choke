@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/match.dart';
 import '../../../services/nostr/nostr_service.dart';
+import '../../home/providers/home_providers.dart';
 
 /// State for the match control screen
 class MatchControlState {
@@ -54,10 +55,11 @@ class _UndoEntry {
 /// Manages match control: timer, scoring, publishing
 class MatchControlNotifier extends StateNotifier<MatchControlState> {
   final NostrService _nostrService;
+  final MatchFeedNotifier? _feedNotifier;
   Timer? _timer;
   bool _pendingPublish = false;
 
-  MatchControlNotifier(Match match, this._nostrService)
+  MatchControlNotifier(Match match, this._nostrService, [this._feedNotifier])
       : super(MatchControlState(
           match: match,
           remainingSeconds: _calculateRemaining(match),
@@ -225,6 +227,9 @@ class MatchControlNotifier extends StateNotifier<MatchControlState> {
     try {
       final match = state.match;
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      // Update home feed immediately (don't wait for relay round-trip)
+      _feedNotifier?.addLocal(match);
       final expiration = now + 604800; // 1 week
 
       await _nostrService.publishAddressableEvent(
@@ -269,5 +274,6 @@ final matchControlProvider =
     throw StateError('activeMatchProvider must be set before using matchControlProvider');
   }
   final nostrService = ref.watch(nostrServiceProvider);
-  return MatchControlNotifier(match, nostrService);
+  final feedNotifier = ref.read(matchFeedProvider.notifier);
+  return MatchControlNotifier(match, nostrService, feedNotifier);
 });
