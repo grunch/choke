@@ -6,11 +6,6 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:nostr_tools/nostr_tools.dart' as nostr;
 import '../key_management/key_manager.dart';
 
-// TODO: Implement NIP-59 gift-wrap support
-// Tracking: https://github.com/grunch/choke/issues/TODO_NIP59
-// NIP-59 is required for private message wrapping/unwrapping per project guidelines.
-// Currently deferred; implement before production release.
-
 /// Nostr Event model (wrapper around nostr_tools Event)
 class NostrEvent {
   final String id;

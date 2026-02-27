@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" width="200" alt="Choke logo" />
+</p>
+
 # Choke 🥋⚡
 
 A modern decentralized BJJ match scoring and publishing app via Nostr.
@@ -82,12 +86,11 @@ lib/
 
 ## Nostr Integration
 
-Choke uses NIP-25 events for match data and NIP-59 gift wrap for private communications between scorers.
+Choke uses Nostr addressable events for match data.
 
 ### Event Kinds
 
-- `31415` — Match events (addressable)
-- `1059` — Gift wrap (encrypted)
+- `31415` — Match events (addressable/replaceable)
 
 ## Contributing
 
