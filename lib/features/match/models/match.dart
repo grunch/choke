@@ -3,6 +3,9 @@ import 'dart:math';
 import 'package:nostr_tools/nostr_tools.dart' as nostr;
 import '../../../services/nostr/nostr_service.dart';
 
+/// Sentinel value for distinguishing "not provided" from "null" in copyWith
+const _sentinel = Object();
+
 /// Represents the status of a BJJ match
 enum MatchStatus {
   waiting,
@@ -288,17 +291,16 @@ class Match {
 
   /// Convert to Nostr event (kind 31925 - Addressable Event)
   ///
-  /// Creates a parameterized replaceable event with:
+  /// Creates an unsigned parameterized replaceable event with:
   /// - kind: 31925
   /// - d tag: match ID
   /// - expiration tag: calculated from start_at + duration
   /// - content: serialized match JSON
   ///
-  /// The [pubkey] and [privateKey] are required for signing.
-  /// Returns a [NostrEvent] ready to be published.
+  /// The [pubkey] is required. Returns an unsigned [NostrEvent] that must
+  /// be signed by a dedicated signing service before publishing.
   NostrEvent toNostrEvent({
     required String pubkey,
-    required String privateKey,
   }) {
     // Calculate expiration timestamp
     final exp = startAt != null ? startAt! + duration : null;
@@ -309,28 +311,17 @@ class Match {
       if (exp != null) ['expiration', exp.toString()],
     ];
 
-    // Build nostr_tools Event first to calculate hash and signature
-    final nostrEvent = nostr.Event(
-      kind: 31925,
-      tags: tags,
-      content: toJsonString(),
-      created_at: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      pubkey: pubkey,
-    );
-
-    // Calculate hash and sign
-    final eventApi = nostr.EventApi();
-    final eventId = eventApi.getEventHash(nostrEvent);
-    final sig = eventApi.signEvent(nostrEvent, privateKey);
+    // Build unsigned event (id and sig will be empty, must be signed externally)
+    final createdAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
     return NostrEvent(
-      id: eventId,
+      id: '',
       pubkey: pubkey,
-      createdAt: nostrEvent.created_at,
+      createdAt: createdAt,
       kind: 31925,
       tags: tags,
       content: toJsonString(),
-      sig: sig,
+      sig: '',
     );
   }
 
@@ -354,14 +345,19 @@ class Match {
     // Parse content JSON
     final json = jsonDecode(event.content) as Map<String, dynamic>;
 
-    // Extract match ID from d tag for validation
-    final dTag = event.tags
+    // Extract and validate d tag (required for kind 31925)
+    final dTags = event.tags
         .where((tag) => tag.isNotEmpty && tag[0] == 'd')
-        .map((tag) => tag.length > 1 ? tag[1] : null)
-        .whereType<String>()
-        .firstOrNull;
+        .toList();
 
-    if (dTag != null && dTag != json['id']) {
+    if (dTags.length != 1 || dTags.first.length < 2 || dTags.first[1].isEmpty) {
+      throw const FormatException(
+        'Missing or invalid d tag for kind 31925 event',
+      );
+    }
+
+    final dTag = dTags.first[1];
+    if (dTag != json['id']) {
       throw FormatException(
         'Match ID mismatch: d tag says "$dTag" but content says "${json['id']}"',
       );
@@ -371,10 +367,13 @@ class Match {
   }
 
   /// Create a copy of this match with updated fields
+  ///
+  /// To clear [startAt] to null, pass [startAt] as null explicitly.
+  /// Omitting [startAt] preserves the current value.
   Match copyWith({
     String? id,
     MatchStatus? status,
-    int? startAt,
+    dynamic startAt = _sentinel,
     int? duration,
     String? f1Name,
     String? f2Name,
@@ -394,7 +393,7 @@ class Match {
     return Match(
       id: id ?? this.id,
       status: status ?? this.status,
-      startAt: startAt ?? this.startAt,
+      startAt: startAt == _sentinel ? this.startAt : startAt as int?,
       duration: duration ?? this.duration,
       f1Name: f1Name ?? this.f1Name,
       f2Name: f2Name ?? this.f2Name,

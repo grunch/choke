@@ -72,7 +72,7 @@ The enum provides:
 
 The total score is calculated using the IBJJF points system:
 
-```
+```text
 Score = (pt2 × 2) + (pt3 × 3) + (pt4 × 4)
 ```
 
@@ -147,7 +147,7 @@ The model integrates with Nostr using kind 31925 (addressable/replaceable events
 
 ### Event Structure
 
-```
+```text
 kind: 31925
 d: "<match_id>"
 expiration: "<start_at + duration>" (optional)
@@ -345,7 +345,7 @@ class MatchNotifier extends StateNotifier<Match> {
 
 ## File Location
 
-```
+```text
 lib/
 └── features/
     └── match/
