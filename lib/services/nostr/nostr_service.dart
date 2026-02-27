@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import '../key_management/key_manager.dart';
 
 /// Nostr Event model
@@ -89,7 +89,7 @@ class Filter {
 class RelayConnection {
   final String url;
   bool isConnected = false;
-  WebSocket? _socket;
+  WebSocketChannel? _channel;
   final _messageController = StreamController<NostrEvent>.broadcast();
   final _connectionController = StreamController<bool>.broadcast();
   Timer? _reconnectTimer;
@@ -103,12 +103,12 @@ class RelayConnection {
 
   Future<void> connect() async {
     try {
-      _socket = await WebSocket.connect(url);
+      _channel = WebSocketChannel.connect(Uri.parse(url));
       isConnected = true;
       _connectionController.add(true);
       debugPrint('NostrService: Connected to $url');
 
-      _socket!.listen(
+      _channel!.stream.listen(
         (data) => _handleMessage(data),
         onError: (error) {
           debugPrint('NostrService: Error on $url: $error');
@@ -150,8 +150,8 @@ class RelayConnection {
     if (!isConnected) return;
     isConnected = false;
     _connectionController.add(false);
-    _socket?.close();
-    _socket = null;
+    _channel?.sink.close();
+    _channel = null;
     _scheduleReconnect();
   }
 
@@ -176,7 +176,7 @@ class RelayConnection {
       subscriptionId,
       filter.toJson(),
     ]);
-    _socket?.add(message);
+    _channel?.sink.add(message);
   }
 
   void unsubscribe(String subscriptionId) {
@@ -185,21 +185,22 @@ class RelayConnection {
     if (!isConnected) return;
 
     final message = jsonEncode(['CLOSE', subscriptionId]);
-    _socket?.add(message);
+    _channel?.sink.add(message);
   }
 
   Future<void> publish(NostrEvent event) async {
-    if (!isConnected) {
+    final channel = _channel;
+    if (!isConnected || channel == null) {
       throw Exception('Not connected to relay $url');
     }
 
     final message = jsonEncode(['EVENT', event.toJson()]);
-    _socket?.add(message);
+    channel.sink.add(message);
   }
 
   void disconnect() {
     _reconnectTimer?.cancel();
-    _socket?.close();
+    _channel?.sink.close();
     isConnected = false;
   }
 
@@ -335,8 +336,19 @@ class NostrService {
       throw Exception('Need at least 2 connected relays for redundancy');
     }
 
-    final futures = connectedRelays.map((relay) => relay.publish(event));
-    await Future.wait(futures);
+    // Publish to all relays and track results
+    final results = await Future.wait(
+      connectedRelays.map(
+        (relay) =>
+            relay.publish(event).then((_) => true).catchError((_) => false),
+      ),
+    );
+    final successCount = results.where((r) => r).length;
+    if (successCount < 2) {
+      throw Exception(
+        'Published to only $successCount relays, need at least 2',
+      );
+    }
   }
 
   /// Create and publish a kind 31925 addressable event
@@ -370,7 +382,6 @@ class NostrService {
     );
 
     // Sign the event
-    // TODO: Implement proper Schnorr signature using secp256k1
     final sig = _signEventId(id, privateKey);
 
     final event = NostrEvent(
@@ -389,9 +400,9 @@ class NostrService {
   /// Sign event id with private key (Schnorr signature)
   /// TODO: Implement proper secp256k1 Schnorr signature
   String _signEventId(String eventId, String privateKeyHex) {
-    // Placeholder: returns a dummy signature
+    // Placeholder: returns a dummy signature without leaking key material
     // In production, use pointycastle or similar for secp256k1 Schnorr
-    return '${privateKeyHex.substring(0, 16)}_signature_placeholder';
+    return 'placeholder_signature_${eventId.hashCode.toRadixString(16)}';
   }
 
   /// Calculate event id from serialized event data
@@ -434,5 +445,7 @@ class NostrService {
 /// Provider for NostrService
 final nostrServiceProvider = Provider<NostrService>((ref) {
   final keyManager = ref.watch(keyManagerProvider);
-  return NostrService(keyManager);
+  final service = NostrService(keyManager);
+  ref.onDispose(() => service.dispose());
+  return service;
 });
