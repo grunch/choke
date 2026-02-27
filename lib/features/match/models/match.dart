@@ -13,15 +13,25 @@ enum MatchStatus {
   finished,
   canceled;
 
-  /// Convert enum to JSON string
-  String toJson() => name;
+  /// Convert enum to kebab-case JSON string
+  String toJson() {
+    return switch (this) {
+      MatchStatus.waiting => 'waiting',
+      MatchStatus.inProgress => 'in-progress',
+      MatchStatus.finished => 'finished',
+      MatchStatus.canceled => 'canceled',
+    };
+  }
 
-  /// Convert JSON string to enum
+  /// Convert kebab-case JSON string to enum
   static MatchStatus fromJson(String json) {
-    return MatchStatus.values.firstWhere(
-      (e) => e.name == json,
-      orElse: () => throw FormatException('Unknown MatchStatus: $json'),
-    );
+    return switch (json) {
+      'waiting' => MatchStatus.waiting,
+      'in-progress' => MatchStatus.inProgress,
+      'finished' => MatchStatus.finished,
+      'canceled' => MatchStatus.canceled,
+      _ => throw FormatException('Unknown MatchStatus: $json'),
+    };
   }
 }
 

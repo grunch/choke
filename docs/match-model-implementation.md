@@ -17,7 +17,7 @@ The match data is serialized to JSON with the following structure:
 ```json
 {
   "id": "abcd",
-  "status": "waiting | inProgress | finished | canceled",
+  "status": "waiting | in-progress | finished | canceled",
   "start_at": 123456789,
   "duration": 300,
   "f1_name": "Athlete A",
@@ -42,7 +42,7 @@ The match data is serialized to JSON with the following structure:
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | String (4 hex chars) | Unique match identifier |
-| `status` | Enum string | `waiting`, `inProgress`, `finished`, or `canceled` |
+| `status` | Enum string | `waiting`, `in-progress`, `finished`, or `canceled` |
 | `start_at` | Integer (optional) | Unix timestamp when match started |
 | `duration` | Integer | Match duration in seconds (e.g., 300 = 5 minutes) |
 | `f1_name` / `f2_name` | String | Fighter names |
@@ -58,14 +58,14 @@ The match data is serialized to JSON with the following structure:
 ```dart
 enum MatchStatus {
   waiting,      // Match created but not started
-  inProgress,   // Match is active
+  in-progress,   // Match is active
   finished,     // Match completed normally
   canceled;     // Match was canceled
 }
 ```
 
 The enum provides:
-- `toJson()`: Serializes to string (e.g., `"inProgress"`)
+- `toJson()`: Serializes to string (e.g., `"in-progress"`)
 - `fromJson(String)`: Parses from string with error handling
 
 ## Score Calculation
@@ -224,7 +224,7 @@ The `copyWith` method enables immutable updates:
 
 ```dart
 final updatedMatch = match.copyWith(
-  status: MatchStatus.inProgress,
+  status: MatchStatus.in-progress,
   startAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
   f1Pt2: match.f1Pt2 + 1,  // Add a takedown
 );
@@ -324,7 +324,7 @@ class MatchNotifier extends StateNotifier<Match> {
 
   void startMatch() {
     state = state.copyWith(
-      status: MatchStatus.inProgress,
+      status: MatchStatus.in-progress,
       startAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
     );
   }

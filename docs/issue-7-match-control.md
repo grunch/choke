@@ -64,7 +64,7 @@ remainingSeconds = duration - (now - startAt)
 
 On start:
 - Set `startAt = now` (unix timestamp)
-- Set `status = inProgress`
+- Set `status = in-progress`
 - Start periodic timer
 
 Each tick:
@@ -144,7 +144,7 @@ A toggle between Fighter 1 and Fighter 2. When a scoring button is tapped, it ap
 | Status | Timer | Scoring | Buttons |
 |--------|-------|---------|---------|
 | `waiting` | Shows full duration | Disabled | [Start Match] |
-| `inProgress` | Counting down | Enabled | [Finish] [Cancel] |
+| `in-progress` | Counting down | Enabled | [Finish] [Cancel] |
 | `finished` | Shows 00:00 or final time | Disabled | (read-only) |
 | `canceled` | Shows "Canceled" | Disabled | (read-only) |
 
