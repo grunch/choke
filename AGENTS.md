@@ -87,6 +87,8 @@ lib/
 - Extract reusable widgets to `shared/widgets/`
 - Keep widgets small and focused
 - Use Riverpod for state management
+- **Never hardcode color hex values in widgets** — always use `BJJColors` or `AppTheme`
+- **Never expose raw exceptions in the UI** — use generic user-friendly messages, log details with `debugPrint`
 
 ## State Management (Riverpod)
 
@@ -133,6 +135,12 @@ class MatchScreen extends ConsumerWidget {
 - Unit tests for models and logic
 - Widget tests for UI components
 - Integration tests for critical flows
+
+## Markdown
+
+- Always add a language identifier to fenced code blocks (MD040 compliance)
+  - ✅ ` ```dart ` / ` ```json ` / ` ```text `
+  - ❌ ` ``` ` (bare fence)
 
 ## Documentation
 
