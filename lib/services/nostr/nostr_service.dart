@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
-import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:secp256k1/secp256k1.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:nostr_tools/nostr_tools.dart' as nostr;
 import '../key_management/key_manager.dart';
 
 // TODO: Implement NIP-59 gift-wrap support
@@ -13,7 +11,7 @@ import '../key_management/key_manager.dart';
 // NIP-59 is required for private message wrapping/unwrapping per project guidelines.
 // Currently deferred; implement before production release.
 
-/// Nostr Event model
+/// Nostr Event model (wrapper around nostr_tools Event)
 class NostrEvent {
   final String id;
   final String pubkey;
@@ -57,6 +55,19 @@ class NostrEvent {
       'content': content,
       'sig': sig,
     };
+  }
+
+  /// Convert to nostr_tools Event
+  nostr.Event toNostrToolsEvent() {
+    return nostr.Event(
+      id: id,
+      pubkey: pubkey,
+      created_at: createdAt,
+      kind: kind,
+      tags: tags,
+      content: content,
+      sig: sig,
+    );
   }
 }
 
@@ -406,20 +417,22 @@ class NostrService {
       ...additionalTags,
     ];
 
-    // Create event data for signing
+    // Create event
     final createdAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
-    // Calculate event id (hash of serialized event)
-    final id = _calculateEventId(
-      pubkey: publicKey,
-      createdAt: createdAt,
+    // Build nostr_tools Event
+    final nostrEvent = nostr.Event(
       kind: 31925,
       tags: tags,
       content: content,
+      created_at: createdAt,
+      pubkey: publicKey,
     );
 
-    // Sign the event
-    final sig = _signEventId(id, privateKey);
+    // Calculate hash and sign using nostr_tools
+    final eventApi = nostr.EventApi();
+    final id = eventApi.getEventHash(nostrEvent);
+    final sig = eventApi.signEvent(nostrEvent, privateKey);
 
     final event = NostrEvent(
       id: id,
@@ -432,62 +445,6 @@ class NostrService {
     );
 
     await publishEvent(event);
-  }
-
-  /// Sign event id with private key using secp256k1 Schnorr signature
-  String _signEventId(String eventId, String privateKeyHex) {
-    try {
-      // Decode private key from hex
-      final privateKeyBytes = _hexToBytes(privateKeyHex);
-
-      // Decode event id (hash) from hex
-      final hashBytes = _hexToBytes(eventId);
-
-      // Sign using secp256k1 Schnorr
-      final signature = Secp256k1.schnorrSign(
-        message: hashBytes,
-        privateKey: privateKeyBytes,
-      );
-
-      // Return signature as hex
-      return _bytesToHex(signature);
-    } catch (e) {
-      debugPrint('NostrService: Error signing event: $e');
-      rethrow;
-    }
-  }
-
-  /// Calculate event id from serialized event data using SHA-256
-  String _calculateEventId({
-    required String pubkey,
-    required int createdAt,
-    required int kind,
-    required List<List<String>> tags,
-    required String content,
-  }) {
-    // Serialize event data exactly as per NIP-01
-    final serialized = jsonEncode([0, pubkey, createdAt, kind, tags, content]);
-
-    // UTF-8 encode and compute SHA-256
-    final bytes = utf8.encode(serialized);
-    final digest = sha256.convert(bytes);
-
-    // Return hex digest
-    return digest.toString();
-  }
-
-  /// Convert hex string to bytes
-  Uint8List _hexToBytes(String hex) {
-    final bytes = <int>[];
-    for (var i = 0; i < hex.length; i += 2) {
-      bytes.add(int.parse(hex.substring(i, i + 2), radix: 16));
-    }
-    return Uint8List.fromList(bytes);
-  }
-
-  /// Convert bytes to hex string
-  String _bytesToHex(Uint8List bytes) {
-    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
   /// Get the latest addressable event for a given key
