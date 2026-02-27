@@ -215,6 +215,7 @@ class RelayConnection {
 class NostrService {
   final KeyManager _keyManager;
   final Map<String, RelayConnection> _relays = {};
+  final Map<String, StreamSubscription<NostrEvent>> _relaySubscriptions = {};
   final _eventController = StreamController<NostrEvent>.broadcast();
   final Map<String, NostrEvent> _addressableEvents = {};
 
@@ -238,16 +239,21 @@ class NostrService {
     final relay = RelayConnection(url);
     _relays[url] = relay;
 
-    // Listen to events from this relay
-    relay.messageStream.listen((event) {
+    // Listen to events from this relay and store subscription
+    final subscription = relay.messageStream.listen((event) {
       _handleIncomingEvent(event);
     });
+    _relaySubscriptions[url] = subscription;
 
     await relay.connect();
   }
 
   /// Remove a relay
   void removeRelay(String url) {
+    // Cancel stream subscription to prevent memory leak
+    final subscription = _relaySubscriptions.remove(url);
+    subscription?.cancel();
+
     final relay = _relays.remove(url);
     relay?.dispose();
   }
@@ -437,6 +443,12 @@ class NostrService {
   }
 
   void dispose() {
+    // Cancel all relay subscriptions to prevent memory leaks
+    for (final subscription in _relaySubscriptions.values) {
+      subscription.cancel();
+    }
+    _relaySubscriptions.clear();
+
     disconnect();
     _eventController.close();
   }
