@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/theme/app_theme.dart';
+import '../match/create_match_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -223,7 +224,13 @@ class HomeScreen extends ConsumerWidget {
                         icon: Icons.add_circle,
                         title: 'Create New Match',
                         subtitle: 'Start scoring a match now',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const CreateMatchScreen(),
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 12),
                       _buildQuickActionButton(

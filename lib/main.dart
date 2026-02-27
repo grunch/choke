@@ -6,6 +6,7 @@ import 'features/match/match_screen.dart';
 import 'features/account/account_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'services/key_management/key_manager.dart';
+import 'services/nostr/nostr_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,9 +19,20 @@ void main() async {
     debugPrint('KeyManager initialization failed: $e\n$st');
   }
 
+  // Initialize NostrService (connect to default relays)
+  final nostrService = NostrService(keyManager);
+  try {
+    await nostrService.initialize();
+  } catch (e, st) {
+    debugPrint('NostrService initialization failed: $e\n$st');
+  }
+
   runApp(
     ProviderScope(
-      overrides: [keyManagerProvider.overrideWithValue(keyManager)],
+      overrides: [
+        keyManagerProvider.overrideWithValue(keyManager),
+        nostrServiceProvider.overrideWithValue(nostrService),
+      ],
       child: const ChokeApp(),
     ),
   );
