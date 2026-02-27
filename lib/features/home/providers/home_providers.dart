@@ -10,11 +10,19 @@ final statusFilterProvider = StateProvider<Set<MatchStatus>>((ref) {
   return {MatchStatus.waiting, MatchStatus.inProgress};
 });
 
+/// A match paired with its Nostr event created_at timestamp
+class _MatchEntry {
+  final Match match;
+  final int createdAt;
+  _MatchEntry(this.match, this.createdAt);
+}
+
 /// Collects matches from Nostr events + locally created matches.
 /// Deduplicates by match ID (latest created_at wins).
 class MatchFeedNotifier extends StateNotifier<List<Match>> {
   final NostrService _nostrService;
   StreamSubscription<NostrEvent>? _subscription;
+  final Map<String, int> _createdAtMap = {};
 
   MatchFeedNotifier(this._nostrService) : super([]) {
     _subscription = _nostrService.eventStream.listen(_onEvent);
@@ -31,18 +39,28 @@ class MatchFeedNotifier extends StateNotifier<List<Match>> {
     }
   }
 
-  /// Add or update a match. If existing match has older created_at, replace it.
+  /// Add or update a match. Only replaces if createdAt is newer.
   void _upsert(Match match, int createdAt) {
-    final existing = state.indexWhere((m) => m.id == match.id);
-    if (existing >= 0) {
-      // Replace with newer version
+    final existingCreatedAt = _createdAtMap[match.id];
+    if (existingCreatedAt != null && createdAt < existingCreatedAt) {
+      // Stale event, ignore
+      return;
+    }
+
+    _createdAtMap[match.id] = createdAt;
+
+    final existingIdx = state.indexWhere((m) => m.id == match.id);
+    if (existingIdx >= 0) {
       final newState = List<Match>.from(state);
-      newState[existing] = match;
+      newState[existingIdx] = match;
       state = newState;
     } else {
       state = [match, ...state];
     }
   }
+
+  /// Get the event created_at for a match ID
+  int? getCreatedAt(String matchId) => _createdAtMap[matchId];
 
   /// Add a locally created match (from CreateMatchScreen)
   void addLocal(Match match) {
@@ -63,8 +81,10 @@ final matchFeedProvider =
   return MatchFeedNotifier(nostrService);
 });
 
-/// Filtered match list based on status filter and 24h window
+/// Filtered match list based on status filter and 24h window.
+/// Uses the Nostr event created_at (not match.startAt) for the time filter.
 final filteredMatchListProvider = Provider<List<Match>>((ref) {
+  final feedNotifier = ref.watch(matchFeedProvider.notifier);
   final matches = ref.watch(matchFeedProvider);
   final statusFilter = ref.watch(statusFilterProvider);
 
@@ -74,10 +94,9 @@ final filteredMatchListProvider = Provider<List<Match>>((ref) {
   return matches.where((m) {
     // Filter by status
     if (!statusFilter.contains(m.status)) return false;
-    // Filter by 24h window (use startAt if available, otherwise allow waiting matches)
-    if (m.startAt != null && m.startAt! > 0 && m.startAt! < cutoff) {
-      return false;
-    }
+    // Filter by event created_at within last 24 hours
+    final createdAt = feedNotifier.getCreatedAt(m.id);
+    if (createdAt != null && createdAt < cutoff) return false;
     return true;
   }).toList();
 });
