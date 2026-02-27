@@ -8,7 +8,7 @@ This document describes the implementation of the `Match` data model for the Cho
 
 - **Issue:** [#4 - Match data model and content schema](https://github.com/grunch/choke/issues/4)
 - **Status:** Implemented
-- **PR:** (to be created)
+- **PR:** #20
 
 ## Content Schema
 
