@@ -6,6 +6,7 @@ import '../../services/nostr/nostr_service.dart';
 import 'models/match.dart';
 import 'providers/match_providers.dart';
 import 'providers/match_control_provider.dart';
+import '../home/providers/home_providers.dart';
 import 'match_control_screen.dart';
 
 // Fighter color palette sourced from BJJColors.fighterPalette
@@ -82,8 +83,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
         ],
       );
 
-      // Add to local state
+      // Add to local state + home feed
       ref.read(matchListProvider.notifier).addMatch(match);
+      ref.read(matchFeedProvider.notifier).addLocal(match);
 
       if (mounted) {
         // Set active match and navigate to control screen
