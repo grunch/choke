@@ -69,6 +69,19 @@ class NostrEvent {
       sig: sig,
     );
   }
+
+  /// Create NostrEvent from nostr_tools Event
+  factory NostrEvent.fromNostrToolsEvent(nostr.Event event) {
+    return NostrEvent(
+      id: event.id,
+      pubkey: event.pubkey,
+      createdAt: event.created_at,
+      kind: event.kind,
+      tags: event.tags,
+      content: event.content,
+      sig: event.sig,
+    );
+  }
 }
 
 /// Filter for Nostr subscriptions
