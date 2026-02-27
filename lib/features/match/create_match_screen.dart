@@ -5,6 +5,7 @@ import '../../shared/theme/app_theme.dart';
 import '../../services/nostr/nostr_service.dart';
 import 'models/match.dart';
 import 'providers/match_providers.dart';
+import 'match_control_screen.dart';
 
 // Fighter color palette sourced from BJJColors.fighterPalette
 
@@ -84,13 +85,12 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
       ref.read(matchListProvider.notifier).addMatch(match);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Match created and published!'),
-            backgroundColor: BJJColors.green,
+        // Navigate to match control screen (replace current screen)
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => MatchControlScreen(match: match),
           ),
         );
-        Navigator.of(context).pop();
       }
     } catch (e) {
       debugPrint('CreateMatch: publish failed: $e');

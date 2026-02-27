@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'shared/theme/app_theme.dart';
 import 'features/home/home_screen.dart';
-import 'features/match/match_screen.dart';
+
 import 'features/account/account_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'services/key_management/key_manager.dart';
@@ -65,7 +65,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
-    const MatchScreen(),
+    const _MatchListPlaceholder(),
     const AccountScreen(),
     const SettingsScreen(),
   ];
@@ -99,6 +99,23 @@ class _MainNavigationState extends State<MainNavigation> {
             label: 'Settings',
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Placeholder for the Match tab — will show match list in future
+class _MatchListPlaceholder extends StatelessWidget {
+  const _MatchListPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text(
+          'Create a match from the Home screen',
+          style: TextStyle(color: BJJColors.grey, fontSize: 16),
+        ),
       ),
     );
   }
