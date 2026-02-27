@@ -306,7 +306,7 @@ class NostrService {
     relay?.dispose();
   }
 
-  /// Subscribe to kind 38000 events for the current user
+  /// Subscribe to kind 31415 events for the current user
   Future<void> subscribeToUserEvents() async {
     final publicKey = await _keyManager.getPublicKeyHex();
     if (publicKey == null) {
@@ -314,7 +314,7 @@ class NostrService {
     }
 
     final filter = Filter(
-      kinds: [38000],
+      kinds: [31415],
       authors: [publicKey],
     );
 
@@ -323,10 +323,10 @@ class NostrService {
     }
   }
 
-  /// Subscribe to kind 38000 events from a specific author
+  /// Subscribe to kind 31415 events from a specific author
   void subscribeToAuthor(String authorPubkey, {String? subscriptionId}) {
     final filter = Filter(
-      kinds: [38000],
+      kinds: [31415],
       authors: [authorPubkey],
     );
 
@@ -360,7 +360,7 @@ class NostrService {
     }
 
     // Addressable event replacement logic (kind, pubkey, d-tag)
-    if (event.kind == 38000) {
+    if (event.kind == 31415) {
       final dTag = event.tags.firstWhere(
         (tag) => tag.isNotEmpty && tag[0] == 'd',
         orElse: () => [],
@@ -412,7 +412,7 @@ class NostrService {
     }
   }
 
-  /// Create and publish a kind 38000 addressable event
+  /// Create and publish a kind 31415 addressable event
   Future<void> publishAddressableEvent({
     required String dTag,
     required String content,
@@ -435,7 +435,7 @@ class NostrService {
 
     // Build nostr_tools Event
     final nostrEvent = nostr.Event(
-      kind: 38000,
+      kind: 31415,
       tags: tags,
       content: content,
       created_at: createdAt,
@@ -451,7 +451,7 @@ class NostrService {
       id: id,
       pubkey: publicKey,
       createdAt: createdAt,
-      kind: 38000,
+      kind: 31415,
       tags: tags,
       content: content,
       sig: sig,

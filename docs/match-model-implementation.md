@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the implementation of the `Match` data model for the Choke BJJ scoring application. The model maps to Nostr event kind 38000 (addressable/replaceable events) and handles all scoring logic for Brazilian Jiu-Jitsu matches.
+This document describes the implementation of the `Match` data model for the Choke BJJ scoring application. The model maps to Nostr event kind 31415 (addressable/replaceable events) and handles all scoring logic for Brazilian Jiu-Jitsu matches.
 
 ## Issue Reference
 
@@ -138,9 +138,9 @@ FormatException('f1Pt2 must be non-negative, got: -1')
 
 ## Nostr Event Integration
 
-### Kind 38000 - Addressable Events
+### Kind 31415 - Addressable Events
 
-The model integrates with Nostr using kind 38000 (addressable/replaceable events). This allows:
+The model integrates with Nostr using kind 31415 (addressable/replaceable events). This allows:
 - Multiple devices to sync match state
 - Real-time updates as scores change
 - Event replaceability (newer events supersede older ones for the same match)
@@ -148,7 +148,7 @@ The model integrates with Nostr using kind 38000 (addressable/replaceable events
 ### Event Structure
 
 ```text
-kind: 38000
+kind: 31415
 d: "<match_id>"
 expiration: "<start_at + duration>" (optional)
 content: "<serialized match JSON>"
@@ -180,7 +180,7 @@ await nostrService.publishEvent(nostrEvent);
 final match = Match.fromNostrEvent(nostrEvent);
 
 // Validates:
-// - Event kind is 38000
+// - Event kind is 31415
 // - d tag matches content id
 // - All data passes validation
 ```
@@ -379,7 +379,7 @@ Potential improvements for future iterations:
 |-----------|--------|-------|
 | Model serializes/deserializes correctly | ✅ | `toJson()`, `fromJson()` implemented |
 | Score calculation is correct | ✅ | IBJJF formula: pt2×2 + pt3×3 + pt4×4 |
-| Nostr event format matches spec | ✅ | kind 38000, d tag, expiration tag |
+| Nostr event format matches spec | ✅ | kind 31415, d tag, expiration tag |
 | Validation rejects invalid data | ✅ | FormatException on all invalid inputs |
 | Match ID generation | ✅ | 4-char secure random hex |
 | Integration with NostrService | ✅ | Uses existing toNostrToolsEvent pattern |
@@ -387,5 +387,5 @@ Potential improvements for future iterations:
 ## Related Documentation
 
 - [NIP-01 - Basic Protocol](https://github.com/nostr-protocol/nips/blob/master/01.md)
-- [NIP-33 - Parameterized Replaceable Events](https://github.com/nostr-protocol/nips/blob/master/33.md) (kind 38000)
+- [NIP-33 - Parameterized Replaceable Events](https://github.com/nostr-protocol/nips/blob/master/33.md) (kind 31415)
 

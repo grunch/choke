@@ -10,7 +10,7 @@ Choke lets you create, score, and publish Brazilian Jiu-Jitsu matches in real ti
 
 - **Real-time scoring** — Takedowns (2pts), Guard Passes (3pts), Mount/Back Takes (4pts), Advantages, Penalties
 - **Countdown timer** — Configurable match duration with second-by-second countdown
-- **Decentralized** — All data published via Nostr (kind 38000 addressable events)
+- **Decentralized** — All data published via Nostr (kind 31415 addressable events)
 - **No accounts needed** — Nostr keypair generated on install
 - **Delegation without nsec sharing** — Ephemeral match keys for team scoring
 - **Live dashboard** — Web viewer for spectators and tournament projection (coming soon)
@@ -86,7 +86,7 @@ Choke uses NIP-25 events for match data and NIP-59 gift wrap for private communi
 
 ### Event Kinds
 
-- `38000` — Match events (addressable)
+- `31415` — Match events (addressable)
 - `1059` — Gift wrap (encrypted)
 
 ## Contributing
