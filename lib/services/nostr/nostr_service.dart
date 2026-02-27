@@ -1,9 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:secp256k1/secp256k1.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../key_management/key_manager.dart';
+
+// TODO: Implement NIP-59 gift-wrap support
+// Tracking: https://github.com/grunch/choke/issues/TODO_NIP59
+// NIP-59 is required for private message wrapping/unwrapping per project guidelines.
+// Currently deferred; implement before production release.
 
 /// Nostr Event model
 class NostrEvent {
@@ -104,6 +112,15 @@ class RelayConnection {
   Future<void> connect() async {
     try {
       _channel = WebSocketChannel.connect(Uri.parse(url));
+
+      // Wait for WebSocket handshake to complete with timeout
+      await _channel!.ready.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('WebSocket connection to $url timed out');
+        },
+      );
+
       isConnected = true;
       _connectionController.add(true);
       debugPrint('NostrService: Connected to $url');
@@ -120,10 +137,15 @@ class RelayConnection {
         },
       );
 
-      // Resubscribe to active subscriptions after reconnection
+      // Resubscribe to active subscriptions after connection is confirmed
       for (final entry in _subscriptionFilters.entries) {
         _subscribe(entry.key, entry.value);
       }
+    } on TimeoutException catch (e) {
+      debugPrint('NostrService: Connection timeout to $url: $e');
+      _channel?.sink.close();
+      _channel = null;
+      _scheduleReconnect();
     } catch (e) {
       debugPrint('NostrService: Failed to connect to $url: $e');
       _scheduleReconnect();
@@ -213,6 +235,8 @@ class RelayConnection {
 
 /// Service for managing Nostr relay connections and event handling
 class NostrService {
+  static const int _maxCachedEvents = 1000; // Max addressable events to cache
+
   final KeyManager _keyManager;
   final Map<String, RelayConnection> _relays = {};
   final Map<String, StreamSubscription<NostrEvent>> _relaySubscriptions = {};
@@ -328,6 +352,13 @@ class NostrService {
         }
 
         _addressableEvents[addressKey] = event;
+
+        // Evict oldest entries if cache exceeds limit
+        if (_addressableEvents.length > _maxCachedEvents) {
+          final oldestKey = _addressableEvents.keys.first;
+          _addressableEvents.remove(oldestKey);
+          debugPrint('NostrService: Evicted oldest event from cache');
+        }
       }
     }
 
@@ -403,15 +434,30 @@ class NostrService {
     await publishEvent(event);
   }
 
-  /// Sign event id with private key (Schnorr signature)
-  /// TODO: Implement proper secp256k1 Schnorr signature
+  /// Sign event id with private key using secp256k1 Schnorr signature
   String _signEventId(String eventId, String privateKeyHex) {
-    // Placeholder: returns a dummy signature without leaking key material
-    // In production, use pointycastle or similar for secp256k1 Schnorr
-    return 'placeholder_signature_${eventId.hashCode.toRadixString(16)}';
+    try {
+      // Decode private key from hex
+      final privateKeyBytes = _hexToBytes(privateKeyHex);
+
+      // Decode event id (hash) from hex
+      final hashBytes = _hexToBytes(eventId);
+
+      // Sign using secp256k1 Schnorr
+      final signature = Secp256k1.schnorrSign(
+        message: hashBytes,
+        privateKey: privateKeyBytes,
+      );
+
+      // Return signature as hex
+      return _bytesToHex(signature);
+    } catch (e) {
+      debugPrint('NostrService: Error signing event: $e');
+      rethrow;
+    }
   }
 
-  /// Calculate event id from serialized event data
+  /// Calculate event id from serialized event data using SHA-256
   String _calculateEventId({
     required String pubkey,
     required int createdAt,
@@ -419,10 +465,29 @@ class NostrService {
     required List<List<String>> tags,
     required String content,
   }) {
+    // Serialize event data exactly as per NIP-01
     final serialized = jsonEncode([0, pubkey, createdAt, kind, tags, content]);
-    // Note: This should be SHA-256 hashed. Using a placeholder for now.
-    // TODO: Implement proper SHA-256 hashing
-    return 'placeholder_${serialized.hashCode}';
+
+    // UTF-8 encode and compute SHA-256
+    final bytes = utf8.encode(serialized);
+    final digest = sha256.convert(bytes);
+
+    // Return hex digest
+    return digest.toString();
+  }
+
+  /// Convert hex string to bytes
+  Uint8List _hexToBytes(String hex) {
+    final bytes = <int>[];
+    for (var i = 0; i < hex.length; i += 2) {
+      bytes.add(int.parse(hex.substring(i, i + 2), radix: 16));
+    }
+    return Uint8List.fromList(bytes);
+  }
+
+  /// Convert bytes to hex string
+  String _bytesToHex(Uint8List bytes) {
+    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
   /// Get the latest addressable event for a given key
