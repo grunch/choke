@@ -111,7 +111,7 @@ class MatchScreen extends ConsumerWidget {
 ## Nostr Integration
 
 - Use `nostr_tools` package
-- All events should be kind 38000 (addressable events)
+- All events should be kind 31415 (addressable events)
 - Implement NIP-59 gift wrap for private communications
 - Store keys securely with `flutter_secure_storage`
 

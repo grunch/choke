@@ -27,7 +27,7 @@ enum MatchStatus {
 
 /// Represents a BJJ match with scoring data
 ///
-/// Maps to Nostr event kind 38000 (addressable events) with the following
+/// Maps to Nostr event kind 31415 (addressable events) with the following
 /// content schema:
 /// ```json
 /// {
@@ -289,10 +289,10 @@ class Match {
     return Match.fromJson(jsonDecode(jsonString) as Map<String, dynamic>);
   }
 
-  /// Convert to Nostr event (kind 38000 - Addressable Event)
+  /// Convert to Nostr event (kind 31415 - Addressable Event)
   ///
   /// Creates an unsigned parameterized replaceable event with:
-  /// - kind: 38000
+  /// - kind: 31415
   /// - d tag: match ID
   /// - expiration tag: calculated from start_at + duration
   /// - content: serialized match JSON
@@ -318,41 +318,41 @@ class Match {
       id: '',
       pubkey: pubkey,
       createdAt: createdAt,
-      kind: 38000,
+      kind: 31415,
       tags: tags,
       content: toJsonString(),
       sig: '',
     );
   }
 
-  /// Create Match from Nostr event (kind 38000)
+  /// Create Match from Nostr event (kind 31415)
   ///
   /// Parses the event content as JSON and extracts the match data.
-  /// Validates that the event kind is 38000 and extracts the match ID
+  /// Validates that the event kind is 31415 and extracts the match ID
   /// from the "d" tag.
   ///
   /// Throws [FormatException] if:
-  /// - Event kind is not 38000
+  /// - Event kind is not 31415
   /// - Event content is not valid JSON
   /// - Match data fails validation
   factory Match.fromNostrEvent(NostrEvent event) {
-    if (event.kind != 38000) {
+    if (event.kind != 31415) {
       throw FormatException(
-        'Expected event kind 38000, got: ${event.kind}',
+        'Expected event kind 31415, got: ${event.kind}',
       );
     }
 
     // Parse content JSON
     final json = jsonDecode(event.content) as Map<String, dynamic>;
 
-    // Extract and validate d tag (required for kind 38000)
+    // Extract and validate d tag (required for kind 31415)
     final dTags = event.tags
         .where((tag) => tag.isNotEmpty && tag[0] == 'd')
         .toList();
 
     if (dTags.length != 1 || dTags.first.length < 2 || dTags.first[1].isEmpty) {
       throw const FormatException(
-        'Missing or invalid d tag for kind 38000 event',
+        'Missing or invalid d tag for kind 31415 event',
       );
     }
 

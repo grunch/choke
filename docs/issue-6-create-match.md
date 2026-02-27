@@ -2,7 +2,7 @@
 
 ## Overview
 
-Implement the match creation flow: a form screen where users input fighter names, match duration, and fighter colors, then publish the initial kind 38000 Nostr event with status `waiting`.
+Implement the match creation flow: a form screen where users input fighter names, match duration, and fighter colors, then publish the initial kind 31415 Nostr event with status `waiting`.
 
 ## Current State
 
@@ -50,7 +50,7 @@ User fills form → validate inputs → Match.create() → build Nostr event
 
 ```json
 {
-  "kind": 38000,
+  "kind": 31415,
   "pubkey": "<user_pubkey>",
   "created_at": <unix_timestamp>,
   "tags": [

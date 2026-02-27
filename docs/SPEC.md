@@ -8,7 +8,7 @@ Through the app, we can create Nostr events for matches by simply entering the f
 
 ## Current Scope
 
-Fetch events from nostr relays in real time, the events we are fetching are authored by the user (pubkey field == user's pubkey), kind 38000, only display on the home screen the ones with creation time less than 24 hours. Only show by default the events in waiting and in-progress status, with a filter where the user can filter by other statuses.
+Fetch events from nostr relays in real time, the events we are fetching are authored by the user (pubkey field == user's pubkey), kind 31415, only display on the home screen the ones with creation time less than 24 hours. Only show by default the events in waiting and in-progress status, with a filter where the user can filter by other statuses.
 
 ---
 
@@ -16,7 +16,7 @@ Fetch events from nostr relays in real time, the events we are fetching are auth
 
 ### Event Form
 
-- **Kind**: 38000 (addressable event → NIP-1)
+- **Kind**: 31415 (addressable event → NIP-1)
 - **Uniqueness key**: (kind, pubkey, "d")
 - **Replace rule**: newest `created_at` wins for the same (kind, pubkey, d)
 - **Tags**:
@@ -125,7 +125,7 @@ Always publish the expiration tag.
 
 ### Home Screen
 
-- Show events kind 38000 with status `waiting`, `in-progress` (default filter)
+- Show events kind 31415 with status `waiting`, `in-progress` (default filter)
 - Filter option to show `finished` and `canceled` statuses
 - Only show events created in last 24 hours
 - Only show events authored by the current user
@@ -138,7 +138,7 @@ Always publish the expiration tag.
 
 - Input: fighter names, duration (default 300s), optional colors
 - Generates 4-hex match_id
-- Publishes kind 38000 event with status: `waiting`
+- Publishes kind 31415 event with status: `waiting`
 
 ### Match Control (Detail Screen)
 
