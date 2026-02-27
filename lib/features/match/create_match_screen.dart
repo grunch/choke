@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/theme/app_theme.dart';
@@ -5,17 +6,7 @@ import '../../services/nostr/nostr_service.dart';
 import 'models/match.dart';
 import 'providers/match_providers.dart';
 
-/// Pre-defined BJJ-relevant color palette for fighter colors
-const List<Color> _colorPalette = [
-  Color(0xFF1BA34E), // BJJ Green
-  Color(0xFFF5B800), // Gold
-  Color(0xFFD32F2F), // Red
-  Color(0xFF2196F3), // Blue
-  Color(0xFFFFFFFF), // White
-  Color(0xFF9C27B0), // Purple
-  Color(0xFFFF9800), // Orange
-  Color(0xFF121A2E), // Navy
-];
+// Fighter color palette sourced from BJJColors.fighterPalette
 
 /// Default duration options in seconds
 const List<int> _durationOptions = [180, 240, 300, 360, 420, 480, 600];
@@ -46,8 +37,8 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   final _f1NameController = TextEditingController();
   final _f2NameController = TextEditingController();
 
-  Color _f1Color = _colorPalette[0]; // Green
-  Color _f2Color = _colorPalette[1]; // Gold
+  Color _f1Color = BJJColors.fighterPalette[0]; // Green
+  Color _f2Color = BJJColors.fighterPalette[1]; // Gold
   int _duration = 300; // 5 minutes
   bool _isPublishing = false;
 
@@ -102,10 +93,12 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
         Navigator.of(context).pop();
       }
     } catch (e) {
+      debugPrint('CreateMatch: publish failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to publish match: $e'),
+            content: const Text(
+                'Could not publish match. Check your connection and try again.'),
             backgroundColor: BJJColors.error,
             action: SnackBarAction(
               label: 'Retry',
@@ -276,7 +269,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
         Wrap(
           spacing: 10,
           runSpacing: 10,
-          children: _colorPalette.map((color) {
+          children: BJJColors.fighterPalette.map((color) {
             final isSelected = color == selectedColor;
             return GestureDetector(
               onTap: () => onColorSelected(color),

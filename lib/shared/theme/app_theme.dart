@@ -42,6 +42,24 @@ class BJJColors {
   static const Color warning = gold;
   static const Color success = green;
   static const Color info = Color(0xFF2196F3);
+
+  // Extended palette for fighter color selection
+  static const Color red = Color(0xFFD32F2F);
+  static const Color blue = Color(0xFF2196F3);
+  static const Color purple = Color(0xFF9C27B0);
+  static const Color orange = Color(0xFFFF9800);
+
+  /// Pre-defined fighter color palette for match creation
+  static const List<Color> fighterPalette = [
+    green,
+    gold,
+    red,
+    blue,
+    white,
+    purple,
+    orange,
+    navy,
+  ];
 }
 
 /// App Theme Configuration

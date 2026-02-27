@@ -29,11 +29,11 @@ Implement the match creation flow: a form screen where users input fighter names
 
 ## Data Flow
 
-```
+```text
 User fills form → validate inputs → Match.create() → build Nostr event
 → NostrService.publishAddressableEvent(dTag: matchId, content: matchJson, additionalTags: [expiration])
-→ on success: add match to local state + navigate to match detail
-→ on failure: show error snackbar
+→ on success: add match to local state + pop back to Home
+→ on failure: show error snackbar with retry
 ```
 
 ## Form Fields
@@ -116,9 +116,9 @@ Simple approach: pre-defined palette of 8 BJJ-relevant colors in a horizontal ro
 
 Palette: `#1BA34E` (Green), `#F5B800` (Gold), `#D32F2F` (Red), `#2196F3` (Blue), `#FFFFFF` (White), `#9C27B0` (Purple), `#FF9800` (Orange), `#121A2E` (Navy)
 
-### Duration Picker
+### Duration Selector
 
-A simple minutes/seconds wheel picker. Pre-set options could be: 3:00, 4:00, 5:00, 6:00, 7:00, 8:00, 10:00 with custom input.
+Pre-defined duration chips (3:00, 4:00, 5:00, 6:00, 7:00, 8:00, 10:00) displayed as tappable rounded containers. Selected chip is highlighted in BJJ Green.
 
 ## Error Handling
 
@@ -130,7 +130,7 @@ A simple minutes/seconds wheel picker. Pre-set options could be: 3:00, 4:00, 5:0
 
 After successful creation:
 1. Add match to `matchListProvider`
-2. Pop back to Home (or navigate to match detail screen — for now pop to Home since scoring screen is not wired yet)
+2. Pop back to Home screen
 
 ## Testing
 
