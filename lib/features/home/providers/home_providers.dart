@@ -5,9 +5,15 @@ import '../../match/models/match.dart';
 import '../../match/providers/match_providers.dart';
 import '../../../services/nostr/nostr_service.dart';
 
-/// Status filter: which statuses to show on the home screen
+/// Status filter: which statuses to show on the home screen.
+/// All statuses shown by default (24h window already limits the list).
 final statusFilterProvider = StateProvider<Set<MatchStatus>>((ref) {
-  return {MatchStatus.waiting, MatchStatus.inProgress};
+  return {
+    MatchStatus.waiting,
+    MatchStatus.inProgress,
+    MatchStatus.finished,
+    MatchStatus.canceled,
+  };
 });
 
 /// A match paired with its Nostr event created_at timestamp
