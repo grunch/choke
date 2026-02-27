@@ -20,6 +20,11 @@ dependencies:
 
   # Nostr
   nostr_tools: ^1.0.9
+  web_socket_channel: ^2.4.0
+
+  # Crypto
+  crypto: ^3.0.6
+  secp256k1: ^0.4.0
 
   # Storage
   flutter_secure_storage: ^9.2.4
