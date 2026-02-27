@@ -4,10 +4,15 @@ import '../../shared/theme/app_theme.dart';
 import 'models/match.dart';
 import 'providers/match_control_provider.dart';
 
-/// Parse hex color string (#RRGGBB) to Color
+/// Parse hex color string (#RRGGBB) to Color with fallback
 Color _hexToColor(String hex) {
-  final h = hex.replaceFirst('#', '');
-  return Color(int.parse('FF$h', radix: 16));
+  try {
+    final h = hex.replaceFirst('#', '');
+    if (h.length != 6) return BJJColors.grey;
+    return Color(int.parse('FF$h', radix: 16));
+  } catch (_) {
+    return BJJColors.grey;
+  }
 }
 
 /// Format seconds as mm:ss
@@ -34,8 +39,8 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(matchControlProvider(widget.match));
-    final notifier = ref.read(matchControlProvider(widget.match).notifier);
+    final state = ref.watch(matchControlProvider);
+    final notifier = ref.read(matchControlProvider.notifier);
     final match = state.match;
     final f1Color = _hexToColor(match.f1Color);
     final f2Color = _hexToColor(match.f2Color);
@@ -245,7 +250,7 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
           shape: BoxShape.circle,
           color: BJJColors.navyDark,
           border: Border.all(
-            color: timerColor.withValues(alpha: 0.4),
+            color: timerColor.withOpacity(0.4),
             width: 4,
           ),
         ),
@@ -270,7 +275,7 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: _statusColor(state.match.status)
-                      .withValues(alpha: 0.2),
+                      .withOpacity(0.2),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
@@ -354,7 +359,7 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -444,16 +449,16 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.2),
+                color: color.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 22),
@@ -505,7 +510,7 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
         decoration: BoxDecoration(
           color: BJJColors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

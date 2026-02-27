@@ -256,11 +256,18 @@ class MatchControlNotifier extends StateNotifier<MatchControlState> {
   }
 }
 
-/// Family provider: one notifier per match ID
-final matchControlProvider = StateNotifierProvider.family<
-    MatchControlNotifier, MatchControlState, Match>(
-  (ref, match) {
-    final nostrService = ref.watch(nostrServiceProvider);
-    return MatchControlNotifier(match, nostrService);
-  },
-);
+/// Provider for the currently active match being controlled.
+/// Set this before navigating to MatchControlScreen.
+final activeMatchProvider = StateProvider<Match?>((ref) => null);
+
+/// Provider for the match control notifier.
+/// Reads the active match from [activeMatchProvider].
+final matchControlProvider =
+    StateNotifierProvider<MatchControlNotifier, MatchControlState>((ref) {
+  final match = ref.read(activeMatchProvider);
+  if (match == null) {
+    throw StateError('activeMatchProvider must be set before using matchControlProvider');
+  }
+  final nostrService = ref.watch(nostrServiceProvider);
+  return MatchControlNotifier(match, nostrService);
+});

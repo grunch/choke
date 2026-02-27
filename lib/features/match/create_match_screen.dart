@@ -5,6 +5,7 @@ import '../../shared/theme/app_theme.dart';
 import '../../services/nostr/nostr_service.dart';
 import 'models/match.dart';
 import 'providers/match_providers.dart';
+import 'providers/match_control_provider.dart';
 import 'match_control_screen.dart';
 
 // Fighter color palette sourced from BJJColors.fighterPalette
@@ -85,7 +86,10 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
       ref.read(matchListProvider.notifier).addMatch(match);
 
       if (mounted) {
-        // Navigate to match control screen (replace current screen)
+        // Set active match and navigate to control screen
+        ref.read(activeMatchProvider.notifier).state = match;
+        // Invalidate to force re-creation with new match
+        ref.invalidate(matchControlProvider);
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (_) => MatchControlScreen(match: match),
