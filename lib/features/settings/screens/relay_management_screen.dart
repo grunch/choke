@@ -169,15 +169,18 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
         children: [
-          ListTile(
+          final theme = Theme.of(context);
+          final colorScheme = theme.colorScheme;
+
+          return ListTile(
             leading: Container(
               width: 12,
               height: 12,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: relay.isEnabled
-                    ? (relay.isConnected ? BJJColors.green : Colors.orange)
-                    : Colors.grey,
+                    ? (relay.isConnected ? BJJColors.green : BJJColors.gold)
+                    : colorScheme.onSurfaceVariant.withOpacity(0.5),
               ),
             ),
             title: Text(
@@ -185,15 +188,15 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
               style: TextStyle(
                 fontWeight: FontWeight.w500,
                 decoration: relay.isEnabled ? null : TextDecoration.lineThrough,
-                color: relay.isEnabled ? null : Colors.grey,
+                color: relay.isEnabled ? null : colorScheme.onSurfaceVariant,
               ),
             ),
             subtitle: Text(
               _getStatusText(relay, isDefault),
               style: TextStyle(
                 color: relay.isEnabled
-                    ? (relay.isConnected ? BJJColors.green : Colors.orange)
-                    : Colors.grey,
+                    ? (relay.isConnected ? BJJColors.green : BJJColors.gold)
+                    : colorScheme.onSurfaceVariant,
               ),
             ),
             trailing: Switch(
