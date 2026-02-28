@@ -312,10 +312,15 @@ class NostrService {
 
   Stream<NostrEvent> get eventStream => _eventController.stream;
 
-  /// Connect to default relays on app start
-  Future<void> initialize() async {
-    await addRelay('wss://relay.mostro.network');
-    await addRelay('wss://nos.lol');
+  /// Connect to configured relays on app start
+  Future<void> initialize({List<String>? relayUrls}) async {
+    final urls = relayUrls ?? [
+      'wss://relay.mostro.network',
+      'wss://nos.lol',
+    ];
+    for (final url in urls) {
+      await addRelay(url);
+    }
   }
 
   /// Add a custom relay
