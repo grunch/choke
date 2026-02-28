@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Simplified launch background matching Mostro Mobile approach -->
-<!-- Flutter handles the splash screen via flutter_native_splash -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/splash_bg" />
+    <item
+        android:gravity="center|fill"
+        android:width="300dp"
+        android:height="300dp">
+        <bitmap
+            android:gravity="fill"
+            android:src="@drawable/splash_icon" />
+    </item>
 </layer-list>
