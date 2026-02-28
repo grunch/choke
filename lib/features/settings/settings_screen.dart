@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/theme/app_theme.dart';
+import 'screens/relay_management_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
@@ -36,7 +38,13 @@ class SettingsScreen extends StatelessWidget {
                   title: const Text('Relays'),
                   subtitle: const Text('Manage relay connections'),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const RelayManagementScreen(),
+                      ),
+                    );
+                  },
                 ),
                 const Divider(height: 1),
                 ListTile(

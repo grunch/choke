@@ -5,6 +5,7 @@ import 'features/home/home_screen.dart';
 
 import 'features/account/account_screen.dart';
 import 'features/settings/settings_screen.dart';
+import 'features/settings/providers/relay_config_provider.dart';
 import 'services/key_management/key_manager.dart';
 import 'services/nostr/nostr_service.dart';
 
@@ -19,10 +20,25 @@ void main() async {
     debugPrint('KeyManager initialization failed: $e\n$st');
   }
 
-  // Initialize NostrService (connect to default relays)
+  // Load relay configuration
+  final relayConfigService = RelayConfigService();
+  List<RelayConfig> relayConfigs = [];
+  try {
+    relayConfigs = await relayConfigService.loadRelays();
+  } catch (e, st) {
+    debugPrint('Relay config loading failed: $e\n$st');
+  }
+
+  // Initialize NostrService with configured relays
   final nostrService = NostrService(keyManager);
   try {
-    await nostrService.initialize();
+    final enabledRelayUrls = relayConfigs
+        .where((r) => r.isEnabled)
+        .map((r) => r.url)
+        .toList();
+    await nostrService.initialize(
+      relayUrls: enabledRelayUrls.isNotEmpty ? enabledRelayUrls : null,
+    );
     // Subscribe to user's match events
     await nostrService.subscribeToUserEvents();
   } catch (e, st) {
@@ -34,6 +50,7 @@ void main() async {
       overrides: [
         keyManagerProvider.overrideWithValue(keyManager),
         nostrServiceProvider.overrideWithValue(nostrService),
+        relayConfigServiceProvider.overrideWithValue(relayConfigService),
       ],
       child: const ChokeApp(),
     ),
