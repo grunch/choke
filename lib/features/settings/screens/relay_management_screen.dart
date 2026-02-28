@@ -292,7 +292,7 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
     }
   }
 
-  Future<void> _confirmDelete(
+  Future<bool> _confirmDelete(
     BuildContext context,
     RelayConfig relay,
     RelayConfigNotifier notifier,
@@ -323,7 +323,9 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
       if (success && mounted) {
         _showSuccessSnackBar(context, 'Relay removed');
       }
+      return success;
     }
+    return false;
   }
 
   void _showErrorSnackBar(BuildContext context, String message) {
