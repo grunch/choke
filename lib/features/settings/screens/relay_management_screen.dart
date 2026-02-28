@@ -16,6 +16,7 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
   final _urlController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isAdding = false;
+  String? _lastShownError;
 
   @override
   void dispose() {
@@ -28,11 +29,15 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
     final relayState = ref.watch(relayConfigProvider);
     final relayNotifier = ref.read(relayConfigProvider.notifier);
 
-    // Show error if any
-    if (relayState.error != null) {
+    // Show error if any (prevent duplicates on rapid rebuilds)
+    if (relayState.error != null && relayState.error != _lastShownError) {
+      _lastShownError = relayState.error;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showErrorSnackBar(context, relayState.error!);
-        relayNotifier.clearError();
+        if (mounted) {
+          _showErrorSnackBar(context, relayState.error!);
+          relayNotifier.clearError();
+          _lastShownError = null;
+        }
       });
     }
 
@@ -221,6 +226,9 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -228,20 +236,18 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
           Icon(
             Icons.dns_outlined,
             size: 64,
-            color: Colors.grey[400],
+            color: colorScheme.onSurfaceVariant.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
           Text(
             'No relays configured',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
+            style: theme.textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
           Text(
             'Add a relay to start publishing events',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[500],
+            style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                 ),
           ),
         ],

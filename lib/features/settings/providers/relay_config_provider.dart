@@ -113,7 +113,10 @@ final relayConfigServiceProvider = Provider<RelayConfigService>((ref) {
   return RelayConfigService();
 });
 
-/// State class for relay configuration
+/// Immutable state class for relay configuration management.
+///
+/// Contains the list of configured relays, loading state, and any error message.
+/// Use [copyWith] to create modified copies while preserving existing error state.
 class RelayConfigState {
   final List<RelayConfig> relays;
   final bool isLoading;
@@ -133,7 +136,7 @@ class RelayConfigState {
     return RelayConfigState(
       relays: relays ?? this.relays,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: error ?? this.error,
     );
   }
 
@@ -151,21 +154,25 @@ class RelayConfigState {
   }
 }
 
-/// Notifier for managing relay configuration
+/// Manages relay configuration state and operations.
+///
+/// Handles loading/saving relay configuration, adding/removing relays,
+/// toggling relay state, and connection status updates.
+/// Uses [RelayConfigService] for persistence and [RelayConfigState] for UI state.
 class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
   final RelayConfigService _service;
 
-  RelayConfigNotifier(this._service) : super(const RelayConfigState()) {
+  RelayConfigNotifier(this._service)
+      : super(const RelayConfigState(isLoading: true)) {
     _initialize();
   }
 
   Future<void> _initialize() async {
-    state = state.copyWith(isLoading: true);
     try {
       final relays = await _service.loadRelays();
       state = RelayConfigState(relays: relays, isLoading: false);
     } catch (e) {
-      state = RelayConfigState(
+      state = const RelayConfigState(
         isLoading: false,
         error: 'Failed to load relay configuration',
       );
@@ -297,23 +304,10 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
     state = state.copyWith(error: null);
   }
 
-  /// Validate relay URL format
+  /// Validates that a relay URL starts with wss:// or ws://.
   bool _isValidRelayUrl(String url) {
     final trimmed = url.trim();
     return trimmed.startsWith('wss://') || trimmed.startsWith('ws://');
-  }
-
-  /// Test if a relay is reachable
-  Future<bool> testRelay(String url) async {
-    try {
-      // Simple connection test
-      final uri = Uri.parse(url.trim());
-      // Note: Actual WebSocket test would require dart:io or web_socket_channel
-      // For now, we just validate the URL can be parsed
-      return uri.isScheme('wss') || uri.isScheme('ws');
-    } catch (e) {
-      return false;
-    }
   }
 }
 
