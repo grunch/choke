@@ -1,5 +1,3 @@
-import 'dart:math';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -26,6 +24,7 @@ class KeyManager {
 
   /// Initialize the key manager
   /// Generates a new keypair if none exists
+  /// Validates that stored public key matches the private key
   Future<void> initialize() async {
     final existingPrivateKey = await _secureStorage.read(key: _privateKeyKey);
 
@@ -33,27 +32,31 @@ class KeyManager {
       // Generate new keypair on first launch
       await _generateAndStoreKeypair();
     } else {
-      // Cache existing keys
+      // Always derive the public key from the private key to ensure
+      // the npub displayed actually corresponds to the stored nsec.
+      final derivedPublicKey = _derivePublicKeyHex(existingPrivateKey);
+
+      // Check if stored public key matches derived key and fix if needed
+      final storedPublicKey = await _secureStorage.read(key: _publicKeyKey);
+      if (storedPublicKey != derivedPublicKey) {
+        debugPrint('KeyManager: Stored public key mismatch — correcting');
+        await _secureStorage.write(key: _publicKeyKey, value: derivedPublicKey);
+      }
       _cachedPrivateKey = existingPrivateKey;
-      _cachedPublicKey = await _secureStorage.read(key: _publicKeyKey);
+      _cachedPublicKey = derivedPublicKey;
     }
   }
 
-  /// Generate a new secp256k1 keypair and store it securely
+  /// Generate a new secp256k1 keypair and store it securely.
+  /// Uses nostr_tools KeyApi to guarantee a valid private key.
   Future<void> _generateAndStoreKeypair() async {
-    // Generate random 32 bytes for private key
-    final random = Random.secure();
-    final privateKeyBytes = Uint8List(32);
-    for (var i = 0; i < 32; i++) {
-      privateKeyBytes[i] = random.nextInt(256);
-    }
+    final keyApi = KeyApi();
 
-    // Convert to hex string
-    final privateKeyHex =
-        privateKeyBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    // Generate a valid secp256k1 private key via nostr_tools
+    final privateKeyHex = keyApi.generatePrivateKey();
 
-    // Derive public key from private key using secp256k1
-    final publicKeyHex = _derivePublicKeyHex(privateKeyHex);
+    // Derive public key from private key
+    final publicKeyHex = keyApi.getPublicKey(privateKeyHex);
 
     // Store securely
     await _secureStorage.write(key: _privateKeyKey, value: privateKeyHex);
