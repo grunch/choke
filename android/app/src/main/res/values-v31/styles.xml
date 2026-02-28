@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <item name="android:windowSplashScreenBackground">@color/splash_bg</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
-        <item name="android:windowSplashScreenIconBackgroundColor">@color/splash_bg</item>
+        <!-- Background color behind the splash icon -->
+        <item name="android:windowSplashScreenBackground">#121A2E</item>
+        <!-- The animated icon drawable -->
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
+        <!-- Background color of the icon circle itself (should match window background) -->
+        <item name="android:windowSplashScreenIconBackgroundColor">#121A2E</item>
+        <!-- Animation duration (0 = no animation) -->
         <item name="android:windowSplashScreenAnimationDuration">0</item>
     </style>
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
