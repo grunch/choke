@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// Model representing a Nostr relay configuration
 class RelayConfig {
@@ -122,6 +124,9 @@ class RelayConfigState {
   final bool isLoading;
   final String? error;
 
+  // Sentinel value to distinguish "clear error" from "no change"
+  static const Object _clearError = Object();
+
   const RelayConfigState({
     this.relays = const [],
     this.isLoading = false,
@@ -131,12 +136,12 @@ class RelayConfigState {
   RelayConfigState copyWith({
     List<RelayConfig>? relays,
     bool? isLoading,
-    String? error,
+    Object? error = _clearError,
   }) {
     return RelayConfigState(
       relays: relays ?? this.relays,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: identical(error, _clearError) ? this.error : error as String?,
     );
   }
 
@@ -187,9 +192,11 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
   /// Add a new relay
   /// Returns true if added successfully, false if URL already exists
   Future<bool> addRelay(String url) async {
-    // Validate URL format
+    // Validate URL format (only wss:// allowed for security)
     if (!_isValidRelayUrl(url)) {
-      state = state.copyWith(error: 'Invalid relay URL. Must start with wss://');
+      state = state.copyWith(
+        error: 'Invalid relay URL. Must start with wss:// (secure WebSocket)',
+      );
       return false;
     }
 
@@ -199,6 +206,19 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
     // Check for duplicates
     if (state.containsUrl(normalizedUrl)) {
       state = state.copyWith(error: 'Relay already exists');
+      return false;
+    }
+
+    // Test connectivity before adding
+    state = state.copyWith(isLoading: true);
+    final isReachable = await testRelayConnectivity(normalizedUrl);
+
+    if (!isReachable) {
+      state = RelayConfigState(
+        relays: state.relays,
+        isLoading: false,
+        error: 'Unable to connect to relay. Please check the URL and try again.',
+      );
       return false;
     }
 
@@ -301,13 +321,46 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
 
   /// Clear error message
   void clearError() {
-    state = state.copyWith(error: null);
+    // Pass explicit null (not the _clearError sentinel) to clear the error
+    state = RelayConfigState(
+      relays: state.relays,
+      isLoading: state.isLoading,
+      error: null,
+    );
   }
 
-  /// Validates that a relay URL starts with wss:// or ws://.
+  /// Validates that a relay URL starts with wss:// (secure WebSocket required).
   bool _isValidRelayUrl(String url) {
     final trimmed = url.trim();
-    return trimmed.startsWith('wss://') || trimmed.startsWith('ws://');
+    return trimmed.startsWith('wss://');
+  }
+
+  /// Tests WebSocket connectivity to a relay.
+  /// Returns true if connection succeeds within timeout, false otherwise.
+  Future<bool> testRelayConnectivity(String url) async {
+    WebSocketChannel? channel;
+    try {
+      // Attempt connection with 5 second timeout
+      channel = WebSocketChannel.connect(Uri.parse(url.trim()));
+      await channel.ready.timeout(const Duration(seconds: 5));
+
+      // Send a simple ping-like message to verify it's a Nostr relay
+      channel.sink.add('["REQ","test",{}]');
+
+      // Wait briefly for any response (even an error confirms it's a relay)
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      await channel.sink.close();
+      return true;
+    } on TimeoutException {
+      debugPrint('RelayConfigNotifier: Connection timeout to $url');
+      await channel?.sink.close();
+      return false;
+    } catch (e) {
+      debugPrint('RelayConfigNotifier: Connection failed to $url: $e');
+      await channel?.sink.close();
+      return false;
+    }
   }
 }
 

@@ -165,65 +165,75 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
   ) {
     final isDefault = RelayConfigService.defaultRelays.contains(relay.url);
 
+    // Swipe-to-delete for custom relays
+    if (!isDefault) {
+      return Dismissible(
+        key: Key(relay.url),
+        direction: DismissDirection.endToStart,
+        confirmDismiss: (_) => _confirmDelete(context, relay, notifier),
+        background: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: BJJColors.error,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          child: const Icon(
+            Icons.delete,
+            color: BJJColors.white,
+          ),
+        ),
+        child: _buildRelayCardContent(context, relay, notifier, isDefault),
+      );
+    }
+
+    return _buildRelayCardContent(context, relay, notifier, isDefault);
+  }
+
+  Widget _buildRelayCardContent(
+    BuildContext context,
+    RelayConfig relay,
+    RelayConfigNotifier notifier,
+    bool isDefault,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        children: [
-          final theme = Theme.of(context);
-          final colorScheme = theme.colorScheme;
-
-          return ListTile(
-            leading: Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: relay.isEnabled
-                    ? (relay.isConnected ? BJJColors.green : BJJColors.gold)
-                    : colorScheme.onSurfaceVariant.withOpacity(0.5),
-              ),
-            ),
-            title: Text(
-              relay.url,
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                decoration: relay.isEnabled ? null : TextDecoration.lineThrough,
-                color: relay.isEnabled ? null : colorScheme.onSurfaceVariant,
-              ),
-            ),
-            subtitle: Text(
-              _getStatusText(relay, isDefault),
-              style: TextStyle(
-                color: relay.isEnabled
-                    ? (relay.isConnected ? BJJColors.green : BJJColors.gold)
-                    : colorScheme.onSurfaceVariant,
-              ),
-            ),
-            trailing: Switch(
-              value: relay.isEnabled,
-              onChanged: (value) => notifier.toggleRelay(relay.url),
-              activeColor: BJJColors.green,
-            ),
+      child: ListTile(
+        leading: Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: relay.isEnabled
+                ? (relay.isConnected ? BJJColors.green : BJJColors.gold)
+                : colorScheme.onSurfaceVariant.withOpacity(0.5),
           ),
-          // Show delete option for custom relays
-          if (!isDefault)
-            Padding(
-              padding: const EdgeInsets.only(left: 16, right: 8, bottom: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton.icon(
-                    onPressed: () => _confirmDelete(context, relay, notifier),
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    label: const Text(
-                      'Remove',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
+        ),
+        title: Text(
+          relay.url,
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            decoration: relay.isEnabled ? null : TextDecoration.lineThrough,
+            color: relay.isEnabled ? null : colorScheme.onSurfaceVariant,
+          ),
+        ),
+        subtitle: Text(
+          _getStatusText(relay, isDefault),
+          style: TextStyle(
+            color: relay.isEnabled
+                ? (relay.isConnected ? BJJColors.green : BJJColors.gold)
+                : colorScheme.onSurfaceVariant,
+          ),
+        ),
+        trailing: Switch(
+          value: relay.isEnabled,
+          onChanged: (value) => notifier.toggleRelay(relay.url),
+          activeColor: BJJColors.green,
+        ),
       ),
     );
   }
@@ -272,9 +282,11 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
     final url = _urlController.text.trim();
     final success = await notifier.addRelay(url);
 
+    if (!mounted) return;
+
     setState(() => _isAdding = false);
 
-    if (success && mounted) {
+    if (success) {
       _urlController.clear();
       _showSuccessSnackBar(context, 'Relay added successfully');
     }
@@ -299,7 +311,7 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text(
               'Remove',
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: BJJColors.error),
             ),
           ),
         ],
