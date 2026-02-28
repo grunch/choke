@@ -1,0 +1,42 @@
+# Flutter Native Splash configuration
+# This handles the splash screen for both Android and iOS
+# matching the Mostro Mobile approach
+
+flutter_native_splash:
+  # Background color (matches BJJ Navy Black)
+  color: "#121A2E"
+  
+  # Background color for dark mode (same for Choke)
+  color_dark: "#121A2E"
+  
+  # The image which will be displayed on the splash screen
+  # Uses the circular BJJ bird icon that fills the entire circle
+  image: assets/icon/icon.png
+  
+  # Dark mode image (same icon)
+  image_dark: assets/icon/icon.png
+  
+  # Android 12+ specific configuration
+  android_12:
+    # Icon for Android 12+ (must be 960x960, fits in a circle)
+    image: assets/icon/icon_android12.png
+    
+    # Background color for Android 12+
+    color: "#121A2E"
+    
+    # Icon background color (optional, if you want a circular background)
+    icon_background_color: "#121A2E"
+  
+  # Fullscreen mode (no status bar during splash)
+  fullscreen: true
+  
+  # Android configuration
+  android: true
+  android_gravity: center
+  
+  # iOS configuration  
+  ios: true
+  ios_content_mode: center
+  
+  # Web configuration (disabled for now)
+  web: false
