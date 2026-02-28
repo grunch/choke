@@ -34,16 +34,15 @@ class KeyManager {
     } else {
       // Always derive the public key from the private key to ensure
       // the npub displayed actually corresponds to the stored nsec.
-      _cachedPrivateKey = existingPrivateKey;
       final derivedPublicKey = _derivePublicKeyHex(existingPrivateKey);
 
       // Check if stored public key matches derived key and fix if needed
       final storedPublicKey = await _secureStorage.read(key: _publicKeyKey);
       if (storedPublicKey != derivedPublicKey) {
         debugPrint('KeyManager: Stored public key mismatch — correcting');
-        await _secureStorage.write(
-            key: _publicKeyKey, value: derivedPublicKey);
+        await _secureStorage.write(key: _publicKeyKey, value: derivedPublicKey);
       }
+      _cachedPrivateKey = existingPrivateKey;
       _cachedPublicKey = derivedPublicKey;
     }
   }
