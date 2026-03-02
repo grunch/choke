@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mutations version="1.2">
+  <!-- Mutation testing configuration for the Choke project -->
+  <!-- See: https://pub.dev/packages/mutation_test -->
+
+  <!-- Source files to mutate -->
+  <directories>
+    <directory recursive="true">lib/features/match/models/</directory>
+  </directories>
+
+  <!-- Test command (Flutter test instead of dart test) -->
+  <commands>
+    <command
+      group="flutter test"
+      expected-return="0"
+      timeout="120"
+      working-directory=".">flutter test</command>
+  </commands>
+
+  <!-- Exclusion patterns: skip lines that shouldn't be mutated -->
+  <exclude>
+    <!-- Skip import statements -->
+    <regex>^\s*import\s</regex>
+    <!-- Skip part/part of directives -->
+    <regex>^\s*part\s</regex>
+    <!-- Skip pure comments -->
+    <regex>^\s*//</regex>
+    <!-- Skip annotations -->
+    <regex>^\s*@</regex>
+    <!-- Skip empty lines -->
+    <regex>^\s*$</regex>
+    <!-- Skip constructor declarations (just signatures) -->
+    <regex>^\s*(const\s+)?[\w]+\s*\(\{?$</regex>
+    <!-- Skip closing braces/parentheses -->
+    <regex>^\s*[\}\)\]];?\s*$</regex>
+  </exclude>
+
+  <!-- Quality thresholds -->
+  <threshold failure="0">
+    <!-- Start with no failure threshold. Increase as test coverage improves.
+         Recommended progression:
+         - Phase 1: failure="0"  (report only)
+         - Phase 2: failure="40" (minimum quality gate)
+         - Phase 3: failure="60" (healthy project)
+         - Phase 4: failure="80" (excellent coverage) -->
+    <rating over="80" name="A - Excellent"/>
+    <rating over="60" name="B - Good"/>
+    <rating over="40" name="C - Acceptable"/>
+    <rating over="20" name="D - Needs improvement"/>
+    <rating over="0"  name="E - Critical"/>
+  </threshold>
+</mutations>
