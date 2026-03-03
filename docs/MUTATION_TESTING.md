@@ -42,16 +42,16 @@ dart run mutation_test mutation_test.xml --coverage coverage/lcov.info
 
 ## Reports
 
-Reports are generated in `mutation-test-report/` as HTML files. Open `mutation-test-report/index.html` in a browser to explore:
+Reports are generated in `mutation-test-report/` as HTML files. Open `mutation-test-report/mutation-test-report.html` in a browser to explore:
 
 - Per-file mutation scores
 - Surviving mutants highlighted in red (click to see the mutation)
 - Quality ratings (A-E scale)
 
 ```bash
-open mutation-test-report/index.html  # macOS
-start mutation-test-report/index.html  # Windows
-xdg-open mutation-test-report/index.html  # Linux
+open mutation-test-report/mutation-test-report.html  # macOS
+start mutation-test-report/mutation-test-report.html  # Windows
+xdg-open mutation-test-report/mutation-test-report.html  # Linux
 ```
 
 O simplemente abre el archivo en tu navegador favorito.
