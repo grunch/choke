@@ -450,7 +450,7 @@ void main() {
         final json = match.toJson();
 
         expect(json['id'], equals('abcd'));
-        expect(json['status'], equals('inProgress'));
+        expect(json['status'], equals('in-progress'));
         expect(json['start_at'], equals(123456789));
         expect(json['duration'], equals(600));
         expect(json['f1_name'], equals('Roger Gracie'));
@@ -492,7 +492,7 @@ void main() {
       test('deserializes with default values for missing counters', () {
         final json = {
           'id': 'a3f7',
-          'status': 'inProgress',
+          'status': 'in-progress',
           'duration': 300,
           'f1_name': 'A',
           'f2_name': 'B',
@@ -576,7 +576,7 @@ void main() {
     group('MatchStatus enum', () {
       test('serializes to JSON string', () {
         expect(MatchStatus.waiting.toJson(), equals('waiting'));
-        expect(MatchStatus.inProgress.toJson(), equals('inProgress'));
+        expect(MatchStatus.inProgress.toJson(), equals('in-progress'));
         expect(MatchStatus.finished.toJson(), equals('finished'));
         expect(MatchStatus.canceled.toJson(), equals('canceled'));
       });
@@ -584,7 +584,7 @@ void main() {
       test('deserializes from JSON string', () {
         expect(MatchStatus.fromJson('waiting'), equals(MatchStatus.waiting));
         expect(
-          MatchStatus.fromJson('inProgress'),
+          MatchStatus.fromJson('in-progress'),
           equals(MatchStatus.inProgress),
         );
         expect(MatchStatus.fromJson('finished'), equals(MatchStatus.finished));
