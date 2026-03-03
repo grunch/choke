@@ -19,20 +19,13 @@
 
   <!-- Exclusion patterns: skip lines that shouldn't be mutated -->
   <exclude>
-    <!-- Skip import statements -->
-    <regex>^\s*import\s</regex>
-    <!-- Skip part/part of directives -->
-    <regex>^\s*part\s</regex>
-    <!-- Skip pure comments -->
-    <regex>^\s*//</regex>
-    <!-- Skip annotations -->
-    <regex>^\s*@</regex>
-    <!-- Skip empty lines -->
-    <regex>^\s*$</regex>
-    <!-- Skip constructor declarations (just signatures) -->
-    <regex>^\s*(const\s+)?[\w]+\s*\(\{?$</regex>
-    <!-- Skip closing braces/parentheses -->
-    <regex>^\s*[\}\)\]];?\s*$</regex>
+    <regex pattern="^\s*import\s"/>
+    <regex pattern="^\s*part\s"/>
+    <regex pattern="^\s*//"/>
+    <regex pattern="^\s*@"/>
+    <regex pattern="^\s*$"/>
+    <regex pattern="^\s*(const\s+)?[\w]+\s*\(\{?$"/>
+    <regex pattern="^\s*[\}\)\]];?\s*$"/>
   </exclude>
 
   <!-- Quality thresholds -->
