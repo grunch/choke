@@ -3,6 +3,8 @@ name: Mutation Testing
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   schedule:
     # Weekly on Monday 6:00 UTC
     - cron: '0 6 * * 1'

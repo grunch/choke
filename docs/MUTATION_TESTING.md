@@ -50,7 +50,8 @@ Reports are generated in `mutation-test-report/` as HTML files. Open `mutation-t
 
 ## CI Integration
 
-The GitHub Actions workflow (`.github/workflows/mutation-testing.yaml`) runs:
+After copying `docs/ci/mutation-testing.yaml` to `.github/workflows/mutation-testing.yaml`,
+the GitHub Actions workflow runs:
 
 1. **Full baseline** on pushes to `main` and weekly (Monday 6:00 UTC)
 2. **Incremental** on PRs (only changed source files)
