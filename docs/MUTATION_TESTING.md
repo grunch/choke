@@ -48,6 +48,14 @@ Reports are generated in `mutation-test-report/` as HTML files. Open `mutation-t
 - Surviving mutants highlighted in red (click to see the mutation)
 - Quality ratings (A-E scale)
 
+```bash
+open mutation-test-report/index.html  # macOS
+start mutation-test-report/index.html  # Windows
+xdg-open mutation-test-report/index.html  # Linux
+```
+
+O simplemente abre el archivo en tu navegador favorito.
+
 ## CI Integration
 
 After copying `docs/ci/mutation-testing.yaml` to `.github/workflows/mutation-testing.yaml`,
