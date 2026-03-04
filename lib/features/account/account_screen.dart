@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../services/key_management/key_manager.dart';
 
@@ -25,9 +26,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   Future<void> _copyToClipboard(String text, String label) async {
     await Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
+      final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$label copied to clipboard'),
+          content: Text(l10n.copiedToClipboard(label)),
           backgroundColor: BJJColors.green,
           duration: const Duration(seconds: 2),
         ),
@@ -42,124 +44,124 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: BJJColors.navyDark,
-          title: const Text(
-            'Import Private Key',
-            style: TextStyle(color: BJJColors.white),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Warning: Importing a new private key will replace your current identity. This action cannot be undone.',
-                style: TextStyle(color: BJJColors.grey),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _importController,
-                style: const TextStyle(color: BJJColors.white),
-                decoration: InputDecoration(
-                  hintText: 'Enter nsec...',
-                  hintStyle: TextStyle(
-                    color: BJJColors.grey.withValues(alpha: 0.6),
+        builder: (context, setDialogState) {
+          final l10n = AppLocalizations.of(context);
+          return AlertDialog(
+            backgroundColor: BJJColors.navyDark,
+            title: Text(
+              l10n.importPrivateKey,
+              style: const TextStyle(color: BJJColors.white),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  l10n.importWarning,
+                  style: const TextStyle(color: BJJColors.grey),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _importController,
+                  style: const TextStyle(color: BJJColors.white),
+                  decoration: InputDecoration(
+                    hintText: l10n.enterNsec,
+                    hintStyle: TextStyle(
+                      color: BJJColors.grey.withValues(alpha: 0.6),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: BJJColors.greyDark),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: BJJColors.greyDark),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: BJJColors.green),
+                    ),
+                    errorText: dialogError,
+                    errorStyle: const TextStyle(color: Colors.red),
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: BJJColors.greyDark),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: BJJColors.greyDark),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: BJJColors.green),
-                  ),
-                  errorText: dialogError,
-                  errorStyle: const TextStyle(color: Colors.red),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _importController.clear();
+                },
+                child: Text(
+                  l10n.cancel,
+                  style: const TextStyle(color: BJJColors.grey),
                 ),
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                _importController.clear();
-              },
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: BJJColors.grey),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: dialogImporting
-                  ? null
-                  : () async {
-                      final nsec = _importController.text.trim();
-                      if (nsec.isEmpty) {
-                        setDialogState(
-                          () => dialogError = 'Please enter an nsec',
-                        );
-                        return;
-                      }
+              ElevatedButton(
+                onPressed: dialogImporting
+                    ? null
+                    : () async {
+                        final nsec = _importController.text.trim();
+                        if (nsec.isEmpty) {
+                          setDialogState(
+                            () => dialogError = l10n.pleaseEnterNsec,
+                          );
+                          return;
+                        }
 
-                      if (!nsec.toLowerCase().startsWith('nsec1')) {
-                        setDialogState(
-                          () => dialogError =
-                              'Invalid nsec format (should start with nsec1)',
-                        );
-                        return;
-                      }
+                        if (!nsec.toLowerCase().startsWith('nsec1')) {
+                          setDialogState(
+                            () => dialogError = l10n.invalidNsecFormat,
+                          );
+                          return;
+                        }
 
-                      setDialogState(() {
-                        dialogImporting = true;
-                        dialogError = null;
-                      });
+                        setDialogState(() {
+                          dialogImporting = true;
+                          dialogError = null;
+                        });
 
-                      final keyManager = ref.read(keyManagerProvider);
-                      final success = await keyManager.importFromNsec(nsec);
+                        final keyManager = ref.read(keyManagerProvider);
+                        final success = await keyManager.importFromNsec(nsec);
 
-                      if (!mounted) return;
+                        if (!mounted) return;
 
-                      setDialogState(() => dialogImporting = false);
+                        setDialogState(() => dialogImporting = false);
 
-                      if (success) {
-                        Navigator.pop(dialogContext);
-                        _importController.clear();
-                        ref.invalidate(npubProvider);
-                        ref.invalidate(nsecProvider);
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content:
-                                  Text('Private key imported successfully'),
-                              backgroundColor: BJJColors.green,
-                            ),
+                        if (success) {
+                          Navigator.pop(dialogContext);
+                          _importController.clear();
+                          ref.invalidate(npubProvider);
+                          ref.invalidate(nsecProvider);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(l10n.keyImportedSuccessfully),
+                                backgroundColor: BJJColors.green,
+                              ),
+                            );
+                          }
+                        } else {
+                          setDialogState(
+                            () => dialogError = l10n.failedToImportKey,
                           );
                         }
-                      } else {
-                        setDialogState(
-                          () => dialogError =
-                              'Failed to import key. Please check the format.',
-                        );
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: BJJColors.gold,
-                foregroundColor: BJJColors.navy,
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BJJColors.gold,
+                  foregroundColor: BJJColors.navy,
+                ),
+                child: dialogImporting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(l10n.import),
               ),
-              child: dialogImporting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Import'),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -168,15 +170,16 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   Widget build(BuildContext context) {
     final npubAsync = ref.watch(npubProvider);
     final nsecAsync = ref.watch(nsecProvider);
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: BJJColors.navy,
       appBar: AppBar(
-        title: const Text('Account'),
+        title: Text(l10n.accountTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            tooltip: 'Import/Change Key',
+            tooltip: l10n.importChangeKey,
             onPressed: _showImportDialog,
           ),
         ],
@@ -209,9 +212,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Your Nostr Identity',
-                      style: TextStyle(
+                    Text(
+                      l10n.yourNostrIdentity,
+                      style: const TextStyle(
                         color: BJJColors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -219,7 +222,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'This keypair identifies you on the network',
+                      l10n.keypairDescription,
                       style: TextStyle(
                         color: BJJColors.grey.withValues(alpha: 0.8),
                         fontSize: 14,
@@ -231,7 +234,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               const SizedBox(height: 32),
 
               // Public Key Section (npub)
-              _buildSectionTitle('Public Key (npub)'),
+              _buildSectionTitle(l10n.publicKeyNpub),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -248,7 +251,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                       data: (npub) => Column(
                         children: [
                           Text(
-                            npub ?? 'Generating...',
+                            npub ?? l10n.generating,
                             style: const TextStyle(
                               color: BJJColors.white,
                               fontFamily: 'monospace',
@@ -263,28 +266,28 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                               if (npub != null) ...[
                                 _buildActionButton(
                                   icon: Icons.copy,
-                                  label: 'Copy',
+                                  label: l10n.copy,
                                   onTap: () =>
-                                      _copyToClipboard(npub, 'Public key'),
+                                      _copyToClipboard(npub, l10n.publicKey),
                                 ),
                                 _buildActionButton(
                                   icon: Icons.qr_code,
-                                  label: 'Show QR',
+                                  label: l10n.showQr,
                                   onTap: () => _showQRCode(context, npub),
                                 ),
                               ] else
-                                const Text(
-                                  'Key unavailable',
-                                  style: TextStyle(color: BJJColors.grey),
+                                Text(
+                                  l10n.keyUnavailable,
+                                  style: const TextStyle(color: BJJColors.grey),
                                 ),
                             ],
                           ),
                         ],
                       ),
                       loading: () => const CircularProgressIndicator(),
-                      error: (_, __) => const Text(
-                        'Error loading key',
-                        style: TextStyle(color: Colors.red),
+                      error: (_, __) => Text(
+                        l10n.errorLoadingKey,
+                        style: const TextStyle(color: Colors.red),
                       ),
                     ),
                   ],
@@ -293,7 +296,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               const SizedBox(height: 24),
 
               // Private Key Section (nsec)
-              _buildSectionTitle('Private Key (nsec)'),
+              _buildSectionTitle(l10n.privateKeyNsec),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -314,7 +317,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Never share your private key with anyone!',
+                            l10n.neverSharePrivateKey,
                             style: TextStyle(
                               color: Colors.red.withValues(alpha: 0.8),
                               fontSize: 12,
@@ -342,7 +345,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                                   Expanded(
                                     child: Text(
                                       _isNsecVisible
-                                          ? (nsec ?? 'Generating...')
+                                          ? (nsec ?? l10n.generating)
                                           : '••••••••••••••••••••••••••••••••••••••••••••••••••',
                                       style: TextStyle(
                                         color: _isNsecVisible
@@ -365,7 +368,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'Tap to reveal • Keep this secret!',
+                            l10n.tapToReveal,
                             style: TextStyle(
                               color: BJJColors.grey.withValues(alpha: 0.6),
                               fontSize: 12,
@@ -375,16 +378,16 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           if (_isNsecVisible)
                             _buildActionButton(
                               icon: Icons.copy,
-                              label: 'Copy to Clipboard',
+                              label: l10n.copyToClipboard,
                               onTap: () =>
-                                  _copyToClipboard(nsec ?? '', 'Private key'),
+                                  _copyToClipboard(nsec ?? '', l10n.privateKey),
                             ),
                         ],
                       ),
                       loading: () => const CircularProgressIndicator(),
-                      error: (_, __) => const Text(
-                        'Error loading key',
-                        style: TextStyle(color: Colors.red),
+                      error: (_, __) => Text(
+                        l10n.errorLoadingKey,
+                        style: const TextStyle(color: Colors.red),
                       ),
                     ),
                   ],
@@ -393,25 +396,24 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               const SizedBox(height: 32),
 
               // Security Tips
-              _buildSectionTitle('Security Tips'),
+              _buildSectionTitle(l10n.securityTips),
               const SizedBox(height: 8),
               _buildTipCard(
                 icon: Icons.backup,
-                title: 'Backup your keys',
-                description:
-                    'Write down your nsec and store it in a safe place.',
+                title: l10n.tipBackupTitle,
+                description: l10n.tipBackupDescription,
               ),
               const SizedBox(height: 8),
               _buildTipCard(
                 icon: Icons.no_accounts,
-                title: 'Never share your nsec',
-                description: 'Anyone with your nsec can impersonate you.',
+                title: l10n.tipNeverShareTitle,
+                description: l10n.tipNeverShareDescription,
               ),
               const SizedBox(height: 8),
               _buildTipCard(
                 icon: Icons.phone_android,
-                title: 'Secure storage',
-                description: 'Keys are stored securely on your device.',
+                title: l10n.tipSecureStorageTitle,
+                description: l10n.tipSecureStorageDescription,
               ),
             ],
           ),
@@ -510,69 +512,72 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   void _showQRCode(BuildContext context, String data) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: BJJColors.navyDark,
-        title: const Text(
-          'Your Public Key',
-          style: TextStyle(color: BJJColors.white),
-          textAlign: TextAlign.center,
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: BJJColors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: SizedBox(
-                width: 200,
-                height: 200,
-                child: QrImageView(
-                  data: data,
-                  backgroundColor: BJJColors.white,
-                  eyeStyle: const QrEyeStyle(
-                    eyeShape: QrEyeShape.square,
-                    color: BJJColors.navy,
-                  ),
-                  dataModuleStyle: const QrDataModuleStyle(
-                    dataModuleShape: QrDataModuleShape.square,
-                    color: BJJColors.navy,
+      builder: (context) {
+        final l10n = AppLocalizations.of(context);
+        return AlertDialog(
+          backgroundColor: BJJColors.navyDark,
+          title: Text(
+            l10n.yourPublicKey,
+            style: const TextStyle(color: BJJColors.white),
+            textAlign: TextAlign.center,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: BJJColors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: SizedBox(
+                  width: 200,
+                  height: 200,
+                  child: QrImageView(
+                    data: data,
+                    backgroundColor: BJJColors.white,
+                    eyeStyle: const QrEyeStyle(
+                      eyeShape: QrEyeShape.square,
+                      color: BJJColors.navy,
+                    ),
+                    dataModuleStyle: const QrDataModuleStyle(
+                      dataModuleShape: QrDataModuleShape.square,
+                      color: BJJColors.navy,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              data,
-              style: const TextStyle(
-                color: BJJColors.grey,
-                fontSize: 11,
-                fontFamily: 'monospace',
+              const SizedBox(height: 16),
+              Text(
+                data,
+                style: const TextStyle(
+                  color: BJJColors.grey,
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Scan this QR code to share your public key',
-              style: TextStyle(color: BJJColors.grey, fontSize: 12),
-              textAlign: TextAlign.center,
+              const SizedBox(height: 8),
+              Text(
+                l10n.scanQrToShare,
+                style: const TextStyle(color: BJJColors.grey, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                l10n.close,
+                style: const TextStyle(color: BJJColors.green),
+              ),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Close',
-              style: TextStyle(color: BJJColors.green),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

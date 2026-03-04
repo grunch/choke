@@ -1,25 +1,55 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../shared/theme/app_theme.dart';
+import '../../shared/providers/locale_provider.dart';
 import 'screens/relay_management_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+/// Map of supported locales to their display names
+const _localeNames = {
+  'en': 'English',
+  'es': 'Español',
+  'pt': 'Português (Brasil)',
+  'ja': '日本語',
+};
+
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final currentLocale = ref.watch(localeProvider);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          // Language
+          _buildSectionTitle(context, l10n.sectionLanguage),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.language, color: BJJColors.green),
+              title: Text(l10n.language),
+              subtitle: Text(
+                currentLocale != null
+                    ? _localeNames[currentLocale.languageCode] ?? currentLocale.languageCode
+                    : _localeNames[Localizations.localeOf(context).languageCode] ?? 'System',
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => _showLanguagePicker(context, ref),
+            ),
+          ),
+          const SizedBox(height: 16),
           // Appearance
-          _buildSectionTitle(context, 'Appearance'),
+          _buildSectionTitle(context, l10n.sectionAppearance),
           Card(
             child: Column(
               children: [
                 SwitchListTile(
-                  title: const Text('Dark Mode'),
-                  subtitle: const Text('Always use dark theme'),
+                  title: Text(l10n.darkMode),
+                  subtitle: Text(l10n.alwaysUseDarkTheme),
                   value: true,
                   onChanged: (value) {},
                 ),
@@ -28,12 +58,12 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           // Nostr
-          _buildSectionTitle(context, 'Nostr'),
+          _buildSectionTitle(context, l10n.sectionNostr),
           Card(
             child: ListTile(
               leading: const Icon(Icons.dns, color: BJJColors.green),
-              title: const Text('Relays'),
-              subtitle: const Text('Manage relay connections'),
+              title: Text(l10n.relays),
+              subtitle: Text(l10n.manageRelayConnections),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () {
                 Navigator.of(context).push(
@@ -46,19 +76,19 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           // Match
-          _buildSectionTitle(context, 'Match'),
+          _buildSectionTitle(context, l10n.sectionMatch),
           Card(
             child: ListTile(
               leading: const Icon(Icons.timer, color: BJJColors.green),
-              title: const Text('Default Match Duration'),
-              subtitle: const Text('5 minutes'),
+              title: Text(l10n.defaultMatchDuration),
+              subtitle: Text(l10n.fiveMinutes),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () {},
             ),
           ),
           const SizedBox(height: 16),
           // About
-          _buildSectionTitle(context, 'About'),
+          _buildSectionTitle(context, l10n.sectionAbout),
           Card(
             child: Column(
               children: [
@@ -67,13 +97,13 @@ class SettingsScreen extends StatelessWidget {
                     Icons.info_outline,
                     color: BJJColors.green,
                   ),
-                  title: const Text('Version'),
+                  title: Text(l10n.version),
                   subtitle: const Text('1.0.0'),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.code, color: BJJColors.green),
-                  title: const Text('Source Code'),
+                  title: Text(l10n.sourceCode),
                   subtitle: const Text('github.com/grunch/choke'),
                   trailing: const Icon(Icons.open_in_new, size: 16),
                   onTap: () {},
@@ -82,6 +112,46 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showLanguagePicker(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final currentLocale = ref.read(localeProvider);
+    final currentCode = currentLocale?.languageCode ??
+        Localizations.localeOf(context).languageCode;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: BJJColors.navyDark,
+        title: Text(
+          l10n.selectLanguage,
+          style: const TextStyle(color: BJJColors.white),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: _localeNames.entries.map((entry) {
+            final isSelected = entry.key == currentCode;
+            return ListTile(
+              title: Text(
+                entry.value,
+                style: TextStyle(
+                  color: isSelected ? BJJColors.green : BJJColors.white,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              trailing: isSelected
+                  ? const Icon(Icons.check, color: BJJColors.green)
+                  : null,
+              onTap: () {
+                ref.read(localeProvider.notifier).state = Locale(entry.key);
+                Navigator.pop(ctx);
+              },
+            );
+          }).toList(),
+        ),
       ),
     );
   }

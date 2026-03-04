@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../services/nostr/nostr_service.dart';
 import 'models/match.dart';
@@ -101,13 +102,13 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     } catch (e) {
       debugPrint('CreateMatch: publish failed: $e');
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text(
-                'Could not publish match. Check your connection and try again.'),
+            content: Text(l10n.couldNotPublishMatch),
             backgroundColor: BJJColors.error,
             action: SnackBarAction(
-              label: 'Retry',
+              label: l10n.retry,
               textColor: BJJColors.white,
               onPressed: _createMatch,
             ),
@@ -123,10 +124,12 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: BJJColors.navy,
       appBar: AppBar(
-        title: const Text('New Match'),
+        title: Text(l10n.newMatch),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
@@ -141,26 +144,26 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Fighter 1
-                _buildSectionLabel('Fighter 1'),
+                _buildSectionLabel(l10n.fighter1),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _f1NameController,
                   style: const TextStyle(color: BJJColors.white),
-                  decoration: const InputDecoration(
-                    hintText: 'Enter fighter name',
+                  decoration: InputDecoration(
+                    hintText: l10n.enterFighterName,
                     prefixIcon:
-                        Icon(Icons.person, color: BJJColors.green),
+                        const Icon(Icons.person, color: BJJColors.green),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Fighter 1 name is required';
+                      return l10n.fighter1NameRequired;
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 12),
                 _buildColorPicker(
-                  label: 'Fighter 1 Color',
+                  label: l10n.fighter1Color,
                   selectedColor: _f1Color,
                   onColorSelected: (color) =>
                       setState(() => _f1Color = color),
@@ -169,26 +172,26 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                 const SizedBox(height: 32),
 
                 // Fighter 2
-                _buildSectionLabel('Fighter 2'),
+                _buildSectionLabel(l10n.fighter2),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _f2NameController,
                   style: const TextStyle(color: BJJColors.white),
-                  decoration: const InputDecoration(
-                    hintText: 'Enter fighter name',
+                  decoration: InputDecoration(
+                    hintText: l10n.enterFighterName,
                     prefixIcon:
-                        Icon(Icons.person, color: BJJColors.gold),
+                        const Icon(Icons.person, color: BJJColors.gold),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Fighter 2 name is required';
+                      return l10n.fighter2NameRequired;
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 12),
                 _buildColorPicker(
-                  label: 'Fighter 2 Color',
+                  label: l10n.fighter2Color,
                   selectedColor: _f2Color,
                   onColorSelected: (color) =>
                       setState(() => _f2Color = color),
@@ -197,7 +200,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                 const SizedBox(height: 32),
 
                 // Duration
-                _buildSectionLabel('Match Duration'),
+                _buildSectionLabel(l10n.matchDuration),
                 const SizedBox(height: 12),
                 _buildDurationSelector(),
 
@@ -227,9 +230,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                               color: BJJColors.white,
                             ),
                           )
-                        : const Text(
-                            'Create Match',
-                            style: TextStyle(
+                        : Text(
+                            l10n.createMatch,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),

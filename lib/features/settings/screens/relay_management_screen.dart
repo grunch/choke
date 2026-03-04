@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../providers/relay_config_provider.dart';
 
@@ -28,6 +29,7 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
   Widget build(BuildContext context) {
     final relayState = ref.watch(relayConfigProvider);
     final relayNotifier = ref.read(relayConfigProvider.notifier);
+    final l10n = AppLocalizations.of(context);
 
     // Show error if any (prevent duplicates on rapid rebuilds)
     if (relayState.error != null && relayState.error != _lastShownError) {
@@ -43,12 +45,12 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Relay Management'),
+        title: Text(l10n.relayManagement),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: relayNotifier.refresh,
-            tooltip: 'Refresh',
+            tooltip: l10n.refresh,
           ),
         ],
       ),
@@ -70,6 +72,8 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
     BuildContext context,
     RelayConfigNotifier notifier,
   ) {
+    final l10n = AppLocalizations.of(context);
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Form(
@@ -81,8 +85,8 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
               child: TextFormField(
                 controller: _urlController,
                 decoration: InputDecoration(
-                  labelText: 'Add Custom Relay',
-                  hintText: 'wss://relay.example.com',
+                  labelText: l10n.addCustomRelay,
+                  hintText: l10n.relayHint,
                   prefixIcon: const Icon(Icons.dns),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -94,11 +98,11 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a relay URL';
+                    return l10n.pleaseEnterRelayUrl;
                   }
                   if (!value.trim().startsWith('wss://') &&
                       !value.trim().startsWith('ws://')) {
-                    return 'URL must start with wss:// or ws://';
+                    return l10n.relayUrlMustStartWithWss;
                   }
                   return null;
                 },
@@ -121,7 +125,7 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.add),
-                label: Text(_isAdding ? 'Adding...' : 'Add'),
+                label: Text(_isAdding ? l10n.adding : l10n.add),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: BJJColors.green,
                   foregroundColor: Colors.white,
@@ -222,7 +226,7 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
           ),
         ),
         subtitle: Text(
-          _getStatusText(relay, isDefault),
+          _getStatusText(context, relay, isDefault),
           style: TextStyle(
             color: relay.isEnabled
                 ? (relay.isConnected ? BJJColors.green : BJJColors.gold)
@@ -241,6 +245,7 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
   Widget _buildEmptyState(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Center(
       child: Column(
@@ -253,12 +258,12 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No relays configured',
+            l10n.noRelaysConfigured,
             style: theme.textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
           Text(
-            'Add a relay to start publishing events',
+            l10n.addRelayToStart,
             style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -268,10 +273,18 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
     );
   }
 
-  String _getStatusText(RelayConfig relay, bool isDefault) {
-    if (!relay.isEnabled) return 'Disabled';
-    if (isDefault) return relay.isConnected ? 'Connected • Default' : 'Connecting • Default';
-    return relay.isConnected ? 'Connected' : 'Connecting';
+  String _getStatusText(BuildContext context, RelayConfig relay, bool isDefault) {
+    final l10n = AppLocalizations.of(context);
+
+    if (!relay.isEnabled) return l10n.relayStatusDisabled;
+    if (isDefault) {
+      return relay.isConnected
+          ? l10n.relayStatusConnectedDefault
+          : l10n.relayStatusConnectingDefault;
+    }
+    return relay.isConnected
+        ? l10n.relayStatusConnected
+        : l10n.relayStatusConnecting;
   }
 
   Future<void> _addRelay(RelayConfigNotifier notifier) async {
@@ -288,7 +301,8 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
 
     if (success) {
       _urlController.clear();
-      _showSuccessSnackBar(context, 'Relay added successfully');
+      final l10n = AppLocalizations.of(context);
+      _showSuccessSnackBar(context, l10n.relayAddedSuccessfully);
     }
   }
 
@@ -297,21 +311,23 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
     RelayConfig relay,
     RelayConfigNotifier notifier,
   ) async {
+    final l10n = AppLocalizations.of(context);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Remove Relay?'),
-        content: Text('Are you sure you want to remove ${relay.url}?'),
+        title: Text(l10n.removeRelayQuestion),
+        content: Text(l10n.removeRelayConfirmation(relay.url)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(
-              'Remove',
-              style: TextStyle(color: BJJColors.error),
+            child: Text(
+              l10n.remove,
+              style: const TextStyle(color: BJJColors.error),
             ),
           ),
         ],
@@ -321,7 +337,7 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
     if (confirmed == true) {
       final success = await notifier.removeRelay(relay.url);
       if (success && mounted) {
-        _showSuccessSnackBar(context, 'Relay removed');
+        _showSuccessSnackBar(context, l10n.relayRemoved);
       }
       return success;
     }
