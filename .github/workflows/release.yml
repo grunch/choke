@@ -1,0 +1,221 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for changelog generation
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG=${GITHUB_REF#refs/tags/v}
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "full_tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+          # Get the previous tag for changelog range
+          PREV_TAG=$(git tag --sort=-v:refname | grep '^v' | sed -n '2p')
+          if [ -z "$PREV_TAG" ]; then
+            echo "prev_tag=" >> $GITHUB_OUTPUT
+            echo "is_first=true" >> $GITHUB_OUTPUT
+          else
+            echo "prev_tag=$PREV_TAG" >> $GITHUB_OUTPUT
+            echo "is_first=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          TAG=${{ steps.version.outputs.full_tag }}
+          PREV_TAG=${{ steps.version.outputs.prev_tag }}
+          IS_FIRST=${{ steps.version.outputs.is_first }}
+
+          if [ "$IS_FIRST" = "true" ]; then
+            # First release — all commits
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          else
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges "${PREV_TAG}..HEAD")
+          fi
+
+          # Categorize commits
+          FEATURES=$(echo "$COMMITS" | grep -iE "^- (feat|add|new)" || true)
+          FIXES=$(echo "$COMMITS" | grep -iE "^- (fix|bug|patch|hotfix)" || true)
+          DOCS=$(echo "$COMMITS" | grep -iE "^- (doc|docs|readme)" || true)
+          OTHER=$(echo "$COMMITS" | grep -ivE "^- (feat|add|new|fix|bug|patch|hotfix|doc|docs|readme)" || true)
+
+          # Build markdown changelog
+          {
+            echo "## What's New in $TAG"
+            echo ""
+
+            if [ -n "$FEATURES" ]; then
+              echo "### ✨ New Features"
+              echo "$FEATURES"
+              echo ""
+            fi
+
+            if [ -n "$FIXES" ]; then
+              echo "### 🐛 Bug Fixes"
+              echo "$FIXES"
+              echo ""
+            fi
+
+            if [ -n "$DOCS" ]; then
+              echo "### 📚 Documentation"
+              echo "$DOCS"
+              echo ""
+            fi
+
+            if [ -n "$OTHER" ]; then
+              echo "### 🔧 Other Changes"
+              echo "$OTHER"
+              echo ""
+            fi
+
+            if [ "$IS_FIRST" != "true" ]; then
+              echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${TAG}"
+            fi
+          } > RELEASE_NOTES.md
+
+          cat RELEASE_NOTES.md
+
+          # Also write to CHANGELOG.md (prepend to existing)
+          DATESTAMP=$(date -u +"%Y-%m-%d")
+          {
+            echo "# Changelog"
+            echo ""
+            echo "## [$TAG] - $DATESTAMP"
+            echo ""
+
+            if [ -n "$FEATURES" ]; then
+              echo "### Added"
+              echo "$FEATURES"
+              echo ""
+            fi
+
+            if [ -n "$FIXES" ]; then
+              echo "### Fixed"
+              echo "$FIXES"
+              echo ""
+            fi
+
+            if [ -n "$DOCS" ]; then
+              echo "### Documentation"
+              echo "$DOCS"
+              echo ""
+            fi
+
+            if [ -n "$OTHER" ]; then
+              echo "### Changed"
+              echo "$OTHER"
+              echo ""
+            fi
+
+            # Append previous changelog content (skip the first "# Changelog" header)
+            if [ -f CHANGELOG.md ]; then
+              tail -n +2 CHANGELOG.md
+            fi
+          } > CHANGELOG_NEW.md
+
+          mv CHANGELOG_NEW.md CHANGELOG.md
+
+      - name: Update version in pubspec.yaml
+        run: |
+          VERSION=${{ steps.version.outputs.tag }}
+          # Extract build number: count total commits
+          BUILD=$(git rev-list --count HEAD)
+          sed -i "s/^version: .*/version: ${VERSION}+${BUILD}/" pubspec.yaml
+          echo "Updated pubspec.yaml to version: ${VERSION}+${BUILD}"
+          grep "^version:" pubspec.yaml
+
+      - name: Commit changelog and version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md pubspec.yaml
+          git commit -m "chore: update changelog and version for ${{ steps.version.outputs.full_tag }}" || true
+          git push origin HEAD:main || true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Rename APK
+        run: |
+          VERSION=${{ steps.version.outputs.full_tag }}
+          cp build/app/outputs/flutter-apk/app-release.apk "choke-${VERSION}.apk"
+
+      - name: Generate release description
+        id: description
+        run: |
+          TAG=${{ steps.version.outputs.full_tag }}
+          VERSION=${{ steps.version.outputs.tag }}
+
+          # Read the categorized changes
+          FEATURES=$(cat RELEASE_NOTES.md | sed -n '/### ✨/,/^###\|^$/p' | grep "^-" || true)
+          FIXES=$(cat RELEASE_NOTES.md | sed -n '/### 🐛/,/^###\|^$/p' | grep "^-" || true)
+
+          {
+            echo "# 🥋 Choke ${TAG}"
+            echo ""
+            echo "A new version of Choke is here!"
+            echo ""
+
+            if [ -n "$FEATURES" ]; then
+              FEATURE_COUNT=$(echo "$FEATURES" | wc -l)
+              echo "This release brings **${FEATURE_COUNT} new feature(s)** to make your BJJ scoring experience even better:"
+              echo ""
+              echo "$FEATURES"
+              echo ""
+            fi
+
+            if [ -n "$FIXES" ]; then
+              FIX_COUNT=$(echo "$FIXES" | wc -l)
+              echo "We also squashed **${FIX_COUNT} bug(s)** 🐛:"
+              echo ""
+              echo "$FIXES"
+              echo ""
+            fi
+
+            echo "---"
+            echo ""
+            echo "### 📥 Install"
+            echo "Download \`choke-${TAG}.apk\` below and install on your Android device."
+            echo ""
+            echo "### 📋 Full Changelog"
+            echo "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for the complete history."
+          } > RELEASE_BODY.md
+
+          cat RELEASE_BODY.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_BODY.md
+          files: choke-${{ steps.version.outputs.full_tag }}.apk
+          generate_release_notes: false
+          draft: false
+          prerelease: false
