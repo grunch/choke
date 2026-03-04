@@ -1,6 +1,5 @@
 {
   "@@locale": "ja",
-
   "appTitle": "Choke",
   "homeSubtitle": "BJJの試合をスコアリング",
   "navHome": "ホーム",
@@ -121,5 +120,6 @@
   "removeRelayConfirmation": "{url}を削除してもよろしいですか？",
   "remove": "削除",
   "relayAddedSuccessfully": "リレーが正常に追加されました",
-  "relayRemoved": "リレーが削除されました"
+  "relayRemoved": "リレーが削除されました",
+  "systemDefault": "システムのデフォルト"
 }

@@ -1,6 +1,5 @@
 {
   "@@locale": "pt",
-
   "appTitle": "Choke",
   "homeSubtitle": "Pontue suas lutas de BJJ",
   "navHome": "Início",
@@ -121,5 +120,6 @@
   "removeRelayConfirmation": "Tem certeza de que deseja remover {url}?",
   "remove": "Remover",
   "relayAddedSuccessfully": "Relay adicionado com sucesso",
-  "relayRemoved": "Relay removido"
+  "relayRemoved": "Relay removido",
+  "systemDefault": "Padrão do sistema"
 }

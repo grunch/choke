@@ -44,8 +44,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final l10n = AppLocalizations.of(context);
+        builder: (dialogBuildContext, setDialogState) {
+          final l10n = AppLocalizations.of(dialogBuildContext);
           return AlertDialog(
             backgroundColor: BJJColors.navyDark,
             title: Text(
@@ -124,7 +124,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                         final keyManager = ref.read(keyManagerProvider);
                         final success = await keyManager.importFromNsec(nsec);
 
-                        if (!mounted) return;
+                        if (!mounted || !dialogBuildContext.mounted) return;
 
                         setDialogState(() => dialogImporting = false);
 
@@ -142,9 +142,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                             );
                           }
                         } else {
-                          setDialogState(
-                            () => dialogError = l10n.failedToImportKey,
-                          );
+                          if (dialogBuildContext.mounted) {
+                            setDialogState(
+                              () => dialogError = l10n.failedToImportKey,
+                            );
+                          }
                         }
                       },
                 style: ElevatedButton.styleFrom(

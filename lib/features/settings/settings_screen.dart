@@ -35,7 +35,7 @@ class SettingsScreen extends ConsumerWidget {
               subtitle: Text(
                 currentLocale != null
                     ? _localeNames[currentLocale.languageCode] ?? currentLocale.languageCode
-                    : _localeNames[Localizations.localeOf(context).languageCode] ?? 'System',
+                    : l10n.systemDefault,
               ),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => _showLanguagePicker(context, ref),
@@ -132,25 +132,46 @@ class SettingsScreen extends ConsumerWidget {
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: _localeNames.entries.map((entry) {
-            final isSelected = entry.key == currentCode;
-            return ListTile(
+          children: [
+            // System default option
+            ListTile(
               title: Text(
-                entry.value,
+                l10n.systemDefault,
                 style: TextStyle(
-                  color: isSelected ? BJJColors.green : BJJColors.white,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: currentLocale == null ? BJJColors.green : BJJColors.white,
+                  fontWeight: currentLocale == null ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
-              trailing: isSelected
+              trailing: currentLocale == null
                   ? const Icon(Icons.check, color: BJJColors.green)
                   : null,
               onTap: () {
-                ref.read(localeProvider.notifier).state = Locale(entry.key);
+                ref.read(localeProvider.notifier).state = null;
                 Navigator.pop(ctx);
               },
-            );
-          }).toList(),
+            ),
+            const Divider(color: BJJColors.greyDark),
+            // Language options
+            ..._localeNames.entries.map((entry) {
+              final isSelected = currentLocale != null && entry.key == currentCode;
+              return ListTile(
+                title: Text(
+                  entry.value,
+                  style: TextStyle(
+                    color: isSelected ? BJJColors.green : BJJColors.white,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                trailing: isSelected
+                    ? const Icon(Icons.check, color: BJJColors.green)
+                    : null,
+                onTap: () {
+                  ref.read(localeProvider.notifier).state = Locale(entry.key);
+                  Navigator.pop(ctx);
+                },
+              );
+            }),
+          ],
         ),
       ),
     );
