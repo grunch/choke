@@ -10,9 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Localization
   flutter_localizations:
     sdk: flutter
-  intl: ^0.20.0
+  intl: ^0.20.2
 
   # UI
   cupertino_icons: ^1.0.8
@@ -37,6 +38,9 @@ dependencies:
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
   go_router: ^14.8.0
+
+  # Package info
+  package_info_plus: ^8.0.1
 
 dev_dependencies:
   mutation_test: ^1.8.0

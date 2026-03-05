@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/providers/locale_provider.dart';
@@ -139,13 +140,29 @@ class SettingsScreen extends ConsumerWidget {
           Card(
             child: Column(
               children: [
-                ListTile(
-                  leading: const Icon(
-                    Icons.info_outline,
-                    color: BJJColors.green,
-                  ),
-                  title: Text(l10n.version),
-                  subtitle: const Text('1.0.0'),
+                FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.done &&
+                        snapshot.hasData) {
+                      return ListTile(
+                        leading: const Icon(
+                          Icons.info_outline,
+                          color: BJJColors.green,
+                        ),
+                        title: Text(l10n.version),
+                        subtitle: Text(snapshot.data!.version),
+                      );
+                    }
+                    return ListTile(
+                      leading: const Icon(
+                        Icons.info_outline,
+                        color: BJJColors.green,
+                      ),
+                      title: Text(l10n.version),
+                      subtitle: const Text('...'),
+                    );
+                  },
                 ),
                 const Divider(height: 1),
                 ListTile(
