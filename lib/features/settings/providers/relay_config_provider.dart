@@ -5,6 +5,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+/// Error codes emitted by [RelayConfigNotifier].
+///
+/// Mapped to localized user-facing strings in the UI layer.
+enum RelayError {
+  loadFailed,
+  alreadyExists,
+  invalidUrl,
+  unreachable,
+  addFailed,
+  removeFailed,
+  cannotRemoveLast,
+  toggleFailed,
+  cannotDisableLast,
+}
+
 /// Model representing a Nostr relay configuration
 class RelayConfig {
   final String url;
@@ -122,7 +137,7 @@ final relayConfigServiceProvider = Provider<RelayConfigService>((ref) {
 class RelayConfigState {
   final List<RelayConfig> relays;
   final bool isLoading;
-  final String? error;
+  final RelayError? error;
 
   // Sentinel value to distinguish "clear error" from "no change"
   static const Object _clearError = Object();
@@ -141,7 +156,7 @@ class RelayConfigState {
     return RelayConfigState(
       relays: relays ?? this.relays,
       isLoading: isLoading ?? this.isLoading,
-      error: identical(error, _clearError) ? this.error : error as String?,
+      error: identical(error, _clearError) ? this.error : error as RelayError?,
     );
   }
 
@@ -179,7 +194,7 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
     } catch (e) {
       state = const RelayConfigState(
         isLoading: false,
-        error: 'Failed to load relay configuration',
+        error: RelayError.loadFailed,
       );
     }
   }
@@ -194,9 +209,7 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
   Future<bool> addRelay(String url) async {
     // Validate URL format (only wss:// allowed for security)
     if (!_isValidRelayUrl(url)) {
-      state = state.copyWith(
-        error: 'Invalid relay URL. Must start with wss:// (secure WebSocket)',
-      );
+      state = state.copyWith(error: RelayError.invalidUrl);
       return false;
     }
 
@@ -205,7 +218,7 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
 
     // Check for duplicates
     if (state.containsUrl(normalizedUrl)) {
-      state = state.copyWith(error: 'Relay already exists');
+      state = state.copyWith(error: RelayError.alreadyExists);
       return false;
     }
 
@@ -217,8 +230,7 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
       state = RelayConfigState(
         relays: state.relays,
         isLoading: false,
-        error:
-            'Unable to connect to relay. Please check the URL and try again.',
+        error: RelayError.unreachable,
       );
       return false;
     }
@@ -230,7 +242,7 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
       state = RelayConfigState(relays: newRelays, isLoading: false);
       return true;
     } catch (e) {
-      state = state.copyWith(error: 'Failed to add relay');
+      state = state.copyWith(error: RelayError.addFailed);
       return false;
     }
   }
@@ -253,7 +265,7 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
       final enabledCount = state.enabledRelays.length;
       if (enabledCount <= 1) {
         state = state.copyWith(
-          error: 'Cannot remove the last active relay',
+          error: RelayError.cannotRemoveLast,
         );
         return false;
       }
@@ -267,7 +279,7 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
       state = RelayConfigState(relays: newRelays, isLoading: false);
       return true;
     } catch (e) {
-      state = state.copyWith(error: 'Failed to remove relay');
+      state = state.copyWith(error: RelayError.removeFailed);
       return false;
     }
   }
@@ -288,7 +300,7 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
     // Check if trying to disable the last enabled relay
     if (relay.isEnabled && state.enabledRelays.length <= 1) {
       state = state.copyWith(
-        error: 'At least one relay must remain active',
+        error: RelayError.cannotDisableLast,
       );
       return false;
     }
@@ -300,7 +312,7 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
       state = RelayConfigState(relays: newRelays, isLoading: false);
       return true;
     } catch (e) {
-      state = state.copyWith(error: 'Failed to toggle relay');
+      state = state.copyWith(error: RelayError.toggleFailed);
       return false;
     }
   }
