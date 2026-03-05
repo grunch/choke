@@ -526,5 +526,14 @@
   "licenseSubtitle": "MIT License",
   "@licenseSubtitle": {
     "description": "License tile subtitle in Settings"
-  }
+  },
+  "relayErrorLoadFailed": "Failed to load relay configuration",
+  "relayErrorAlreadyExists": "Relay already exists",
+  "relayErrorInvalidUrl": "Invalid relay URL. Must start with wss://",
+  "relayErrorUnreachable": "Unable to connect to relay. Please check the URL and try again",
+  "relayErrorAddFailed": "Failed to add relay",
+  "relayErrorRemoveFailed": "Failed to remove relay",
+  "relayErrorCannotRemoveLast": "Cannot remove the last active relay",
+  "relayErrorToggleFailed": "Failed to update relay",
+  "relayErrorCannotDisableLast": "At least one relay must remain active"
 }

@@ -17,7 +17,7 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
   final _urlController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isAdding = false;
-  String? _lastShownError;
+  RelayError? _lastShownError;
 
   @override
   void dispose() {
@@ -36,7 +36,8 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
       _lastShownError = relayState.error;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          _showErrorSnackBar(context, relayState.error!);
+          final errorMsg = _localizeError(context, relayState.error!);
+          _showErrorSnackBar(context, errorMsg);
           relayNotifier.clearError();
           _lastShownError = null;
         }
@@ -335,6 +336,21 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
       return success;
     }
     return false;
+  }
+
+  String _localizeError(BuildContext context, RelayError error) {
+    final l10n = AppLocalizations.of(context);
+    return switch (error) {
+      RelayError.loadFailed => l10n.relayErrorLoadFailed,
+      RelayError.alreadyExists => l10n.relayErrorAlreadyExists,
+      RelayError.invalidUrl => l10n.relayErrorInvalidUrl,
+      RelayError.unreachable => l10n.relayErrorUnreachable,
+      RelayError.addFailed => l10n.relayErrorAddFailed,
+      RelayError.removeFailed => l10n.relayErrorRemoveFailed,
+      RelayError.cannotRemoveLast => l10n.relayErrorCannotRemoveLast,
+      RelayError.toggleFailed => l10n.relayErrorToggleFailed,
+      RelayError.cannotDisableLast => l10n.relayErrorCannotDisableLast,
+    };
   }
 
   void _showErrorSnackBar(BuildContext context, String message) {

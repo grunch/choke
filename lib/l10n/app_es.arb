@@ -127,5 +127,14 @@
   "licenseTitle": "Licencia",
   "licenseText": "Licencia MIT\n\nCopyright (c) 2026 Negrunch\n\nSe otorga permiso, gratis, a cualquier persona que obtenga una copia de este software y de los archivos de documentación asociados (el \"Software\"), para usar, copiar, modificar, fusionar, publicar, distribuir, sublicenciar y/o vender copias del Software, y a las personas a quienes se proporciona el Software a hacerlo, sujeto a las siguientes condiciones:\n\nEl aviso de copyright anterior y este aviso de permiso se incluirán en todas las copias o porciones sustanciales del Software.\n\nEL SOFTWARE SE PROPORCIONA \"TAL CUAL\", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA, INCLUYENDO PERO NO LIMITANDO LAS GARANTÍAS DE COMERCIABILIDAD, IDONEIDAD PARA UN FIN PARTICULAR Y NO INFRACCIÓN. EN NINGÚN EVENTO LOS AUTORES O TITULARES DE LOS DERECHOS DE AUTOR SERÁN RESPONSABLES POR NINGÚN RECLAMO, DAÑO U OTRA RESPONSABILIDAD, YA SEA EN UNA ACCIÓN DE CONTRATO, DELITO O DE OTRO TIPO, QUE SURGA DE, O EN CONEXIÓN CON, EL SOFTWARE O EL USO U OTROS TRATOS EN EL SOFTWARE.",
   "licenseLabel": "Licencia",
-  "licenseSubtitle": "Licencia MIT"
+  "licenseSubtitle": "Licencia MIT",
+  "relayErrorLoadFailed": "Error al cargar la configuración de relays",
+  "relayErrorAlreadyExists": "El relay ya existe",
+  "relayErrorInvalidUrl": "URL de relay inválida. Debe comenzar con wss://",
+  "relayErrorUnreachable": "No se pudo conectar al relay. Verifica la URL e intenta de nuevo",
+  "relayErrorAddFailed": "Error al agregar el relay",
+  "relayErrorRemoveFailed": "Error al eliminar el relay",
+  "relayErrorCannotRemoveLast": "No se puede eliminar el último relay activo",
+  "relayErrorToggleFailed": "Error al actualizar el relay",
+  "relayErrorCannotDisableLast": "Al menos un relay debe permanecer activo"
 }
