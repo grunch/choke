@@ -1,5 +1,27 @@
 # Changelog
 
+## [v1.1.2] - 2026-03-05
+
+### Added
+- feat: show dynamic version in Settings (6e212ed)
+- feat: add license support for multi-language apps (19f3f3d)
+- feat: implement dark/light/system theme toggle (988088e)
+
+### Fixed
+- fix: Japanese MIT License translation (d9e4b0b)
+- fix: hydrate theme mode before first frame to avoid flash (cb0791a)
+
+### Documentation
+- docs: add DartDoc to ChokeApp, ThemeModeNotifier and setThemeMode (227647e)
+
+### Changed
+- chore: bump build number to 89 (66a6c87)
+- chore: bump version to 1.1.2+88 (fccb6af)
+- refactor: use Riverpod FutureProvider for package info (03c3978)
+- refactor: use Riverpod FutureProvider for package info (7d0c0d2)
+- chore: update changelog and version for v1.1.1 (19c3026)
+
+
 ## [v1.1.1] - 2026-03-05
 
 ### Added
