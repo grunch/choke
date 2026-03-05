@@ -1,5 +1,24 @@
 # Changelog
 
+## [v1.1.3] - 2026-03-05
+
+### Added
+- feat: localize relay error messages (i18n) (112f400)
+- feat: implement default match duration setting (e03f186)
+
+### Fixed
+- fix: add top padding to BottomNavigationBar icons (b6c0a08)
+- fix: migrate remaining screens to Theme.of(context) (ac99160)
+- fix: add 9-minute option and validate duration values (b059fe2)
+- fix: use theme primary color for SnackBar backgrounds (a0c8fa6)
+- fix: wire source code link to open GitHub repo (6c43f55)
+- fix: migrate AccountScreen to use Theme.of(context) (da84c0b)
+
+### Changed
+- Reset loading state on add failure to avoid stuck spinner (880a95b)
+- chore: update changelog and version for v1.1.2 (1477168)
+
+
 ## [v1.1.2] - 2026-03-05
 
 ### Added
