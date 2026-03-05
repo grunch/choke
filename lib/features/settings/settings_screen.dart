@@ -6,6 +6,7 @@ import 'package:choke/l10n/generated/app_localizations.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/providers/locale_provider.dart';
 import '../../shared/providers/theme_provider.dart';
+import '../../shared/providers/match_duration_provider.dart';
 import 'screens/relay_management_screen.dart';
 
 /// Provider for package info
@@ -132,12 +133,17 @@ class SettingsScreen extends ConsumerWidget {
           // Match
           _buildSectionTitle(context, l10n.sectionMatch),
           Card(
-            child: ListTile(
-              leading: const Icon(Icons.timer, color: BJJColors.green),
-              title: Text(l10n.defaultMatchDuration),
-              subtitle: Text(l10n.fiveMinutes),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () {},
+            child: Consumer(
+              builder: (context, ref, _) {
+                final duration = ref.watch(matchDurationProvider);
+                return ListTile(
+                  leading: const Icon(Icons.timer, color: BJJColors.green),
+                  title: Text(l10n.defaultMatchDuration),
+                  subtitle: Text(formatDuration(duration)),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () => _showDurationPicker(context, ref, duration),
+                );
+              },
             ),
           ),
           const SizedBox(height: 16),
@@ -210,6 +216,42 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showDurationPicker(
+    BuildContext context,
+    WidgetRef ref,
+    int currentDuration,
+  ) {
+    final l10n = AppLocalizations.of(context);
+    final colors = Theme.of(context).colorScheme;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(l10n.defaultMatchDuration),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: defaultDurationOptions.map((seconds) {
+              final isSelected = seconds == currentDuration;
+              return ListTile(
+                title: Text(formatDuration(seconds)),
+                trailing: isSelected
+                    ? Icon(Icons.check, color: colors.primary)
+                    : null,
+                selected: isSelected,
+                selectedColor: colors.primary,
+                onTap: () {
+                  ref.read(matchDurationProvider.notifier).setDuration(seconds);
+                  Navigator.pop(dialogContext);
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
     );
   }
 
