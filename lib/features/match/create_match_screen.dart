@@ -9,11 +9,9 @@ import 'providers/match_providers.dart';
 import 'providers/match_control_provider.dart';
 import '../home/providers/home_providers.dart';
 import 'match_control_screen.dart';
+import '../../shared/providers/match_duration_provider.dart';
 
 // Fighter color palette sourced from BJJColors.fighterPalette
-
-/// Default duration options in seconds
-const List<int> _durationOptions = [180, 240, 300, 360, 420, 480, 600];
 
 /// Convert Color to hex string (#RRGGBB)
 String _colorToHex(Color color) {
@@ -23,12 +21,8 @@ String _colorToHex(Color color) {
       .toUpperCase();
 }
 
-/// Format seconds as mm:ss
-String _formatDuration(int seconds) {
-  final m = seconds ~/ 60;
-  final s = seconds % 60;
-  return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-}
+/// Format seconds as mm:ss — delegates to shared [formatDuration].
+String _formatDuration(int seconds) => formatDuration(seconds);
 
 class CreateMatchScreen extends ConsumerStatefulWidget {
   const CreateMatchScreen({super.key});
@@ -44,8 +38,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
 
   Color _f1Color = BJJColors.fighterPalette[0]; // Green
   Color _f2Color = BJJColors.fighterPalette[1]; // Gold
-  int _duration = 300; // 5 minutes
+  late int _duration;
   bool _isPublishing = false;
+  bool _durationInitialized = false;
 
   @override
   void dispose() {
@@ -125,6 +120,11 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Initialize duration from provider only once
+    if (!_durationInitialized) {
+      _duration = ref.read(matchDurationProvider);
+      _durationInitialized = true;
+    }
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
@@ -323,7 +323,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     return Wrap(
       spacing: 10,
       runSpacing: 10,
-      children: _durationOptions.map((seconds) {
+      children: defaultDurationOptions.map((seconds) {
         final isSelected = seconds == _duration;
         return GestureDetector(
           onTap: () => setState(() => _duration = seconds),

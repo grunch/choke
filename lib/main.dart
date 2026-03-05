@@ -4,6 +4,7 @@ import 'package:choke/l10n/generated/app_localizations.dart';
 import 'shared/theme/app_theme.dart';
 import 'shared/providers/locale_provider.dart';
 import 'shared/providers/theme_provider.dart';
+import 'shared/providers/match_duration_provider.dart';
 import 'features/home/home_screen.dart';
 
 import 'features/account/account_screen.dart';
@@ -46,11 +47,13 @@ void main() async {
     debugPrint('NostrService initialization failed: $e\n$st');
   }
 
-  // Load saved theme mode before first frame to avoid flash
+  // Load saved preferences before first frame to avoid flash
   final savedThemeMode = await ThemeModeNotifier.loadSavedThemeMode();
+  final savedDuration = await MatchDurationNotifier.loadSavedDuration();
 
-  // Create theme notifier with hydrated value (no flash on startup)
+  // Create notifiers with hydrated values (no flash on startup)
   final themeNotifier = ThemeModeNotifier()..hydrate(savedThemeMode);
+  final durationNotifier = MatchDurationNotifier()..hydrate(savedDuration);
 
   runApp(
     ProviderScope(
@@ -59,6 +62,7 @@ void main() async {
         nostrServiceProvider.overrideWithValue(nostrService),
         relayConfigServiceProvider.overrideWithValue(relayConfigService),
         themeModeProvider.overrideWith((_) => themeNotifier),
+        matchDurationProvider.overrideWith((_) => durationNotifier),
       ],
       child: const ChokeApp(),
     ),
