@@ -65,6 +65,11 @@ void main() async {
   );
 }
 
+/// Root application widget.
+///
+/// Watches [localeProvider] and [themeModeProvider] to configure the app's
+/// locale and theme mode. Provides both light and dark themes, with the
+/// active mode determined by user preference or system setting.
 class ChokeApp extends ConsumerWidget {
   const ChokeApp({super.key});
 

@@ -9,12 +9,23 @@ const _kThemeModeKey = 'choke:theme-mode';
 ///
 /// Hydrated synchronously from SharedPreferences at startup to avoid
 /// theme flash on first frame.
+/// Provides the current [ThemeMode] for the app.
+///
+/// Defaults to [ThemeMode.system]. The value is persisted to
+/// [SharedPreferences] and can be hydrated before the first frame
+/// to avoid a theme flash on startup.
 final themeModeProvider =
     StateNotifierProvider<ThemeModeNotifier, ThemeMode>((ref) {
   return ThemeModeNotifier();
 });
 
+/// Manages the app's [ThemeMode] state with persistence.
+///
+/// On startup, call [loadSavedThemeMode] to read the saved preference,
+/// then [hydrate] to set the initial value synchronously before the
+/// first frame renders.
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
+  /// Creates a [ThemeModeNotifier] with [ThemeMode.system] as default.
   ThemeModeNotifier() : super(ThemeMode.system);
 
   /// Initialize from SharedPreferences. Call before runApp().
@@ -36,6 +47,9 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
     state = mode;
   }
 
+  /// Updates the theme mode and persists the choice to [SharedPreferences].
+  ///
+  /// Accepts [ThemeMode.system], [ThemeMode.dark], or [ThemeMode.light].
   Future<void> setThemeMode(ThemeMode mode) async {
     state = mode;
     final prefs = await SharedPreferences.getInstance();
