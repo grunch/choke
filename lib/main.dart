@@ -125,23 +125,47 @@ class _MainNavigationState extends State<MainNavigation> {
         onTap: (index) => setState(() => _currentIndex = index),
         items: [
           BottomNavigationBarItem(
-            icon: const Icon(Icons.home_outlined),
-            activeIcon: const Icon(Icons.home),
+            icon: const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Icon(Icons.home_outlined),
+            ),
+            activeIcon: const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Icon(Icons.home),
+            ),
             label: l10n.navHome,
           ),
           BottomNavigationBarItem(
-            icon: const Icon(Icons.sports_martial_arts_outlined),
-            activeIcon: const Icon(Icons.sports_martial_arts),
+            icon: const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Icon(Icons.sports_martial_arts_outlined),
+            ),
+            activeIcon: const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Icon(Icons.sports_martial_arts),
+            ),
             label: l10n.navMatch,
           ),
           BottomNavigationBarItem(
-            icon: const Icon(Icons.person_outline),
-            activeIcon: const Icon(Icons.person),
+            icon: const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Icon(Icons.person_outline),
+            ),
+            activeIcon: const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Icon(Icons.person),
+            ),
             label: l10n.navAccount,
           ),
           BottomNavigationBarItem(
-            icon: const Icon(Icons.settings_outlined),
-            activeIcon: const Icon(Icons.settings),
+            icon: const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Icon(Icons.settings_outlined),
+            ),
+            activeIcon: const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Icon(Icons.settings),
+            ),
             label: l10n.navSettings,
           ),
         ],
