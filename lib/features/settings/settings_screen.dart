@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/providers/locale_provider.dart';
 import '../../shared/providers/theme_provider.dart';
 import 'screens/relay_management_screen.dart';
+
+/// Provider for package info
+final packageInfoProvider = FutureProvider<PackageInfo>((ref) {
+  return PackageInfo.fromPlatform();
+});
 
 /// Map of supported locales to their display names
 const _localeNames = {
@@ -139,13 +145,44 @@ class SettingsScreen extends ConsumerWidget {
           Card(
             child: Column(
               children: [
-                ListTile(
-                  leading: const Icon(
-                    Icons.info_outline,
-                    color: BJJColors.green,
-                  ),
-                  title: Text(l10n.version),
-                  subtitle: const Text('1.0.0'),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final packageInfo = ref.watch(packageInfoProvider);
+                    return packageInfo.when(
+                      data: (info) {
+                        return ListTile(
+                          leading: const Icon(
+                            Icons.info_outline,
+                            color: BJJColors.green,
+                          ),
+                          title: Text(l10n.version),
+                          subtitle: Text(info.version),
+                        );
+                      },
+                      loading: () {
+                        return ListTile(
+                          leading: const Icon(
+                            Icons.info_outline,
+                            color: BJJColors.green,
+                          ),
+                          title: Text(l10n.version),
+                          subtitle: const Text('...'),
+                        );
+                      },
+                      error: (error, stack) {
+                        debugPrint(
+                            'Error loading package info: $error\n$stack');
+                        return ListTile(
+                          leading: const Icon(
+                            Icons.info_outline,
+                            color: BJJColors.green,
+                          ),
+                          title: Text(l10n.version),
+                          subtitle: const Text('Error loading version'),
+                        );
+                      },
+                    );
+                  },
                 ),
                 const Divider(height: 1),
                 ListTile(
