@@ -491,7 +491,7 @@
   "@relayRemoved": {
     "description": "Success message after removing relay"
   },
-  "systemDefault": "System default",
+  "systemDefault": "System",
   "@systemDefault": {
     "description": "System default locale option"
   },
