@@ -46,12 +46,19 @@ void main() async {
     debugPrint('NostrService initialization failed: $e\n$st');
   }
 
+  // Load saved theme mode before first frame to avoid flash
+  final savedThemeMode = await ThemeModeNotifier.loadSavedThemeMode();
+
+  // Create theme notifier with hydrated value (no flash on startup)
+  final themeNotifier = ThemeModeNotifier()..hydrate(savedThemeMode);
+
   runApp(
     ProviderScope(
       overrides: [
         keyManagerProvider.overrideWithValue(keyManager),
         nostrServiceProvider.overrideWithValue(nostrService),
         relayConfigServiceProvider.overrideWithValue(relayConfigService),
+        themeModeProvider.overrideWith((_) => themeNotifier),
       ],
       child: const ChokeApp(),
     ),
