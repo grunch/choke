@@ -115,7 +115,8 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFilterChips(BuildContext context, WidgetRef ref, Set<MatchStatus> selected) {
+  Widget _buildFilterChips(
+      BuildContext context, WidgetRef ref, Set<MatchStatus> selected) {
     final l10n = AppLocalizations.of(context);
 
     return Wrap(
@@ -127,8 +128,8 @@ class HomeScreen extends ConsumerWidget {
           label: Text(_statusLabel(l10n, status)),
           selected: isSelected,
           onSelected: (value) {
-            final current = Set<MatchStatus>.from(
-                ref.read(statusFilterProvider));
+            final current =
+                Set<MatchStatus>.from(ref.read(statusFilterProvider));
             if (value) {
               current.add(status);
             } else {
@@ -342,24 +343,20 @@ class HomeScreen extends ConsumerWidget {
                   Row(
                     children: [
                       if (match.f1Adv > 0)
-                        _buildSmallBadge(
-                            'A:${match.f1Adv}', BJJColors.gold),
+                        _buildSmallBadge('A:${match.f1Adv}', BJJColors.gold),
                       if (match.f1Pen > 0) ...[
                         const SizedBox(width: 4),
-                        _buildSmallBadge(
-                            'P:${match.f1Pen}', BJJColors.error),
+                        _buildSmallBadge('P:${match.f1Pen}', BJJColors.error),
                       ],
                     ],
                   ),
                   Row(
                     children: [
                       if (match.f2Adv > 0)
-                        _buildSmallBadge(
-                            'A:${match.f2Adv}', BJJColors.gold),
+                        _buildSmallBadge('A:${match.f2Adv}', BJJColors.gold),
                       if (match.f2Pen > 0) ...[
                         const SizedBox(width: 4),
-                        _buildSmallBadge(
-                            'P:${match.f2Pen}', BJJColors.error),
+                        _buildSmallBadge('P:${match.f2Pen}', BJJColors.error),
                       ],
                     ],
                   ),

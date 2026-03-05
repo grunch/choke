@@ -240,7 +240,8 @@ class MatchControlNotifier extends StateNotifier<MatchControlState> {
         ],
       );
 
-      debugPrint('MatchControl: published match ${match.id} (${match.status.name})');
+      debugPrint(
+          'MatchControl: published match ${match.id} (${match.status.name})');
     } catch (e) {
       debugPrint('MatchControl: publish failed: $e');
     } finally {
@@ -271,7 +272,8 @@ final matchControlProvider =
     StateNotifierProvider<MatchControlNotifier, MatchControlState>((ref) {
   final match = ref.read(activeMatchProvider);
   if (match == null) {
-    throw StateError('activeMatchProvider must be set before using matchControlProvider');
+    throw StateError(
+        'activeMatchProvider must be set before using matchControlProvider');
   }
   final nostrService = ref.watch(nostrServiceProvider);
   final feedNotifier = ref.read(matchFeedProvider.notifier);

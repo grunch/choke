@@ -175,7 +175,8 @@ class RelayConnection {
   void _handleMessage(dynamic data) {
     try {
       final raw = data as String;
-      debugPrint('NostrService: [$url] received: ${raw.length > 200 ? '${raw.substring(0, 200)}...' : raw}');
+      debugPrint(
+          'NostrService: [$url] received: ${raw.length > 200 ? '${raw.substring(0, 200)}...' : raw}');
       final message = jsonDecode(raw) as List<dynamic>;
       if (message.isEmpty) return;
 
@@ -186,7 +187,8 @@ class RelayConnection {
         _messageController.add(event);
       } else if (type == 'OK' && message.length >= 3) {
         // ["OK", <event_id>, <accepted>, <message>]
-        debugPrint('NostrService: [$url] OK: eventId=${message[1]}, accepted=${message[2]}, msg=${message.length > 3 ? message[3] : ""}');
+        debugPrint(
+            'NostrService: [$url] OK: eventId=${message[1]}, accepted=${message[2]}, msg=${message.length > 3 ? message[3] : ""}');
         _okController.add(message);
       } else if (type == 'NOTICE' && message.length >= 2) {
         debugPrint('NostrService: [$url] NOTICE: ${message[1]}');
@@ -314,10 +316,11 @@ class NostrService {
 
   /// Connect to configured relays on app start
   Future<void> initialize({List<String>? relayUrls}) async {
-    final urls = relayUrls ?? [
-      'wss://relay.mostro.network',
-      'wss://nos.lol',
-    ];
+    final urls = relayUrls ??
+        [
+          'wss://relay.mostro.network',
+          'wss://nos.lol',
+        ];
     for (final url in urls) {
       await addRelay(url);
     }
@@ -440,7 +443,8 @@ class NostrService {
   Future<void> publishEvent(NostrEvent event) async {
     final connectedRelays = _relays.values.where((r) => r.isConnected).toList();
 
-    debugPrint('NostrService: publishing event ${event.id} (kind ${event.kind}, content ${event.content.length} chars) to ${connectedRelays.length} relays');
+    debugPrint(
+        'NostrService: publishing event ${event.id} (kind ${event.kind}, content ${event.content.length} chars) to ${connectedRelays.length} relays');
 
     if (connectedRelays.isEmpty) {
       throw Exception('No connected relays');
@@ -461,7 +465,8 @@ class NostrService {
     );
 
     final successCount = results.where((r) => r).length;
-    debugPrint('NostrService: published to $successCount/${connectedRelays.length} relays');
+    debugPrint(
+        'NostrService: published to $successCount/${connectedRelays.length} relays');
 
     if (successCount == 0) {
       throw Exception('Event rejected by all relays');
@@ -502,7 +507,8 @@ class NostrService {
     final eventApi = nostr.EventApi();
     final finishedEvent = eventApi.finishEvent(nostrEvent, privateKey);
     debugPrint('NostrService: event id: ${finishedEvent.id}');
-    debugPrint('NostrService: event sig: ${finishedEvent.sig.substring(0, 16)}...');
+    debugPrint(
+        'NostrService: event sig: ${finishedEvent.sig.substring(0, 16)}...');
     debugPrint('NostrService: event pubkey: ${finishedEvent.pubkey}');
 
     // Verify the signature before publishing

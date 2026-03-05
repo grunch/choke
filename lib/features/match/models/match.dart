@@ -356,9 +356,8 @@ class Match {
     final json = jsonDecode(event.content) as Map<String, dynamic>;
 
     // Extract and validate d tag (required for kind 31415)
-    final dTags = event.tags
-        .where((tag) => tag.isNotEmpty && tag[0] == 'd')
-        .toList();
+    final dTags =
+        event.tags.where((tag) => tag.isNotEmpty && tag[0] == 'd').toList();
 
     if (dTags.length != 1 || dTags.first.length < 2 || dTags.first[1].isEmpty) {
       throw const FormatException(

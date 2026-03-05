@@ -217,7 +217,8 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
       state = RelayConfigState(
         relays: state.relays,
         isLoading: false,
-        error: 'Unable to connect to relay. Please check the URL and try again.',
+        error:
+            'Unable to connect to relay. Please check the URL and try again.',
       );
       return false;
     }

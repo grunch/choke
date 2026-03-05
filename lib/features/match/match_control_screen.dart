@@ -30,8 +30,7 @@ class MatchControlScreen extends ConsumerStatefulWidget {
   const MatchControlScreen({super.key, required this.match});
 
   @override
-  ConsumerState<MatchControlScreen> createState() =>
-      _MatchControlScreenState();
+  ConsumerState<MatchControlScreen> createState() => _MatchControlScreenState();
 }
 
 class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
@@ -156,8 +155,7 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
                           label: l10n.takedownSweep,
                           points: '+2',
                           color: BJJColors.green,
-                          onTap: () =>
-                              notifier.scorePt2(_selectedFighter),
+                          onTap: () => notifier.scorePt2(_selectedFighter),
                         ),
                         const SizedBox(height: 10),
                         _buildScoringButton(
@@ -165,8 +163,7 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
                           label: l10n.guardPass,
                           points: '+3',
                           color: BJJColors.green,
-                          onTap: () =>
-                              notifier.scorePt3(_selectedFighter),
+                          onTap: () => notifier.scorePt3(_selectedFighter),
                         ),
                         const SizedBox(height: 10),
                         _buildScoringButton(
@@ -174,8 +171,7 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
                           label: l10n.mountBackTake,
                           points: '+4',
                           color: BJJColors.gold,
-                          onTap: () =>
-                              notifier.scorePt4(_selectedFighter),
+                          onTap: () => notifier.scorePt4(_selectedFighter),
                         ),
                         const SizedBox(height: 14),
                         Row(
@@ -215,8 +211,7 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
                                     ? BJJColors.grey
                                     : BJJColors.greyDark,
                               ),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
                           ),
                         ),
@@ -265,7 +260,8 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
                 displayText,
                 style: TextStyle(
                   color: isLow ? BJJColors.error : BJJColors.white,
-                  fontSize: state.match.status == MatchStatus.canceled ? 20 : 40,
+                  fontSize:
+                      state.match.status == MatchStatus.canceled ? 20 : 40,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'monospace',
                 ),
@@ -277,8 +273,7 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
                   vertical: 3,
                 ),
                 decoration: BoxDecoration(
-                  color: _statusColor(state.match.status)
-                      .withOpacity(0.2),
+                  color: _statusColor(state.match.status).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
@@ -311,9 +306,7 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
       decoration: BoxDecoration(
         color: BJJColors.navyDark,
         borderRadius: BorderRadius.circular(16),
-        border: isLeading
-            ? Border.all(color: color, width: 2)
-            : null,
+        border: isLeading ? Border.all(color: color, width: 2) : null,
       ),
       child: Column(
         children: [
@@ -367,7 +360,8 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
       ),
       child: Text(
         text,
-        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w500),
+        style:
+            TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w500),
       ),
     );
   }
@@ -386,9 +380,7 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  color: _selectedFighter == 1
-                      ? f1Color
-                      : Colors.transparent,
+                  color: _selectedFighter == 1 ? f1Color : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
@@ -413,9 +405,7 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  color: _selectedFighter == 2
-                      ? f2Color
-                      : Colors.transparent,
+                  color: _selectedFighter == 2 ? f2Color : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
@@ -478,8 +468,7 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
               ),
             ),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: color,
                 borderRadius: BorderRadius.circular(16),
@@ -640,8 +629,8 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child:
-                Text(l10n.cancel, style: const TextStyle(color: BJJColors.grey)),
+            child: Text(l10n.cancel,
+                style: const TextStyle(color: BJJColors.grey)),
           ),
           ElevatedButton(
             onPressed: () {
