@@ -6,6 +6,22 @@
 - feat: add multi-language support — EN, ES, PT, JA (closes #42) (9c51752)
 
 ### Fixed
+- fix: add flutter gen-l10n step before build in release workflow (4cc9d43)
+- fix: pin intl to ^0.20.0 (required by flutter_localizations) (d12d039)
+- fix: apply CodeRabbit review fixes (2a3ef8c)
+
+### Changed
+- chore: update changelog and version for v1.1.0 (3728f7d)
+- chore: update changelog and version for v1.1.0 (eb9311a)
+- chore: update changelog and version for v1.0.1 (92ec666)
+
+
+## [v1.1.0] - 2026-03-05
+
+### Added
+- feat: add multi-language support — EN, ES, PT, JA (closes #42) (9c51752)
+
+### Fixed
 - fix: pin intl to ^0.20.0 (required by flutter_localizations) (d12d039)
 - fix: apply CodeRabbit review fixes (2a3ef8c)
 
