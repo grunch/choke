@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import 'shared/theme/app_theme.dart';
 import 'shared/providers/locale_provider.dart';
+import 'shared/providers/theme_provider.dart';
 import 'features/home/home_screen.dart';
 
 import 'features/account/account_screen.dart';
@@ -34,10 +35,8 @@ void main() async {
   // Initialize NostrService with configured relays
   final nostrService = NostrService(keyManager);
   try {
-    final enabledRelayUrls = relayConfigs
-        .where((r) => r.isEnabled)
-        .map((r) => r.url)
-        .toList();
+    final enabledRelayUrls =
+        relayConfigs.where((r) => r.isEnabled).map((r) => r.url).toList();
     await nostrService.initialize(
       relayUrls: enabledRelayUrls.isNotEmpty ? enabledRelayUrls : null,
     );
@@ -47,29 +46,44 @@ void main() async {
     debugPrint('NostrService initialization failed: $e\n$st');
   }
 
+  // Load saved theme mode before first frame to avoid flash
+  final savedThemeMode = await ThemeModeNotifier.loadSavedThemeMode();
+
+  // Create theme notifier with hydrated value (no flash on startup)
+  final themeNotifier = ThemeModeNotifier()..hydrate(savedThemeMode);
+
   runApp(
     ProviderScope(
       overrides: [
         keyManagerProvider.overrideWithValue(keyManager),
         nostrServiceProvider.overrideWithValue(nostrService),
         relayConfigServiceProvider.overrideWithValue(relayConfigService),
+        themeModeProvider.overrideWith((_) => themeNotifier),
       ],
       child: const ChokeApp(),
     ),
   );
 }
 
+/// Root application widget.
+///
+/// Watches [localeProvider] and [themeModeProvider] to configure the app's
+/// locale and theme mode. Provides both light and dark themes, with the
+/// active mode determined by user preference or system setting.
 class ChokeApp extends ConsumerWidget {
   const ChokeApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp(
       title: 'Choke',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       locale: locale,

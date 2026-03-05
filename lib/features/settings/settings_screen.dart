@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/providers/locale_provider.dart';
+import '../../shared/providers/theme_provider.dart';
 import 'screens/relay_management_screen.dart';
 
 /// Map of supported locales to their display names
@@ -20,6 +21,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final currentLocale = ref.watch(localeProvider);
+    final currentThemeMode = ref.watch(themeModeProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
@@ -34,7 +36,8 @@ class SettingsScreen extends ConsumerWidget {
               title: Text(l10n.language),
               subtitle: Text(
                 currentLocale != null
-                    ? _localeNames[currentLocale.languageCode] ?? currentLocale.languageCode
+                    ? _localeNames[currentLocale.languageCode] ??
+                        currentLocale.languageCode
                     : l10n.systemDefault,
               ),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -45,15 +48,59 @@ class SettingsScreen extends ConsumerWidget {
           // Appearance
           _buildSectionTitle(context, l10n.sectionAppearance),
           Card(
-            child: Column(
-              children: [
-                SwitchListTile(
-                  title: Text(l10n.darkMode),
-                  subtitle: Text(l10n.alwaysUseDarkTheme),
-                  value: true,
-                  onChanged: (value) {},
-                ),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.palette, color: BJJColors.green),
+                      const SizedBox(width: 12),
+                      Text(
+                        l10n.themeMode,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<ThemeMode>(
+                      segments: [
+                        ButtonSegment<ThemeMode>(
+                          value: ThemeMode.system,
+                          icon: const Icon(Icons.brightness_auto),
+                          label: Text(l10n.systemDefault),
+                        ),
+                        ButtonSegment<ThemeMode>(
+                          value: ThemeMode.dark,
+                          icon: const Icon(Icons.dark_mode),
+                          label: Text(l10n.dark),
+                        ),
+                        ButtonSegment<ThemeMode>(
+                          value: ThemeMode.light,
+                          icon: const Icon(Icons.light_mode),
+                          label: Text(l10n.light),
+                        ),
+                      ],
+                      selected: {currentThemeMode},
+                      onSelectionChanged: (Set<ThemeMode> selected) {
+                        ref
+                            .read(themeModeProvider.notifier)
+                            .setThemeMode(selected.first);
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.followSystemTheme,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: BJJColors.grey,
+                        ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -125,11 +172,7 @@ class SettingsScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: BJJColors.navyDark,
-        title: Text(
-          l10n.selectLanguage,
-          style: const TextStyle(color: BJJColors.white),
-        ),
+        title: Text(l10n.selectLanguage),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -138,8 +181,12 @@ class SettingsScreen extends ConsumerWidget {
               title: Text(
                 l10n.systemDefault,
                 style: TextStyle(
-                  color: currentLocale == null ? BJJColors.green : BJJColors.white,
-                  fontWeight: currentLocale == null ? FontWeight.bold : FontWeight.normal,
+                  color: currentLocale == null
+                      ? BJJColors.green
+                      : Theme.of(context).textTheme.bodyLarge?.color,
+                  fontWeight: currentLocale == null
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                 ),
               ),
               trailing: currentLocale == null
@@ -150,16 +197,20 @@ class SettingsScreen extends ConsumerWidget {
                 Navigator.pop(ctx);
               },
             ),
-            const Divider(color: BJJColors.greyDark),
+            const Divider(),
             // Language options
             ..._localeNames.entries.map((entry) {
-              final isSelected = currentLocale != null && entry.key == currentCode;
+              final isSelected =
+                  currentLocale != null && entry.key == currentCode;
               return ListTile(
                 title: Text(
                   entry.value,
                   style: TextStyle(
-                    color: isSelected ? BJJColors.green : BJJColors.white,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected
+                        ? BJJColors.green
+                        : Theme.of(context).textTheme.bodyLarge?.color,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
                 trailing: isSelected

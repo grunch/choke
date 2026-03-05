@@ -358,14 +358,6 @@
   "@sectionAppearance": {
     "description": "Settings section: appearance"
   },
-  "darkMode": "Dark Mode",
-  "@darkMode": {
-    "description": "Dark mode toggle title"
-  },
-  "alwaysUseDarkTheme": "Always use dark theme",
-  "@alwaysUseDarkTheme": {
-    "description": "Dark mode toggle subtitle"
-  },
   "sectionNostr": "Nostr",
   "@sectionNostr": {
     "description": "Settings section: nostr"
@@ -502,5 +494,21 @@
   "systemDefault": "System default",
   "@systemDefault": {
     "description": "System default locale option"
+  },
+  "themeMode": "Theme",
+  "@themeMode": {
+    "description": "Theme mode selector title"
+  },
+  "dark": "Dark",
+  "@dark": {
+    "description": "Dark theme option"
+  },
+  "light": "Light",
+  "@light": {
+    "description": "Light theme option"
+  },
+  "followSystemTheme": "Follow system setting",
+  "@followSystemTheme": {
+    "description": "Hint text explaining system theme follows device setting"
   }
 }

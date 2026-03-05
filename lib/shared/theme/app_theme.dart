@@ -169,6 +169,112 @@ class AppTheme {
     );
   }
 
+  /// Light theme — light backgrounds, dark text, same BJJ accent colors
+  static ThemeData get lightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: BJJColors.offWhite,
+      colorScheme: const ColorScheme.light(
+        primary: BJJColors.green,
+        onPrimary: BJJColors.white,
+        secondary: BJJColors.gold,
+        onSecondary: BJJColors.navy,
+        surface: BJJColors.white,
+        onSurface: BJJColors.navy,
+        error: BJJColors.error,
+        onError: BJJColors.white,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: BJJColors.white,
+        foregroundColor: BJJColors.navy,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: BJJColors.green,
+          foregroundColor: BJJColors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: BJJColors.green,
+          side: const BorderSide(color: BJJColors.green, width: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: BJJColors.goldDark),
+      ),
+      cardTheme: CardThemeData(
+        color: BJJColors.white,
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: BJJColors.offWhite,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: BJJColors.greyLight),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: BJJColors.greyLight),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: BJJColors.green, width: 2),
+        ),
+        labelStyle: const TextStyle(color: BJJColors.grey),
+        hintStyle: const TextStyle(color: BJJColors.greyLight),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: BJJColors.white,
+        selectedItemColor: BJJColors.green,
+        unselectedItemColor: BJJColors.grey,
+        type: BottomNavigationBarType.fixed,
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: BJJColors.gold,
+        foregroundColor: BJJColors.navy,
+      ),
+      textTheme: const TextTheme(
+        headlineLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          color: BJJColors.navy,
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: BJJColors.navy,
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: BJJColors.navy,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: BJJColors.navy,
+        ),
+        bodyLarge: TextStyle(fontSize: 16, color: BJJColors.navy),
+        bodyMedium: TextStyle(fontSize: 14, color: BJJColors.greyDark),
+        labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: BJJColors.green,
+        ),
+      ),
+    );
+  }
+
   /// Championship theme variant - for special screens
   static ThemeData get championshipTheme {
     return darkTheme.copyWith(

@@ -287,12 +287,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get sectionAppearance => 'Apariencia';
 
   @override
-  String get darkMode => 'Modo oscuro';
-
-  @override
-  String get alwaysUseDarkTheme => 'Usar siempre el tema oscuro';
-
-  @override
   String get sectionNostr => 'Nostr';
 
   @override
@@ -394,4 +388,16 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get systemDefault => 'Predeterminado del sistema';
+
+  @override
+  String get themeMode => 'Tema';
+
+  @override
+  String get dark => 'Oscuro';
+
+  @override
+  String get light => 'Claro';
+
+  @override
+  String get followSystemTheme => 'Seguir configuración del sistema';
 }

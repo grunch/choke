@@ -87,8 +87,6 @@
   "leave": "Sair",
   "settingsTitle": "Configurações",
   "sectionAppearance": "Aparência",
-  "darkMode": "Modo escuro",
-  "alwaysUseDarkTheme": "Sempre usar tema escuro",
   "sectionNostr": "Nostr",
   "relays": "Relays",
   "manageRelayConnections": "Gerenciar conexões de relays",
@@ -121,5 +119,9 @@
   "remove": "Remover",
   "relayAddedSuccessfully": "Relay adicionado com sucesso",
   "relayRemoved": "Relay removido",
-  "systemDefault": "Padrão do sistema"
+  "systemDefault": "Padrão do sistema",
+  "themeMode": "Tema",
+  "dark": "Escuro",
+  "light": "Claro",
+  "followSystemTheme": "Seguir configuração do sistema"
 }
