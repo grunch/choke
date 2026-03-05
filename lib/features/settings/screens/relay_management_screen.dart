@@ -124,11 +124,6 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
                       )
                     : const Icon(Icons.add),
                 label: Text(_isAdding ? l10n.adding : l10n.add),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: BJJColors.green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                ),
               ),
             ),
           ],
@@ -166,6 +161,7 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
     RelayConfigNotifier notifier,
   ) {
     final isDefault = RelayConfigService.defaultRelays.contains(relay.url);
+    final colors = Theme.of(context).colorScheme;
 
     // Swipe-to-delete for custom relays
     if (!isDefault) {
@@ -176,15 +172,12 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
         background: Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: BJJColors.error,
+            color: colors.error,
             borderRadius: BorderRadius.circular(12),
           ),
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 20),
-          child: const Icon(
-            Icons.delete,
-            color: BJJColors.white,
-          ),
+          child: Icon(Icons.delete, color: colors.onError),
         ),
         child: _buildRelayCardContent(context, relay, notifier, isDefault),
       );
@@ -234,7 +227,7 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
         trailing: Switch(
           value: relay.isEnabled,
           onChanged: (value) => notifier.toggleRelay(relay.url),
-          activeColor: BJJColors.green,
+          activeColor: colorScheme.primary,
         ),
       ),
     );
@@ -311,6 +304,7 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
     RelayConfigNotifier notifier,
   ) async {
     final l10n = AppLocalizations.of(context);
+    final colors = Theme.of(context).colorScheme;
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -326,7 +320,7 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(
               l10n.remove,
-              style: const TextStyle(color: BJJColors.error),
+              style: TextStyle(color: colors.error),
             ),
           ),
         ],
@@ -344,20 +338,22 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
   }
 
   void _showErrorSnackBar(BuildContext context, String message) {
+    final colors = Theme.of(context).colorScheme;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: colors.error,
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
   void _showSuccessSnackBar(BuildContext context, String message) {
+    final colors = Theme.of(context).colorScheme;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: BJJColors.green,
+        backgroundColor: colors.primary,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
       ),

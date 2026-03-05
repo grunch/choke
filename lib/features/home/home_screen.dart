@@ -9,13 +9,13 @@ import '../match/providers/match_control_provider.dart';
 import 'providers/home_providers.dart';
 
 /// Parse hex color string (#RRGGBB) to Color with fallback
-Color _hexToColor(String hex) {
+Color _hexToColor(String hex, Color fallback) {
   try {
     final h = hex.replaceFirst('#', '');
-    if (h.length != 6) return BJJColors.grey;
+    if (h.length != 6) return fallback;
     return Color(int.parse('FF$h', radix: 16));
   } catch (_) {
-    return BJJColors.grey;
+    return fallback;
   }
 }
 
@@ -27,17 +27,17 @@ class HomeScreen extends ConsumerWidget {
     final filteredMatches = ref.watch(filteredMatchListProvider);
     final statusFilter = ref.watch(statusFilterProvider);
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: BJJColors.navy,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const CreateMatchScreen()),
           );
         },
-        backgroundColor: BJJColors.green,
-        child: const Icon(Icons.add, color: BJJColors.white),
+        child: const Icon(Icons.add),
       ),
       body: SafeArea(
         child: Column(
@@ -54,21 +54,14 @@ class HomeScreen extends ConsumerWidget {
                     children: [
                       Text(
                         l10n.appTitle,
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(
-                              color: BJJColors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         l10n.homeSubtitle,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(color: BJJColors.grey),
+                        style: theme.textTheme.bodyMedium,
                       ),
                     ],
                   ),
@@ -87,9 +80,9 @@ class HomeScreen extends ConsumerWidget {
             // Match list
             Expanded(
               child: Container(
-                decoration: const BoxDecoration(
-                  color: BJJColors.offWhite,
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainerHighest,
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(32),
                     topRight: Radius.circular(32),
                   ),
@@ -118,6 +111,7 @@ class HomeScreen extends ConsumerWidget {
   Widget _buildFilterChips(
       BuildContext context, WidgetRef ref, Set<MatchStatus> selected) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
 
     return Wrap(
       spacing: 8,
@@ -140,15 +134,17 @@ class HomeScreen extends ConsumerWidget {
           selectedColor: _statusColor(status).withOpacity(0.2),
           checkmarkColor: _statusColor(status),
           labelStyle: TextStyle(
-            color: isSelected ? _statusColor(status) : BJJColors.grey,
+            color: isSelected
+                ? _statusColor(status)
+                : theme.textTheme.bodyMedium?.color,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
             fontSize: 12,
           ),
-          backgroundColor: BJJColors.navyDark,
+          backgroundColor: theme.colorScheme.surface,
           side: BorderSide(
             color: isSelected
                 ? _statusColor(status).withOpacity(0.5)
-                : BJJColors.greyDark.withOpacity(0.3),
+                : theme.colorScheme.outline.withOpacity(0.3),
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -160,6 +156,8 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildEmptyState(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     return Center(
       child: Column(
@@ -169,8 +167,8 @@ class HomeScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           Text(
             l10n.noMatchesYet,
-            style: const TextStyle(
-              color: BJJColors.navy,
+            style: TextStyle(
+              color: colors.onSurface,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
@@ -178,10 +176,7 @@ class HomeScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             l10n.createNewOne,
-            style: TextStyle(
-              color: BJJColors.greyDark,
-              fontSize: 14,
-            ),
+            style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14),
           ),
         ],
       ),
@@ -190,8 +185,10 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildMatchCard(BuildContext context, WidgetRef ref, Match match) {
     final l10n = AppLocalizations.of(context);
-    final f1Color = _hexToColor(match.f1Color);
-    final f2Color = _hexToColor(match.f2Color);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final f1Color = _hexToColor(match.f1Color, colors.outline);
+    final f2Color = _hexToColor(match.f2Color, colors.outline);
 
     return InkWell(
       onTap: () {
@@ -207,11 +204,11 @@ class HomeScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: BJJColors.white,
+          color: colors.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: BJJColors.navy.withOpacity(0.06),
+              color: colors.shadow.withOpacity(0.06),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -226,7 +223,7 @@ class HomeScreen extends ConsumerWidget {
                 Text(
                   '#${match.id}',
                   style: TextStyle(
-                    color: BJJColors.greyDark,
+                    color: theme.textTheme.bodyMedium?.color,
                     fontSize: 12,
                     fontFamily: 'monospace',
                     fontWeight: FontWeight.w500,
@@ -269,8 +266,8 @@ class HomeScreen extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     match.f1Name,
-                    style: const TextStyle(
-                      color: BJJColors.navy,
+                    style: TextStyle(
+                      color: colors.onSurface,
                       fontWeight: FontWeight.w500,
                       fontSize: 14,
                     ),
@@ -281,8 +278,8 @@ class HomeScreen extends ConsumerWidget {
                   '${match.f1Score}',
                   style: TextStyle(
                     color: match.f1Score > match.f2Score
-                        ? BJJColors.green
-                        : BJJColors.navy,
+                        ? colors.primary
+                        : colors.onSurface,
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
                   ),
@@ -291,18 +288,15 @@ class HomeScreen extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
                     l10n.vs,
-                    style: TextStyle(
-                      color: BJJColors.greyDark,
-                      fontSize: 12,
-                    ),
+                    style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
                   ),
                 ),
                 Text(
                   '${match.f2Score}',
                   style: TextStyle(
                     color: match.f2Score > match.f1Score
-                        ? BJJColors.green
-                        : BJJColors.navy,
+                        ? colors.primary
+                        : colors.onSurface,
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
                   ),
@@ -311,8 +305,8 @@ class HomeScreen extends ConsumerWidget {
                   child: Text(
                     match.f2Name,
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      color: BJJColors.navy,
+                    style: TextStyle(
+                      color: colors.onSurface,
                       fontWeight: FontWeight.w500,
                       fontSize: 14,
                     ),

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
-import '../../shared/theme/app_theme.dart';
 import '../../shared/providers/locale_provider.dart';
 import '../../shared/providers/theme_provider.dart';
 import '../../shared/providers/match_duration_provider.dart';
@@ -30,6 +29,8 @@ class SettingsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final currentLocale = ref.watch(localeProvider);
     final currentThemeMode = ref.watch(themeModeProvider);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
@@ -40,7 +41,7 @@ class SettingsScreen extends ConsumerWidget {
           _buildSectionTitle(context, l10n.sectionLanguage),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.language, color: BJJColors.green),
+              leading: Icon(Icons.language, color: colors.primary),
               title: Text(l10n.language),
               subtitle: Text(
                 currentLocale != null
@@ -63,11 +64,11 @@ class SettingsScreen extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.palette, color: BJJColors.green),
+                      Icon(Icons.palette, color: colors.primary),
                       const SizedBox(width: 12),
                       Text(
                         l10n.themeMode,
-                        style: Theme.of(context).textTheme.titleMedium,
+                        style: theme.textTheme.titleMedium,
                       ),
                     ],
                   ),
@@ -103,9 +104,7 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     l10n.followSystemTheme,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: BJJColors.grey,
-                        ),
+                    style: theme.textTheme.bodySmall,
                   ),
                 ],
               ),
@@ -116,7 +115,7 @@ class SettingsScreen extends ConsumerWidget {
           _buildSectionTitle(context, l10n.sectionNostr),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.dns, color: BJJColors.green),
+              leading: Icon(Icons.dns, color: colors.primary),
               title: Text(l10n.relays),
               subtitle: Text(l10n.manageRelayConnections),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -137,7 +136,7 @@ class SettingsScreen extends ConsumerWidget {
               builder: (context, ref, _) {
                 final duration = ref.watch(matchDurationProvider);
                 return ListTile(
-                  leading: const Icon(Icons.timer, color: BJJColors.green),
+                  leading: Icon(Icons.timer, color: colors.primary),
                   title: Text(l10n.defaultMatchDuration),
                   subtitle: Text(formatDuration(duration)),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -158,9 +157,9 @@ class SettingsScreen extends ConsumerWidget {
                     return packageInfo.when(
                       data: (info) {
                         return ListTile(
-                          leading: const Icon(
+                          leading: Icon(
                             Icons.info_outline,
-                            color: BJJColors.green,
+                            color: colors.primary,
                           ),
                           title: Text(l10n.version),
                           subtitle: Text(info.version),
@@ -168,9 +167,9 @@ class SettingsScreen extends ConsumerWidget {
                       },
                       loading: () {
                         return ListTile(
-                          leading: const Icon(
+                          leading: Icon(
                             Icons.info_outline,
-                            color: BJJColors.green,
+                            color: colors.primary,
                           ),
                           title: Text(l10n.version),
                           subtitle: const Text('...'),
@@ -180,9 +179,9 @@ class SettingsScreen extends ConsumerWidget {
                         debugPrint(
                             'Error loading package info: $error\n$stack');
                         return ListTile(
-                          leading: const Icon(
+                          leading: Icon(
                             Icons.info_outline,
-                            color: BJJColors.green,
+                            color: colors.primary,
                           ),
                           title: Text(l10n.version),
                           subtitle: const Text('Error loading version'),
@@ -193,7 +192,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.code, color: BJJColors.green),
+                  leading: Icon(Icons.code, color: colors.primary),
                   title: Text(l10n.sourceCode),
                   subtitle: const Text('github.com/grunch/choke'),
                   trailing: const Icon(Icons.open_in_new, size: 16),
@@ -204,8 +203,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading:
-                      const Icon(Icons.description, color: BJJColors.green),
+                  leading: Icon(Icons.description, color: colors.primary),
                   title: Text(l10n.licenseLabel),
                   subtitle: Text(l10n.licenseSubtitle),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -257,6 +255,7 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showLanguagePicker(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final colors = Theme.of(context).colorScheme;
     final currentLocale = ref.read(localeProvider);
     final currentCode = currentLocale?.languageCode ??
         Localizations.localeOf(context).languageCode;
@@ -274,7 +273,7 @@ class SettingsScreen extends ConsumerWidget {
                 l10n.systemDefault,
                 style: TextStyle(
                   color: currentLocale == null
-                      ? BJJColors.green
+                      ? colors.primary
                       : Theme.of(context).textTheme.bodyLarge?.color,
                   fontWeight: currentLocale == null
                       ? FontWeight.bold
@@ -282,7 +281,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
               trailing: currentLocale == null
-                  ? const Icon(Icons.check, color: BJJColors.green)
+                  ? Icon(Icons.check, color: colors.primary)
                   : null,
               onTap: () {
                 ref.read(localeProvider.notifier).state = null;
@@ -299,14 +298,14 @@ class SettingsScreen extends ConsumerWidget {
                   entry.value,
                   style: TextStyle(
                     color: isSelected
-                        ? BJJColors.green
+                        ? colors.primary
                         : Theme.of(context).textTheme.bodyLarge?.color,
                     fontWeight:
                         isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
                 trailing: isSelected
-                    ? const Icon(Icons.check, color: BJJColors.green)
+                    ? Icon(Icons.check, color: colors.primary)
                     : null,
                 onTap: () {
                   ref.read(localeProvider.notifier).state = Locale(entry.key);
@@ -344,7 +343,6 @@ class SettingsScreen extends ConsumerWidget {
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: BJJColors.grey,
               letterSpacing: 1.5,
             ),
       ),
