@@ -46,42 +46,29 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogBuildContext, setDialogState) {
           final l10n = AppLocalizations.of(dialogBuildContext);
+          final theme = Theme.of(dialogBuildContext);
+          final colors = theme.colorScheme;
           return AlertDialog(
-            backgroundColor: BJJColors.navyDark,
+            backgroundColor: colors.surface,
             title: Text(
               l10n.importPrivateKey,
-              style: const TextStyle(color: BJJColors.white),
+              style: TextStyle(color: colors.onSurface),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   l10n.importWarning,
-                  style: const TextStyle(color: BJJColors.grey),
+                  style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _importController,
-                  style: const TextStyle(color: BJJColors.white),
+                  style: TextStyle(color: colors.onSurface),
                   decoration: InputDecoration(
                     hintText: l10n.enterNsec,
-                    hintStyle: TextStyle(
-                      color: BJJColors.grey.withValues(alpha: 0.6),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: BJJColors.greyDark),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: BJJColors.greyDark),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: BJJColors.green),
-                    ),
                     errorText: dialogError,
-                    errorStyle: const TextStyle(color: Colors.red),
+                    errorStyle: TextStyle(color: colors.error),
                   ),
                 ),
               ],
@@ -92,10 +79,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                   Navigator.pop(dialogContext);
                   _importController.clear();
                 },
-                child: Text(
-                  l10n.cancel,
-                  style: const TextStyle(color: BJJColors.grey),
-                ),
+                child: Text(l10n.cancel),
               ),
               ElevatedButton(
                 onPressed: dialogImporting
@@ -150,8 +134,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                         }
                       },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: BJJColors.gold,
-                  foregroundColor: BJJColors.navy,
+                  backgroundColor: colors.secondary,
+                  foregroundColor: colors.onSecondary,
                 ),
                 child: dialogImporting
                     ? const SizedBox(
@@ -173,9 +157,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final npubAsync = ref.watch(npubProvider);
     final nsecAsync = ref.watch(nsecProvider);
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: BJJColors.navy,
       appBar: AppBar(
         title: Text(l10n.accountTitle),
         actions: [
@@ -200,35 +185,28 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [BJJColors.green, BJJColors.gold],
+                        gradient: LinearGradient(
+                          colors: [colors.primary, colors.secondary],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(24),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.shield,
                         size: 40,
-                        color: BJJColors.white,
+                        color: colors.onPrimary,
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       l10n.yourNostrIdentity,
-                      style: const TextStyle(
-                        color: BJJColors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: theme.textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       l10n.keypairDescription,
-                      style: TextStyle(
-                        color: BJJColors.grey.withValues(alpha: 0.8),
-                        fontSize: 14,
-                      ),
+                      style: theme.textTheme.bodyMedium,
                     ),
                   ],
                 ),
@@ -236,15 +214,15 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               const SizedBox(height: 32),
 
               // Public Key Section (npub)
-              _buildSectionTitle(l10n.publicKeyNpub),
+              _buildSectionTitle(context, l10n.publicKeyNpub),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: BJJColors.navyDark,
+                  color: colors.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: BJJColors.green.withValues(alpha: 0.3),
+                    color: colors.primary.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Column(
@@ -254,8 +232,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                         children: [
                           Text(
                             npub ?? l10n.generating,
-                            style: const TextStyle(
-                              color: BJJColors.white,
+                            style: TextStyle(
+                              color: colors.onSurface,
                               fontFamily: 'monospace',
                               fontSize: 13,
                             ),
@@ -267,12 +245,14 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                             children: [
                               if (npub != null) ...[
                                 _buildActionButton(
+                                  context: context,
                                   icon: Icons.copy,
                                   label: l10n.copy,
                                   onTap: () =>
                                       _copyToClipboard(npub, l10n.publicKey),
                                 ),
                                 _buildActionButton(
+                                  context: context,
                                   icon: Icons.qr_code,
                                   label: l10n.showQr,
                                   onTap: () => _showQRCode(context, npub),
@@ -280,7 +260,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                               ] else
                                 Text(
                                   l10n.keyUnavailable,
-                                  style: const TextStyle(color: BJJColors.grey),
+                                  style: theme.textTheme.bodyMedium,
                                 ),
                             ],
                           ),
@@ -289,7 +269,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                       loading: () => const CircularProgressIndicator(),
                       error: (_, __) => Text(
                         l10n.errorLoadingKey,
-                        style: const TextStyle(color: Colors.red),
+                        style: TextStyle(color: colors.error),
                       ),
                     ),
                   ],
@@ -298,14 +278,16 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               const SizedBox(height: 24),
 
               // Private Key Section (nsec)
-              _buildSectionTitle(l10n.privateKeyNsec),
+              _buildSectionTitle(context, l10n.privateKeyNsec),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: BJJColors.navyDark,
+                  color: colors.surface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: colors.error.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -313,7 +295,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                       children: [
                         Icon(
                           Icons.warning_amber,
-                          color: Colors.red.withValues(alpha: 0.8),
+                          color: colors.error.withValues(alpha: 0.8),
                           size: 20,
                         ),
                         const SizedBox(width: 8),
@@ -321,7 +303,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           child: Text(
                             l10n.neverSharePrivateKey,
                             style: TextStyle(
-                              color: Colors.red.withValues(alpha: 0.8),
+                              color: colors.error.withValues(alpha: 0.8),
                               fontSize: 12,
                             ),
                           ),
@@ -339,7 +321,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: BJJColors.navy,
+                                color: theme.scaffoldBackgroundColor,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
@@ -351,8 +333,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                                           : '••••••••••••••••••••••••••••••••••••••••••••••••••',
                                       style: TextStyle(
                                         color: _isNsecVisible
-                                            ? BJJColors.white
-                                            : BJJColors.grey,
+                                            ? colors.onSurface
+                                            : theme.textTheme.bodyMedium?.color,
                                         fontFamily: 'monospace',
                                         fontSize: 13,
                                       ),
@@ -362,7 +344,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                                     _isNsecVisible
                                         ? Icons.visibility_off
                                         : Icons.visibility,
-                                    color: BJJColors.grey,
+                                    color: theme.textTheme.bodyMedium?.color,
                                   ),
                                 ],
                               ),
@@ -371,14 +353,14 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           const SizedBox(height: 12),
                           Text(
                             l10n.tapToReveal,
-                            style: TextStyle(
-                              color: BJJColors.grey.withValues(alpha: 0.6),
+                            style: theme.textTheme.bodyMedium?.copyWith(
                               fontSize: 12,
                             ),
                           ),
                           const SizedBox(height: 12),
                           if (_isNsecVisible)
                             _buildActionButton(
+                              context: context,
                               icon: Icons.copy,
                               label: l10n.copyToClipboard,
                               onTap: () =>
@@ -389,7 +371,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                       loading: () => const CircularProgressIndicator(),
                       error: (_, __) => Text(
                         l10n.errorLoadingKey,
-                        style: const TextStyle(color: Colors.red),
+                        style: TextStyle(color: colors.error),
                       ),
                     ),
                   ],
@@ -398,21 +380,24 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               const SizedBox(height: 32),
 
               // Security Tips
-              _buildSectionTitle(l10n.securityTips),
+              _buildSectionTitle(context, l10n.securityTips),
               const SizedBox(height: 8),
               _buildTipCard(
+                context: context,
                 icon: Icons.backup,
                 title: l10n.tipBackupTitle,
                 description: l10n.tipBackupDescription,
               ),
               const SizedBox(height: 8),
               _buildTipCard(
+                context: context,
                 icon: Icons.no_accounts,
                 title: l10n.tipNeverShareTitle,
                 description: l10n.tipNeverShareDescription,
               ),
               const SizedBox(height: 8),
               _buildTipCard(
+                context: context,
                 icon: Icons.phone_android,
                 title: l10n.tipSecureStorageTitle,
                 description: l10n.tipSecureStorageDescription,
@@ -424,11 +409,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(BuildContext context, String title) {
+    final theme = Theme.of(context);
     return Text(
       title.toUpperCase(),
-      style: const TextStyle(
-        color: BJJColors.grey,
+      style: TextStyle(
+        color: theme.textTheme.bodyMedium?.color,
         fontSize: 12,
         fontWeight: FontWeight.w600,
         letterSpacing: 1.5,
@@ -437,28 +423,30 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Widget _buildActionButton({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required VoidCallback onTap,
   }) {
+    final colors = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: BJJColors.green.withValues(alpha: 0.2),
+          color: colors.primary.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: BJJColors.green, size: 18),
+            Icon(icon, color: colors.primary, size: 18),
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(
-                color: BJJColors.green,
+              style: TextStyle(
+                color: colors.primary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -469,19 +457,22 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Widget _buildTipCard({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required String description,
   }) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: BJJColors.navyDark,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(icon, color: BJJColors.gold, size: 20),
+          Icon(icon, color: colors.secondary, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -489,8 +480,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: BJJColors.white,
+                  style: TextStyle(
+                    color: colors.onSurface,
                     fontWeight: FontWeight.w500,
                     fontSize: 14,
                   ),
@@ -498,10 +489,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 const SizedBox(height: 2),
                 Text(
                   description,
-                  style: TextStyle(
-                    color: BJJColors.grey.withValues(alpha: 0.8),
-                    fontSize: 12,
-                  ),
+                  style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
                 ),
               ],
             ),
@@ -516,11 +504,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       context: context,
       builder: (context) {
         final l10n = AppLocalizations.of(context);
+        final theme = Theme.of(context);
+        final colors = theme.colorScheme;
         return AlertDialog(
-          backgroundColor: BJJColors.navyDark,
+          backgroundColor: colors.surface,
           title: Text(
             l10n.yourPublicKey,
-            style: const TextStyle(color: BJJColors.white),
+            style: TextStyle(color: colors.onSurface),
             textAlign: TextAlign.center,
           ),
           content: Column(
@@ -552,8 +542,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               const SizedBox(height: 16),
               Text(
                 data,
-                style: const TextStyle(
-                  color: BJJColors.grey,
+                style: TextStyle(
+                  color: theme.textTheme.bodyMedium?.color,
                   fontSize: 11,
                   fontFamily: 'monospace',
                 ),
@@ -564,7 +554,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               const SizedBox(height: 8),
               Text(
                 l10n.scanQrToShare,
-                style: const TextStyle(color: BJJColors.grey, fontSize: 12),
+                style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -572,10 +562,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(
-                l10n.close,
-                style: const TextStyle(color: BJJColors.green),
-              ),
+              child: Text(l10n.close),
             ),
           ],
         );
