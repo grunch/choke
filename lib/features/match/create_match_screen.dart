@@ -99,13 +99,14 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
       debugPrint('CreateMatch: publish failed: $e');
       if (mounted) {
         final l10n = AppLocalizations.of(context);
+        final colors = Theme.of(context).colorScheme;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.couldNotPublishMatch),
-            backgroundColor: BJJColors.error,
+            backgroundColor: colors.error,
             action: SnackBarAction(
               label: l10n.retry,
-              textColor: BJJColors.white,
+              textColor: colors.onError,
               onPressed: _createMatch,
             ),
           ),
@@ -126,9 +127,10 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
       _durationInitialized = true;
     }
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: BJJColors.navy,
       appBar: AppBar(
         title: Text(l10n.newMatch),
         leading: IconButton(
@@ -145,15 +147,14 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Fighter 1
-                _buildSectionLabel(l10n.fighter1),
+                _buildSectionLabel(context, l10n.fighter1),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _f1NameController,
-                  style: const TextStyle(color: BJJColors.white),
+                  style: TextStyle(color: colors.onSurface),
                   decoration: InputDecoration(
                     hintText: l10n.enterFighterName,
-                    prefixIcon:
-                        const Icon(Icons.person, color: BJJColors.green),
+                    prefixIcon: Icon(Icons.person, color: colors.primary),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -164,6 +165,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                 ),
                 const SizedBox(height: 12),
                 _buildColorPicker(
+                  context: context,
                   label: l10n.fighter1Color,
                   selectedColor: _f1Color,
                   onColorSelected: (color) => setState(() => _f1Color = color),
@@ -172,14 +174,14 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                 const SizedBox(height: 32),
 
                 // Fighter 2
-                _buildSectionLabel(l10n.fighter2),
+                _buildSectionLabel(context, l10n.fighter2),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _f2NameController,
-                  style: const TextStyle(color: BJJColors.white),
+                  style: TextStyle(color: colors.onSurface),
                   decoration: InputDecoration(
                     hintText: l10n.enterFighterName,
-                    prefixIcon: const Icon(Icons.person, color: BJJColors.gold),
+                    prefixIcon: Icon(Icons.person, color: colors.secondary),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -190,6 +192,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                 ),
                 const SizedBox(height: 12),
                 _buildColorPicker(
+                  context: context,
                   label: l10n.fighter2Color,
                   selectedColor: _f2Color,
                   onColorSelected: (color) => setState(() => _f2Color = color),
@@ -198,9 +201,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                 const SizedBox(height: 32),
 
                 // Duration
-                _buildSectionLabel(l10n.matchDuration),
+                _buildSectionLabel(context, l10n.matchDuration),
                 const SizedBox(height: 12),
-                _buildDurationSelector(),
+                _buildDurationSelector(context),
 
                 const SizedBox(height: 48),
 
@@ -210,23 +213,11 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   height: 56,
                   child: ElevatedButton(
                     onPressed: _isPublishing ? null : _createMatch,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: BJJColors.green,
-                      foregroundColor: BJJColors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      disabledBackgroundColor:
-                          BJJColors.green.withValues(alpha: 0.5),
-                    ),
                     child: _isPublishing
                         ? const SizedBox(
                             width: 24,
                             height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: BJJColors.white,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : Text(
                             l10n.createMatch,
@@ -245,11 +236,11 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     );
   }
 
-  Widget _buildSectionLabel(String label) {
+  Widget _buildSectionLabel(BuildContext context, String label) {
     return Text(
       label.toUpperCase(),
-      style: const TextStyle(
-        color: BJJColors.grey,
+      style: TextStyle(
+        color: Theme.of(context).textTheme.bodyMedium?.color,
         fontSize: 12,
         fontWeight: FontWeight.w600,
         letterSpacing: 1.5,
@@ -258,19 +249,19 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   }
 
   Widget _buildColorPicker({
+    required BuildContext context,
     required String label,
     required Color selectedColor,
     required ValueChanged<Color> onColorSelected,
   }) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: TextStyle(
-            color: BJJColors.grey.withValues(alpha: 0.8),
-            fontSize: 12,
-          ),
+          style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -288,8 +279,8 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: isSelected
-                        ? BJJColors.white
-                        : BJJColors.greyDark.withValues(alpha: 0.5),
+                        ? colors.onSurface
+                        : colors.outline.withValues(alpha: 0.5),
                     width: isSelected ? 3 : 1,
                   ),
                   boxShadow: isSelected
@@ -319,7 +310,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     );
   }
 
-  Widget _buildDurationSelector() {
+  Widget _buildDurationSelector(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Wrap(
       spacing: 10,
       runSpacing: 10,
@@ -330,18 +323,20 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isSelected ? BJJColors.green : BJJColors.navyDark,
+              color: isSelected ? colors.primary : colors.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
-                    ? BJJColors.green
-                    : BJJColors.greyDark.withValues(alpha: 0.5),
+                    ? colors.primary
+                    : colors.outline.withValues(alpha: 0.5),
               ),
             ),
             child: Text(
               _formatDuration(seconds),
               style: TextStyle(
-                color: isSelected ? BJJColors.white : BJJColors.grey,
+                color: isSelected
+                    ? colors.onPrimary
+                    : theme.textTheme.bodyMedium?.color,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 fontSize: 16,
                 fontFamily: 'monospace',
