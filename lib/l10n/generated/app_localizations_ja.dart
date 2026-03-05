@@ -274,12 +274,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get sectionAppearance => '外観';
 
   @override
-  String get darkMode => 'ダークモード';
-
-  @override
-  String get alwaysUseDarkTheme => '常にダークテーマを使用';
-
-  @override
   String get sectionNostr => 'Nostr';
 
   @override
@@ -379,4 +373,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get systemDefault => 'システムのデフォルト';
+
+  @override
+  String get themeMode => 'テーマ';
+
+  @override
+  String get dark => 'ダーク';
+
+  @override
+  String get light => 'ライト';
+
+  @override
+  String get followSystemTheme => 'システム設定に従う';
 }

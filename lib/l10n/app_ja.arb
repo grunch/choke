@@ -87,8 +87,6 @@
   "leave": "離れる",
   "settingsTitle": "設定",
   "sectionAppearance": "外観",
-  "darkMode": "ダークモード",
-  "alwaysUseDarkTheme": "常にダークテーマを使用",
   "sectionNostr": "Nostr",
   "relays": "リレー",
   "manageRelayConnections": "リレー接続を管理",
@@ -121,5 +119,9 @@
   "remove": "削除",
   "relayAddedSuccessfully": "リレーが正常に追加されました",
   "relayRemoved": "リレーが削除されました",
-  "systemDefault": "システムのデフォルト"
+  "systemDefault": "システムのデフォルト",
+  "themeMode": "テーマ",
+  "dark": "ダーク",
+  "light": "ライト",
+  "followSystemTheme": "システム設定に従う"
 }

@@ -27,6 +27,7 @@ dependencies:
 
   # Storage
   flutter_secure_storage: ^9.2.4
+  shared_preferences: ^2.3.4
 
   # QR
   qr_flutter: ^4.1.0
