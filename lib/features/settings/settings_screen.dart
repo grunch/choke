@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/providers/locale_provider.dart';
@@ -190,7 +191,10 @@ class SettingsScreen extends ConsumerWidget {
                   title: Text(l10n.sourceCode),
                   subtitle: const Text('github.com/grunch/choke'),
                   trailing: const Icon(Icons.open_in_new, size: 16),
-                  onTap: () {},
+                  onTap: () => launchUrl(
+                    Uri.parse('https://github.com/grunch/choke'),
+                    mode: LaunchMode.externalApplication,
+                  ),
                 ),
                 const Divider(height: 1),
                 ListTile(
