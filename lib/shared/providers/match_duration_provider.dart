@@ -4,7 +4,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 const _kMatchDurationKey = 'choke:default-match-duration';
 
 /// Default match duration options in seconds (3–10 minutes).
-const List<int> defaultDurationOptions = [180, 240, 300, 360, 420, 480, 600];
+const List<int> defaultDurationOptions = [
+  180,
+  240,
+  300,
+  360,
+  420,
+  480,
+  540,
+  600,
+];
 
 /// Default duration: 5 minutes (300 seconds).
 const int defaultMatchDuration = 300;
@@ -24,21 +33,35 @@ class MatchDurationNotifier extends StateNotifier<int> {
   MatchDurationNotifier() : super(defaultMatchDuration);
 
   /// Load saved duration from [SharedPreferences]. Call before runApp().
+  ///
+  /// Returns [defaultMatchDuration] if no value is stored or the stored
+  /// value is not in [defaultDurationOptions].
   static Future<int> loadSavedDuration() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getInt(_kMatchDurationKey) ?? defaultMatchDuration;
+    final value = prefs.getInt(_kMatchDurationKey);
+    if (value != null && defaultDurationOptions.contains(value)) {
+      return value;
+    }
+    return defaultMatchDuration;
   }
 
   /// Set initial duration synchronously (called at startup).
   void hydrate(int seconds) {
-    state = seconds;
+    state = defaultDurationOptions.contains(seconds)
+        ? seconds
+        : defaultMatchDuration;
   }
 
   /// Updates the default duration and persists to [SharedPreferences].
+  ///
+  /// Falls back to [defaultMatchDuration] if [seconds] is not a valid option.
   Future<void> setDuration(int seconds) async {
-    state = seconds;
+    final normalized = defaultDurationOptions.contains(seconds)
+        ? seconds
+        : defaultMatchDuration;
+    state = normalized;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_kMatchDurationKey, seconds);
+    await prefs.setInt(_kMatchDurationKey, normalized);
   }
 }
 
