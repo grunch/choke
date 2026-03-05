@@ -115,9 +115,7 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
             SizedBox(
               height: 56,
               child: ElevatedButton.icon(
-                onPressed: _isAdding
-                    ? null
-                    : () => _addRelay(notifier),
+                onPressed: _isAdding ? null : () => _addRelay(notifier),
                 icon: _isAdding
                     ? const SizedBox(
                         width: 20,
@@ -265,15 +263,16 @@ class _RelayManagementScreenState extends ConsumerState<RelayManagementScreen> {
           Text(
             l10n.addRelayToStart,
             style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
     );
   }
 
-  String _getStatusText(BuildContext context, RelayConfig relay, bool isDefault) {
+  String _getStatusText(
+      BuildContext context, RelayConfig relay, bool isDefault) {
     final l10n = AppLocalizations.of(context);
 
     if (!relay.isEnabled) return l10n.relayStatusDisabled;

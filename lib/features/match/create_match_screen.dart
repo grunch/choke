@@ -18,8 +18,9 @@ const List<int> _durationOptions = [180, 240, 300, 360, 420, 480, 600];
 /// Convert Color to hex string (#RRGGBB)
 String _colorToHex(Color color) {
   return '#${color.red.toRadixString(16).padLeft(2, '0')}'
-      '${color.green.toRadixString(16).padLeft(2, '0')}'
-      '${color.blue.toRadixString(16).padLeft(2, '0')}'.toUpperCase();
+          '${color.green.toRadixString(16).padLeft(2, '0')}'
+          '${color.blue.toRadixString(16).padLeft(2, '0')}'
+      .toUpperCase();
 }
 
 /// Format seconds as mm:ss
@@ -165,8 +166,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                 _buildColorPicker(
                   label: l10n.fighter1Color,
                   selectedColor: _f1Color,
-                  onColorSelected: (color) =>
-                      setState(() => _f1Color = color),
+                  onColorSelected: (color) => setState(() => _f1Color = color),
                 ),
 
                 const SizedBox(height: 32),
@@ -179,8 +179,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   style: const TextStyle(color: BJJColors.white),
                   decoration: InputDecoration(
                     hintText: l10n.enterFighterName,
-                    prefixIcon:
-                        const Icon(Icons.person, color: BJJColors.gold),
+                    prefixIcon: const Icon(Icons.person, color: BJJColors.gold),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -193,8 +192,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                 _buildColorPicker(
                   label: l10n.fighter2Color,
                   selectedColor: _f2Color,
-                  onColorSelected: (color) =>
-                      setState(() => _f2Color = color),
+                  onColorSelected: (color) => setState(() => _f2Color = color),
                 ),
 
                 const SizedBox(height: 32),
@@ -332,9 +330,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? BJJColors.green
-                  : BJJColors.navyDark,
+              color: isSelected ? BJJColors.green : BJJColors.navyDark,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected

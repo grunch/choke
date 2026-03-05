@@ -385,4 +385,17 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get followSystemTheme => 'システム設定に従う';
+
+  @override
+  String get licenseTitle => 'ライセンス';
+
+  @override
+  String get licenseText =>
+      'MIT ライセンス\n\nCopyright (c) 2026 Negrunch\n\n permission は、以下の条件に従って、このソフトウェアおよび関連ドキュメントファイル（「ソフトウェア」）のコピーを取得した任何人に、ソフトウェアを自由に使用、コピー、変更、統合、公開、配布、サブライセンス、および/またはコピーを販売する権利を無償で付与されます：\n\n上記の著作権表示および本許可通知は、ソフトウェアのすべてのコピーまたは重要な部分に含まれるものとします。\n\n本ソフトウェアは「現状のまま」提供され、商品性、特定目的への適合性、および非侵害に関する明示的または黙示的な保証はありません。いかなる場合においても、著作者または著作権者は、契約、不法行為、またはその他の理由から、ソフトウェアまたはその使用その他の取引に起因または関連して発生した請求、損害またはその他の責任を負わないものとします。';
+
+  @override
+  String get licenseLabel => 'ライセンス';
+
+  @override
+  String get licenseSubtitle => 'MIT ライセンス';
 }

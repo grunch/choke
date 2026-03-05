@@ -155,6 +155,15 @@ class SettingsScreen extends ConsumerWidget {
                   trailing: const Icon(Icons.open_in_new, size: 16),
                   onTap: () {},
                 ),
+                const Divider(height: 1),
+                ListTile(
+                  leading:
+                      const Icon(Icons.description, color: BJJColors.green),
+                  title: Text(l10n.licenseLabel),
+                  subtitle: Text(l10n.licenseSubtitle),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () => _showLicenseScreen(context),
+                ),
               ],
             ),
           ),
@@ -224,6 +233,24 @@ class SettingsScreen extends ConsumerWidget {
             }),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showLicenseScreen(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(AppLocalizations.of(context)!.licenseTitle),
+        content: SingleChildScrollView(
+          child: Text(AppLocalizations.of(context)!.licenseText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(AppLocalizations.of(context)!.close),
+          ),
+        ],
       ),
     );
   }
