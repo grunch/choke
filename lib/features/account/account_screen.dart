@@ -27,10 +27,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     await Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
       final l10n = AppLocalizations.of(context);
+      final primaryColor = Theme.of(context).colorScheme.primary;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.copiedToClipboard(label)),
-          backgroundColor: BJJColors.green,
+          backgroundColor: primaryColor,
           duration: const Duration(seconds: 2),
         ),
       );
@@ -118,10 +119,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           ref.invalidate(npubProvider);
                           ref.invalidate(nsecProvider);
                           if (mounted) {
+                            final primaryColor =
+                                Theme.of(context).colorScheme.primary;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(l10n.keyImportedSuccessfully),
-                                backgroundColor: BJJColors.green,
+                                backgroundColor: primaryColor,
                               ),
                             );
                           }
