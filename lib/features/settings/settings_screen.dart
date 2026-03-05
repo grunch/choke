@@ -7,6 +7,11 @@ import '../../shared/providers/locale_provider.dart';
 import '../../shared/providers/theme_provider.dart';
 import 'screens/relay_management_screen.dart';
 
+/// Provider for package info
+final packageInfoProvider = FutureProvider<PackageInfo>((ref) {
+  return PackageInfo.fromPlatform();
+});
+
 /// Map of supported locales to their display names
 const _localeNames = {
   'en': 'English',
@@ -140,27 +145,42 @@ class SettingsScreen extends ConsumerWidget {
           Card(
             child: Column(
               children: [
-                FutureBuilder<PackageInfo>(
-                  future: PackageInfo.fromPlatform(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.done &&
-                        snapshot.hasData) {
-                      return ListTile(
-                        leading: const Icon(
-                          Icons.info_outline,
-                          color: BJJColors.green,
-                        ),
-                        title: Text(l10n.version),
-                        subtitle: Text(snapshot.data!.version),
-                      );
-                    }
-                    return ListTile(
-                      leading: const Icon(
-                        Icons.info_outline,
-                        color: BJJColors.green,
-                      ),
-                      title: Text(l10n.version),
-                      subtitle: const Text('...'),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final packageInfo = ref.watch(packageInfoProvider);
+                    return packageInfo.when(
+                      data: (info) {
+                        return ListTile(
+                          leading: const Icon(
+                            Icons.info_outline,
+                            color: BJJColors.green,
+                          ),
+                          title: Text(l10n.version),
+                          subtitle: Text(info.version),
+                        );
+                      },
+                      loading: () {
+                        return ListTile(
+                          leading: const Icon(
+                            Icons.info_outline,
+                            color: BJJColors.green,
+                          ),
+                          title: Text(l10n.version),
+                          subtitle: const Text('...'),
+                        );
+                      },
+                      error: (error, stack) {
+                        debugPrint(
+                            'Error loading package info: $error\n$stack');
+                        return ListTile(
+                          leading: const Icon(
+                            Icons.info_outline,
+                            color: BJJColors.green,
+                          ),
+                          title: Text(l10n.version),
+                          subtitle: const Text('Error loading version'),
+                        );
+                      },
                     );
                   },
                 ),
