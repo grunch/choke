@@ -242,7 +242,10 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
       state = RelayConfigState(relays: newRelays, isLoading: false);
       return true;
     } catch (e) {
-      state = state.copyWith(error: RelayError.addFailed);
+      state = state.copyWith(
+        isLoading: false,
+        error: RelayError.addFailed,
+      );
       return false;
     }
   }
