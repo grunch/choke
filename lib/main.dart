@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'shared/theme/app_theme.dart';
+import 'shared/providers/locale_provider.dart';
 import 'features/home/home_screen.dart';
 
 import 'features/account/account_screen.dart';
@@ -57,15 +59,20 @@ void main() async {
   );
 }
 
-class ChokeApp extends StatelessWidget {
+class ChokeApp extends ConsumerWidget {
   const ChokeApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+
     return MaterialApp(
       title: 'Choke',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: locale,
       home: const MainNavigation(),
     );
   }
@@ -91,31 +98,33 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            activeIcon: const Icon(Icons.home),
+            label: l10n.navHome,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.sports_martial_arts_outlined),
-            activeIcon: Icon(Icons.sports_martial_arts),
-            label: 'Match',
+            icon: const Icon(Icons.sports_martial_arts_outlined),
+            activeIcon: const Icon(Icons.sports_martial_arts),
+            label: l10n.navMatch,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Account',
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person),
+            label: l10n.navAccount,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: 'Settings',
+            icon: const Icon(Icons.settings_outlined),
+            activeIcon: const Icon(Icons.settings),
+            label: l10n.navSettings,
           ),
         ],
       ),
@@ -129,11 +138,13 @@ class _MatchListPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    final l10n = AppLocalizations.of(context);
+
+    return Scaffold(
       body: Center(
         child: Text(
-          'Create a match from the Home screen',
-          style: TextStyle(color: BJJColors.grey, fontSize: 16),
+          l10n.matchListPlaceholder,
+          style: const TextStyle(color: BJJColors.grey, fontSize: 16),
         ),
       ),
     );

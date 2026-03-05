@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../shared/theme/app_theme.dart';
 import '../match/create_match_screen.dart';
 import '../match/match_control_screen.dart';
@@ -25,6 +26,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filteredMatches = ref.watch(filteredMatchListProvider);
     final statusFilter = ref.watch(statusFilterProvider);
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: BJJColors.navy,
@@ -51,7 +53,7 @@ class HomeScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Choke',
+                        l10n.appTitle,
                         style: Theme.of(context)
                             .textTheme
                             .headlineMedium
@@ -62,7 +64,7 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Score your BJJ matches',
+                        l10n.homeSubtitle,
                         style: Theme.of(context)
                             .textTheme
                             .bodyMedium
@@ -77,7 +79,7 @@ class HomeScreen extends ConsumerWidget {
             // Filter chips
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: _buildFilterChips(ref, statusFilter),
+              child: _buildFilterChips(context, ref, statusFilter),
             ),
 
             const SizedBox(height: 16),
@@ -93,7 +95,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
                 child: filteredMatches.isEmpty
-                    ? _buildEmptyState()
+                    ? _buildEmptyState(context)
                     : ListView.builder(
                         padding: const EdgeInsets.all(20),
                         itemCount: filteredMatches.length,
@@ -113,14 +115,16 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFilterChips(WidgetRef ref, Set<MatchStatus> selected) {
+  Widget _buildFilterChips(BuildContext context, WidgetRef ref, Set<MatchStatus> selected) {
+    final l10n = AppLocalizations.of(context);
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: MatchStatus.values.map((status) {
         final isSelected = selected.contains(status);
         return FilterChip(
-          label: Text(_statusLabel(status)),
+          label: Text(_statusLabel(l10n, status)),
           selected: isSelected,
           onSelected: (value) {
             final current = Set<MatchStatus>.from(
@@ -153,16 +157,18 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Text('🥋', style: TextStyle(fontSize: 64)),
           const SizedBox(height: 16),
-          const Text(
-            'No matches yet',
-            style: TextStyle(
+          Text(
+            l10n.noMatchesYet,
+            style: const TextStyle(
               color: BJJColors.navy,
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -170,7 +176,7 @@ class HomeScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Create a new one!',
+            l10n.createNewOne,
             style: TextStyle(
               color: BJJColors.greyDark,
               fontSize: 14,
@@ -182,6 +188,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildMatchCard(BuildContext context, WidgetRef ref, Match match) {
+    final l10n = AppLocalizations.of(context);
     final f1Color = _hexToColor(match.f1Color);
     final f2Color = _hexToColor(match.f2Color);
 
@@ -232,7 +239,7 @@ class HomeScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    _statusLabel(match.status),
+                    _statusLabel(l10n, match.status),
                     style: TextStyle(
                       color: _statusColor(match.status),
                       fontSize: 11,
@@ -282,7 +289,7 @@ class HomeScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
-                    'vs',
+                    l10n.vs,
                     style: TextStyle(
                       color: BJJColors.greyDark,
                       fontSize: 12,
@@ -392,12 +399,12 @@ class HomeScreen extends ConsumerWidget {
     };
   }
 
-  String _statusLabel(MatchStatus status) {
+  String _statusLabel(AppLocalizations l10n, MatchStatus status) {
     return switch (status) {
-      MatchStatus.waiting => 'Waiting',
-      MatchStatus.inProgress => 'In Progress',
-      MatchStatus.finished => 'Finished',
-      MatchStatus.canceled => 'Canceled',
+      MatchStatus.waiting => l10n.statusWaiting,
+      MatchStatus.inProgress => l10n.statusInProgress,
+      MatchStatus.finished => l10n.statusFinished,
+      MatchStatus.canceled => l10n.statusCanceled,
     };
   }
 }

@@ -1,0 +1,506 @@
+{
+  "@@locale": "en",
+  "appTitle": "Choke",
+  "@appTitle": {
+    "description": "Application title"
+  },
+  "homeSubtitle": "Score your BJJ matches",
+  "@homeSubtitle": {
+    "description": "Subtitle on home screen"
+  },
+  "navHome": "Home",
+  "@navHome": {
+    "description": "Bottom navigation label for Home tab"
+  },
+  "navMatch": "Match",
+  "@navMatch": {
+    "description": "Bottom navigation label for Match tab"
+  },
+  "navAccount": "Account",
+  "@navAccount": {
+    "description": "Bottom navigation label for Account tab"
+  },
+  "navSettings": "Settings",
+  "@navSettings": {
+    "description": "Bottom navigation label for Settings tab"
+  },
+  "matchListPlaceholder": "Create a match from the Home screen",
+  "@matchListPlaceholder": {
+    "description": "Placeholder text in Match tab"
+  },
+  "noMatchesYet": "No matches yet",
+  "@noMatchesYet": {
+    "description": "Empty state title on home screen"
+  },
+  "createNewOne": "Create a new one!",
+  "@createNewOne": {
+    "description": "Empty state subtitle on home screen"
+  },
+  "statusWaiting": "Waiting",
+  "@statusWaiting": {
+    "description": "Match status: waiting"
+  },
+  "statusInProgress": "In Progress",
+  "@statusInProgress": {
+    "description": "Match status: in progress"
+  },
+  "statusFinished": "Finished",
+  "@statusFinished": {
+    "description": "Match status: finished"
+  },
+  "statusCanceled": "Canceled",
+  "@statusCanceled": {
+    "description": "Match status: canceled"
+  },
+  "vs": "vs",
+  "@vs": {
+    "description": "Versus separator between scores"
+  },
+  "accountTitle": "Account",
+  "@accountTitle": {
+    "description": "Account screen app bar title"
+  },
+  "importChangeKey": "Import/Change Key",
+  "@importChangeKey": {
+    "description": "Tooltip for import key button"
+  },
+  "yourNostrIdentity": "Your Nostr Identity",
+  "@yourNostrIdentity": {
+    "description": "Account screen header title"
+  },
+  "keypairDescription": "This keypair identifies you on the network",
+  "@keypairDescription": {
+    "description": "Account screen header subtitle"
+  },
+  "publicKeyNpub": "Public Key (npub)",
+  "@publicKeyNpub": {
+    "description": "Section title for public key"
+  },
+  "generating": "Generating...",
+  "@generating": {
+    "description": "Placeholder while key is being generated"
+  },
+  "copy": "Copy",
+  "@copy": {
+    "description": "Copy button label"
+  },
+  "showQr": "Show QR",
+  "@showQr": {
+    "description": "Show QR code button label"
+  },
+  "keyUnavailable": "Key unavailable",
+  "@keyUnavailable": {
+    "description": "Message when key is not available"
+  },
+  "errorLoadingKey": "Error loading key",
+  "@errorLoadingKey": {
+    "description": "Error message when key fails to load"
+  },
+  "privateKeyNsec": "Private Key (nsec)",
+  "@privateKeyNsec": {
+    "description": "Section title for private key"
+  },
+  "neverSharePrivateKey": "Never share your private key with anyone!",
+  "@neverSharePrivateKey": {
+    "description": "Warning about private key"
+  },
+  "tapToReveal": "Tap to reveal • Keep this secret!",
+  "@tapToReveal": {
+    "description": "Hint text under hidden private key"
+  },
+  "copyToClipboard": "Copy to Clipboard",
+  "@copyToClipboard": {
+    "description": "Button to copy key to clipboard"
+  },
+  "copiedToClipboard": "{label} copied to clipboard",
+  "@copiedToClipboard": {
+    "description": "Snackbar message when something is copied",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "publicKey": "Public key",
+  "@publicKey": {
+    "description": "Label for public key when copying"
+  },
+  "privateKey": "Private key",
+  "@privateKey": {
+    "description": "Label for private key when copying"
+  },
+  "importPrivateKey": "Import Private Key",
+  "@importPrivateKey": {
+    "description": "Import key dialog title"
+  },
+  "importWarning": "Warning: Importing a new private key will replace your current identity. This action cannot be undone.",
+  "@importWarning": {
+    "description": "Warning message in import dialog"
+  },
+  "enterNsec": "Enter nsec...",
+  "@enterNsec": {
+    "description": "Hint text for nsec input field"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button label"
+  },
+  "import": "Import",
+  "@import": {
+    "description": "Import button label"
+  },
+  "pleaseEnterNsec": "Please enter an nsec",
+  "@pleaseEnterNsec": {
+    "description": "Validation error: empty nsec"
+  },
+  "invalidNsecFormat": "Invalid nsec format (should start with nsec1)",
+  "@invalidNsecFormat": {
+    "description": "Validation error: bad nsec format"
+  },
+  "keyImportedSuccessfully": "Private key imported successfully",
+  "@keyImportedSuccessfully": {
+    "description": "Success message after key import"
+  },
+  "failedToImportKey": "Failed to import key. Please check the format.",
+  "@failedToImportKey": {
+    "description": "Error message when key import fails"
+  },
+  "yourPublicKey": "Your Public Key",
+  "@yourPublicKey": {
+    "description": "QR dialog title"
+  },
+  "scanQrToShare": "Scan this QR code to share your public key",
+  "@scanQrToShare": {
+    "description": "QR dialog description"
+  },
+  "close": "Close",
+  "@close": {
+    "description": "Close button label"
+  },
+  "securityTips": "Security Tips",
+  "@securityTips": {
+    "description": "Section title for security tips"
+  },
+  "tipBackupTitle": "Backup your keys",
+  "@tipBackupTitle": {
+    "description": "Security tip: backup title"
+  },
+  "tipBackupDescription": "Write down your nsec and store it in a safe place.",
+  "@tipBackupDescription": {
+    "description": "Security tip: backup description"
+  },
+  "tipNeverShareTitle": "Never share your nsec",
+  "@tipNeverShareTitle": {
+    "description": "Security tip: never share title"
+  },
+  "tipNeverShareDescription": "Anyone with your nsec can impersonate you.",
+  "@tipNeverShareDescription": {
+    "description": "Security tip: never share description"
+  },
+  "tipSecureStorageTitle": "Secure storage",
+  "@tipSecureStorageTitle": {
+    "description": "Security tip: secure storage title"
+  },
+  "tipSecureStorageDescription": "Keys are stored securely on your device.",
+  "@tipSecureStorageDescription": {
+    "description": "Security tip: secure storage description"
+  },
+  "newMatch": "New Match",
+  "@newMatch": {
+    "description": "Create match screen title"
+  },
+  "fighter1": "Fighter 1",
+  "@fighter1": {
+    "description": "Fighter 1 section label"
+  },
+  "fighter2": "Fighter 2",
+  "@fighter2": {
+    "description": "Fighter 2 section label"
+  },
+  "enterFighterName": "Enter fighter name",
+  "@enterFighterName": {
+    "description": "Hint text for fighter name input"
+  },
+  "fighter1NameRequired": "Fighter 1 name is required",
+  "@fighter1NameRequired": {
+    "description": "Validation: fighter 1 name empty"
+  },
+  "fighter2NameRequired": "Fighter 2 name is required",
+  "@fighter2NameRequired": {
+    "description": "Validation: fighter 2 name empty"
+  },
+  "fighter1Color": "Fighter 1 Color",
+  "@fighter1Color": {
+    "description": "Color picker label for fighter 1"
+  },
+  "fighter2Color": "Fighter 2 Color",
+  "@fighter2Color": {
+    "description": "Color picker label for fighter 2"
+  },
+  "matchDuration": "Match Duration",
+  "@matchDuration": {
+    "description": "Duration section label"
+  },
+  "createMatch": "Create Match",
+  "@createMatch": {
+    "description": "Create match button label"
+  },
+  "couldNotPublishMatch": "Could not publish match. Check your connection and try again.",
+  "@couldNotPublishMatch": {
+    "description": "Error when match publish fails"
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Retry button label"
+  },
+  "matchId": "Match #{id}",
+  "@matchId": {
+    "description": "Match ID in app bar",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "canceled": "CANCELED",
+  "@canceled": {
+    "description": "Timer display when match is canceled"
+  },
+  "vsLabel": "VS",
+  "@vsLabel": {
+    "description": "VS label between score cards"
+  },
+  "takedownSweep": "Takedown / Sweep",
+  "@takedownSweep": {
+    "description": "Scoring button: +2 points"
+  },
+  "guardPass": "Guard Pass",
+  "@guardPass": {
+    "description": "Scoring button: +3 points"
+  },
+  "mountBackTake": "Mount / Back Take",
+  "@mountBackTake": {
+    "description": "Scoring button: +4 points"
+  },
+  "advantage": "Advantage",
+  "@advantage": {
+    "description": "Advantage button label"
+  },
+  "penalty": "Penalty",
+  "@penalty": {
+    "description": "Penalty button label"
+  },
+  "undoLastAction": "Undo Last Action",
+  "@undoLastAction": {
+    "description": "Undo button label"
+  },
+  "startMatch": "Start Match",
+  "@startMatch": {
+    "description": "Start match button label"
+  },
+  "finish": "Finish",
+  "@finish": {
+    "description": "Finish match button label"
+  },
+  "matchFinished": "Match Finished",
+  "@matchFinished": {
+    "description": "Status text when match is finished"
+  },
+  "matchCanceled": "Match Canceled",
+  "@matchCanceled": {
+    "description": "Status text when match is canceled"
+  },
+  "finishMatchQuestion": "Finish Match?",
+  "@finishMatchQuestion": {
+    "description": "Finish match dialog title"
+  },
+  "finishMatchDescription": "This will end the match and publish the final score.",
+  "@finishMatchDescription": {
+    "description": "Finish match dialog content"
+  },
+  "cancelMatchQuestion": "Cancel Match?",
+  "@cancelMatchQuestion": {
+    "description": "Cancel match dialog title"
+  },
+  "cancelMatchDescription": "This will cancel the match. Scores will not be saved.",
+  "@cancelMatchDescription": {
+    "description": "Cancel match dialog content"
+  },
+  "goBack": "Go Back",
+  "@goBack": {
+    "description": "Go back button in cancel dialog"
+  },
+  "cancelMatch": "Cancel Match",
+  "@cancelMatch": {
+    "description": "Cancel match button in dialog"
+  },
+  "leaveMatchQuestion": "Leave Match?",
+  "@leaveMatchQuestion": {
+    "description": "Leave match dialog title"
+  },
+  "leaveMatchDescription": "The match is still in progress. Are you sure you want to leave?",
+  "@leaveMatchDescription": {
+    "description": "Leave match dialog content"
+  },
+  "stay": "Stay",
+  "@stay": {
+    "description": "Stay button in leave dialog"
+  },
+  "leave": "Leave",
+  "@leave": {
+    "description": "Leave button in leave dialog"
+  },
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Settings screen title"
+  },
+  "sectionAppearance": "Appearance",
+  "@sectionAppearance": {
+    "description": "Settings section: appearance"
+  },
+  "darkMode": "Dark Mode",
+  "@darkMode": {
+    "description": "Dark mode toggle title"
+  },
+  "alwaysUseDarkTheme": "Always use dark theme",
+  "@alwaysUseDarkTheme": {
+    "description": "Dark mode toggle subtitle"
+  },
+  "sectionNostr": "Nostr",
+  "@sectionNostr": {
+    "description": "Settings section: nostr"
+  },
+  "relays": "Relays",
+  "@relays": {
+    "description": "Relay management tile title"
+  },
+  "manageRelayConnections": "Manage relay connections",
+  "@manageRelayConnections": {
+    "description": "Relay management tile subtitle"
+  },
+  "sectionMatch": "Match",
+  "@sectionMatch": {
+    "description": "Settings section: match"
+  },
+  "defaultMatchDuration": "Default Match Duration",
+  "@defaultMatchDuration": {
+    "description": "Default duration tile title"
+  },
+  "fiveMinutes": "5 minutes",
+  "@fiveMinutes": {
+    "description": "Default duration value"
+  },
+  "sectionAbout": "About",
+  "@sectionAbout": {
+    "description": "Settings section: about"
+  },
+  "version": "Version",
+  "@version": {
+    "description": "Version tile title"
+  },
+  "sourceCode": "Source Code",
+  "@sourceCode": {
+    "description": "Source code tile title"
+  },
+  "sectionLanguage": "Language",
+  "@sectionLanguage": {
+    "description": "Settings section: language"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language selector tile title"
+  },
+  "selectLanguage": "Select Language",
+  "@selectLanguage": {
+    "description": "Language picker dialog title"
+  },
+  "relayManagement": "Relay Management",
+  "@relayManagement": {
+    "description": "Relay management screen title"
+  },
+  "refresh": "Refresh",
+  "@refresh": {
+    "description": "Refresh button tooltip"
+  },
+  "addCustomRelay": "Add Custom Relay",
+  "@addCustomRelay": {
+    "description": "Add relay input label"
+  },
+  "relayHint": "wss://relay.example.com",
+  "@relayHint": {
+    "description": "Relay URL input hint"
+  },
+  "pleaseEnterRelayUrl": "Please enter a relay URL",
+  "@pleaseEnterRelayUrl": {
+    "description": "Validation: empty relay URL"
+  },
+  "relayUrlMustStartWithWss": "URL must start with wss:// or ws://",
+  "@relayUrlMustStartWithWss": {
+    "description": "Validation: invalid relay URL prefix"
+  },
+  "adding": "Adding...",
+  "@adding": {
+    "description": "Button label while adding relay"
+  },
+  "add": "Add",
+  "@add": {
+    "description": "Add button label"
+  },
+  "noRelaysConfigured": "No relays configured",
+  "@noRelaysConfigured": {
+    "description": "Empty state title for relays"
+  },
+  "addRelayToStart": "Add a relay to start publishing events",
+  "@addRelayToStart": {
+    "description": "Empty state subtitle for relays"
+  },
+  "relayStatusDisabled": "Disabled",
+  "@relayStatusDisabled": {
+    "description": "Relay status: disabled"
+  },
+  "relayStatusConnectedDefault": "Connected • Default",
+  "@relayStatusConnectedDefault": {
+    "description": "Relay status: connected default"
+  },
+  "relayStatusConnectingDefault": "Connecting • Default",
+  "@relayStatusConnectingDefault": {
+    "description": "Relay status: connecting default"
+  },
+  "relayStatusConnected": "Connected",
+  "@relayStatusConnected": {
+    "description": "Relay status: connected"
+  },
+  "relayStatusConnecting": "Connecting",
+  "@relayStatusConnecting": {
+    "description": "Relay status: connecting"
+  },
+  "removeRelayQuestion": "Remove Relay?",
+  "@removeRelayQuestion": {
+    "description": "Remove relay dialog title"
+  },
+  "removeRelayConfirmation": "Are you sure you want to remove {url}?",
+  "@removeRelayConfirmation": {
+    "description": "Remove relay dialog content",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "remove": "Remove",
+  "@remove": {
+    "description": "Remove button label"
+  },
+  "relayAddedSuccessfully": "Relay added successfully",
+  "@relayAddedSuccessfully": {
+    "description": "Success message after adding relay"
+  },
+  "relayRemoved": "Relay removed",
+  "@relayRemoved": {
+    "description": "Success message after removing relay"
+  },
+  "systemDefault": "System default",
+  "@systemDefault": {
+    "description": "System default locale option"
+  }
+}
