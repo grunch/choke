@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.1.0] - 2026-03-05
+
+### Added
+- feat: add multi-language support — EN, ES, PT, JA (closes #42) (9c51752)
+
+### Fixed
+- fix: apply CodeRabbit review fixes (2a3ef8c)
+
+### Changed
+- chore: update changelog and version for v1.0.1 (92ec666)
+
+
 ## [v1.0.1] - 2026-03-04
 
 ### Added
