@@ -535,5 +535,15 @@
   "relayErrorRemoveFailed": "Failed to remove relay",
   "relayErrorCannotRemoveLast": "Cannot remove the last active relay",
   "relayErrorToggleFailed": "Failed to update relay",
-  "relayErrorCannotDisableLast": "At least one relay must remain active"
+  "relayErrorCannotDisableLast": "At least one relay must remain active",
+  "builtBy": "Built by {name}",
+  "@builtBy": {
+    "description": "Creator credit in settings footer",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Pana"
+      }
+    }
+  }
 }

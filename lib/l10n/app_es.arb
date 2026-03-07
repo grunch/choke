@@ -136,5 +136,6 @@
   "relayErrorRemoveFailed": "Error al eliminar el relay",
   "relayErrorCannotRemoveLast": "No se puede eliminar el último relay activo",
   "relayErrorToggleFailed": "Error al actualizar el relay",
-  "relayErrorCannotDisableLast": "Al menos un relay debe permanecer activo"
+  "relayErrorCannotDisableLast": "Al menos un relay debe permanecer activo",
+  "builtBy": "Construido por {name}"
 }

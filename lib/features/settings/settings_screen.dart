@@ -194,7 +194,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Built by Pana',
+                      l10n.builtBy('Pana'),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colors.onSurface.withValues(alpha: 0.5),
                       ),

@@ -372,7 +372,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get relayRemoved => 'リレーが削除されました';
 
   @override
-  String get systemDefault => 'システムのデフォルト';
+  String get systemDefault => 'システム';
 
   @override
   String get themeMode => 'テーマ';
@@ -398,4 +398,36 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get licenseSubtitle => 'MIT ライセンス';
+
+  @override
+  String get relayErrorLoadFailed => 'リレー設定の読み込みに失敗しました';
+
+  @override
+  String get relayErrorAlreadyExists => 'リレーは既に存在します';
+
+  @override
+  String get relayErrorInvalidUrl => '無効なリレーURL。wss://で始まる必要があります';
+
+  @override
+  String get relayErrorUnreachable => 'リレーに接続できません。URLを確認して再試行してください';
+
+  @override
+  String get relayErrorAddFailed => 'リレーの追加に失敗しました';
+
+  @override
+  String get relayErrorRemoveFailed => 'リレーの削除に失敗しました';
+
+  @override
+  String get relayErrorCannotRemoveLast => '最後のアクティブなリレーは削除できません';
+
+  @override
+  String get relayErrorToggleFailed => 'リレーの更新に失敗しました';
+
+  @override
+  String get relayErrorCannotDisableLast => '少なくとも1つのリレーをアクティブにする必要があります';
+
+  @override
+  String builtBy(String name) {
+    return '$name が開発';
+  }
 }
