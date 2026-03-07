@@ -151,46 +151,6 @@ class SettingsScreen extends ConsumerWidget {
           Card(
             child: Column(
               children: [
-                Consumer(
-                  builder: (context, ref, child) {
-                    final packageInfo = ref.watch(packageInfoProvider);
-                    return packageInfo.when(
-                      data: (info) {
-                        return ListTile(
-                          leading: Icon(
-                            Icons.info_outline,
-                            color: colors.primary,
-                          ),
-                          title: Text(l10n.version),
-                          subtitle: Text(info.version),
-                        );
-                      },
-                      loading: () {
-                        return ListTile(
-                          leading: Icon(
-                            Icons.info_outline,
-                            color: colors.primary,
-                          ),
-                          title: Text(l10n.version),
-                          subtitle: const Text('...'),
-                        );
-                      },
-                      error: (error, stack) {
-                        debugPrint(
-                            'Error loading package info: $error\n$stack');
-                        return ListTile(
-                          leading: Icon(
-                            Icons.info_outline,
-                            color: colors.primary,
-                          ),
-                          title: Text(l10n.version),
-                          subtitle: const Text('Error loading version'),
-                        );
-                      },
-                    );
-                  },
-                ),
-                const Divider(height: 1),
                 ListTile(
                   leading: Icon(Icons.code, color: colors.primary),
                   title: Text(l10n.sourceCode),
@@ -212,6 +172,42 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(height: 32),
+          // Built by Pana footer
+          Consumer(
+            builder: (context, ref, child) {
+              final packageInfo = ref.watch(packageInfoProvider);
+              final version = packageInfo.whenOrNull(
+                data: (info) => info.version,
+              );
+              return Center(
+                child: Column(
+                  children: [
+                    const Text(
+                      '⬛⬛⬛🟥⬛',
+                      style: TextStyle(fontSize: 12, letterSpacing: 2),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Built by Pana',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurface.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      version != null ? 'v$version' : '...',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onSurface.withValues(alpha: 0.35),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
         ],
       ),
     );
