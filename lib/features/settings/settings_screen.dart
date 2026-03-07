@@ -177,8 +177,13 @@ class SettingsScreen extends ConsumerWidget {
           Consumer(
             builder: (context, ref, child) {
               final packageInfo = ref.watch(packageInfoProvider);
-              final version = packageInfo.whenOrNull(
-                data: (info) => info.version,
+              final versionText = packageInfo.when(
+                data: (info) => 'v${info.version}',
+                loading: () => '...',
+                error: (error, stackTrace) {
+                  debugPrint('Failed to load package info: $error');
+                  return '—';
+                },
               );
               return Center(
                 child: Column(
@@ -196,7 +201,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      version != null ? 'v$version' : '...',
+                      versionText,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colors.onSurface.withValues(alpha: 0.35),
                         fontSize: 11,
