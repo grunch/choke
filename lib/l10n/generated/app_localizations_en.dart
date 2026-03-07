@@ -383,7 +383,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get relayRemoved => 'Relay removed';
 
   @override
-  String get systemDefault => 'System default';
+  String get systemDefault => 'System';
 
   @override
   String get themeMode => 'Theme';
@@ -409,4 +409,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get licenseSubtitle => 'MIT License';
+
+  @override
+  String get relayErrorLoadFailed => 'Failed to load relay configuration';
+
+  @override
+  String get relayErrorAlreadyExists => 'Relay already exists';
+
+  @override
+  String get relayErrorInvalidUrl =>
+      'Invalid relay URL. Must start with wss://';
+
+  @override
+  String get relayErrorUnreachable =>
+      'Unable to connect to relay. Please check the URL and try again';
+
+  @override
+  String get relayErrorAddFailed => 'Failed to add relay';
+
+  @override
+  String get relayErrorRemoveFailed => 'Failed to remove relay';
+
+  @override
+  String get relayErrorCannotRemoveLast =>
+      'Cannot remove the last active relay';
+
+  @override
+  String get relayErrorToggleFailed => 'Failed to update relay';
+
+  @override
+  String get relayErrorCannotDisableLast =>
+      'At least one relay must remain active';
+
+  @override
+  String builtBy(String name) {
+    return 'Built by $name';
+  }
 }

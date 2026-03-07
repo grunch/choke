@@ -819,7 +819,7 @@ abstract class AppLocalizations {
   /// System default locale option
   ///
   /// In en, this message translates to:
-  /// **'System default'**
+  /// **'System'**
   String get systemDefault;
 
   /// Theme mode selector title
@@ -869,6 +869,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'MIT License'**
   String get licenseSubtitle;
+
+  /// No description provided for @relayErrorLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load relay configuration'**
+  String get relayErrorLoadFailed;
+
+  /// No description provided for @relayErrorAlreadyExists.
+  ///
+  /// In en, this message translates to:
+  /// **'Relay already exists'**
+  String get relayErrorAlreadyExists;
+
+  /// No description provided for @relayErrorInvalidUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid relay URL. Must start with wss://'**
+  String get relayErrorInvalidUrl;
+
+  /// No description provided for @relayErrorUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to connect to relay. Please check the URL and try again'**
+  String get relayErrorUnreachable;
+
+  /// No description provided for @relayErrorAddFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to add relay'**
+  String get relayErrorAddFailed;
+
+  /// No description provided for @relayErrorRemoveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove relay'**
+  String get relayErrorRemoveFailed;
+
+  /// No description provided for @relayErrorCannotRemoveLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot remove the last active relay'**
+  String get relayErrorCannotRemoveLast;
+
+  /// No description provided for @relayErrorToggleFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update relay'**
+  String get relayErrorToggleFailed;
+
+  /// No description provided for @relayErrorCannotDisableLast.
+  ///
+  /// In en, this message translates to:
+  /// **'At least one relay must remain active'**
+  String get relayErrorCannotDisableLast;
+
+  /// Creator credit in settings footer
+  ///
+  /// In en, this message translates to:
+  /// **'Built by {name}'**
+  String builtBy(String name);
 }
 
 class _AppLocalizationsDelegate

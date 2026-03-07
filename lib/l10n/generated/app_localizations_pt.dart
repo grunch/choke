@@ -386,7 +386,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get relayRemoved => 'Relay removido';
 
   @override
-  String get systemDefault => 'Padrão do sistema';
+  String get systemDefault => 'Sistema';
 
   @override
   String get themeMode => 'Tema';
@@ -412,4 +412,41 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get licenseSubtitle => 'Licença MIT';
+
+  @override
+  String get relayErrorLoadFailed =>
+      'Falha ao carregar a configuração de relays';
+
+  @override
+  String get relayErrorAlreadyExists => 'O relay já existe';
+
+  @override
+  String get relayErrorInvalidUrl =>
+      'URL de relay inválida. Deve começar com wss://';
+
+  @override
+  String get relayErrorUnreachable =>
+      'Não foi possível conectar ao relay. Verifique a URL e tente novamente';
+
+  @override
+  String get relayErrorAddFailed => 'Falha ao adicionar o relay';
+
+  @override
+  String get relayErrorRemoveFailed => 'Falha ao remover o relay';
+
+  @override
+  String get relayErrorCannotRemoveLast =>
+      'Não é possível remover o último relay ativo';
+
+  @override
+  String get relayErrorToggleFailed => 'Falha ao atualizar o relay';
+
+  @override
+  String get relayErrorCannotDisableLast =>
+      'Pelo menos um relay deve permanecer ativo';
+
+  @override
+  String builtBy(String name) {
+    return 'Feito por $name';
+  }
 }
