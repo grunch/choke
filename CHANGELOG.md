@@ -1,5 +1,19 @@
 # Changelog
 
+## [v1.1.4] - 2026-03-07
+
+### Added
+- feat: add 'Built by Pana' footer with black belt badge in settings (7c71999)
+
+### Fixed
+- fix: localize 'Built by' text in footer (c6c7331)
+- fix: handle packageInfo error state with explicit logging (4eed371)
+
+### Changed
+- test: add widget tests for settings footer (dc4c0a0)
+- chore: update changelog and version for v1.1.3 (2698f56)
+
+
 ## [v1.1.3] - 2026-03-05
 
 ### Added
