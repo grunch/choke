@@ -13,6 +13,8 @@ val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
+val releaseKeystoreFile =
+    keystoreProperties["storeFile"]?.toString()?.let { file(it) }
 
 android {
     namespace = "com.grunch.choke"
@@ -38,10 +40,10 @@ android {
 
     signingConfigs {
         create("release") {
-            if (keystorePropertiesFile.exists()) {
+            if (releaseKeystoreFile?.exists() == true) {
                 keyAlias = keystoreProperties["keyAlias"] as String
                 keyPassword = keystoreProperties["keyPassword"] as String
-                storeFile = file(keystoreProperties["storeFile"] as String)
+                storeFile = releaseKeystoreFile
                 storePassword = keystoreProperties["storePassword"] as String
             }
         }
@@ -49,7 +51,7 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (keystorePropertiesFile.exists()) {
+            signingConfig = if (releaseKeystoreFile?.exists() == true) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")
