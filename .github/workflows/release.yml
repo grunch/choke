@@ -166,6 +166,29 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
+      - name: Verify signing secrets
+        run: |
+          missing=""
+          [ -z "${{ secrets.KEYSTORE_BASE64 }}" ] && missing="$missing KEYSTORE_BASE64"
+          [ -z "${{ secrets.KEYSTORE_PASSWORD }}" ] && missing="$missing KEYSTORE_PASSWORD"
+          [ -z "${{ secrets.KEY_PASSWORD }}" ] && missing="$missing KEY_PASSWORD"
+          [ -z "${{ secrets.KEY_ALIAS }}" ] && missing="$missing KEY_ALIAS"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing signing secrets:$missing"
+            exit 1
+          fi
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/choke-upload-key.jks
+
+      - name: Create key.properties
+        run: |
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=choke-upload-key.jks" >> android/key.properties
+
       - name: Build APK
         run: flutter build apk --release
 
