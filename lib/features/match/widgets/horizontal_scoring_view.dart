@@ -23,9 +23,157 @@ String _formatTime(int seconds) {
 }
 
 /// Horizontal layout optimized for fast dual-fighter scoring
-/// Follows the mockup design with 3 scoring columns + advantage/penalty per fighter
+/// Icon-only design with badges (+2/+3/+4) instead of text labels to prevent overflow
 class HorizontalScoringView extends ConsumerWidget {
   const HorizontalScoringView({super.key});
+
+  /// Build compact scoring column with emoji badge instead of text label
+  Widget _buildScoringColumn({
+    required ColorScheme colors,
+    required String emoji,
+    required String badge,
+    required int count,
+    required VoidCallback? onIncrement,
+    required VoidCallback? onDecrement,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Emoji + badge
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 16)),
+            const SizedBox(width: 2),
+            Text(
+              badge,
+              style: TextStyle(
+                color: colors.onSurface.withOpacity(0.6),
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        // Count
+        Text(
+          count.toString(),
+          style: TextStyle(
+            color: colors.onSurface,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 2),
+        // Increment/Decrement buttons
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 30,
+              height: 30,
+              child: IconButton(
+                onPressed: onIncrement,
+                padding: EdgeInsets.zero,
+                iconSize: 16,
+                icon: const Icon(Icons.add),
+                style: IconButton.styleFrom(
+                  backgroundColor: colors.primary.withOpacity(0.1),
+                  foregroundColor: colors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 2),
+            SizedBox(
+              width: 30,
+              height: 30,
+              child: IconButton(
+                onPressed: onDecrement,
+                padding: EdgeInsets.zero,
+                iconSize: 16,
+                icon: const Icon(Icons.remove),
+                style: IconButton.styleFrom(
+                  backgroundColor: colors.error.withOpacity(0.1),
+                  foregroundColor: colors.error,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Build compact advantage/penalty column with emoji
+  Widget _buildAdvPenColumn({
+    required ColorScheme colors,
+    required String emoji,
+    required String label,
+    required int count,
+    required VoidCallback? onIncrement,
+    required VoidCallback? onDecrement,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Emoji + label
+        Text(
+          '$emoji $label',
+          style: TextStyle(
+            color: colors.onSurface.withOpacity(0.6),
+            fontSize: 10,
+          ),
+        ),
+        const SizedBox(height: 2),
+        // Count
+        Text(
+          count.toString(),
+          style: TextStyle(
+            color: colors.onSurface,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 2),
+        // Buttons
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: IconButton(
+                onPressed: onIncrement,
+                padding: EdgeInsets.zero,
+                iconSize: 14,
+                icon: const Icon(Icons.add),
+                style: IconButton.styleFrom(
+                  backgroundColor: colors.primary.withOpacity(0.1),
+                  foregroundColor: colors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 2),
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: IconButton(
+                onPressed: onDecrement,
+                padding: EdgeInsets.zero,
+                iconSize: 14,
+                icon: const Icon(Icons.remove),
+                style: IconButton.styleFrom(
+                  backgroundColor: colors.error.withOpacity(0.1),
+                  foregroundColor: colors.error,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -239,8 +387,8 @@ class HorizontalScoringView extends ConsumerWidget {
                   // Column 1: +4 (Mount/Back take)
                   Expanded(
                     child: _buildScoringColumn(
-                      label: l10n.mountBackTake,
-                      points: 4,
+                      emoji: '🏅',
+                      badge: '+4',
                       count: pt4Count,
                       onIncrement:
                           isRunning ? () => notifier.scorePt4(fighter) : null,
@@ -255,13 +403,13 @@ class HorizontalScoringView extends ConsumerWidget {
                     ),
                   ),
 
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
 
                   // Column 2: +3 (Guard pass)
                   Expanded(
                     child: _buildScoringColumn(
-                      label: l10n.guardPass,
-                      points: 3,
+                      emoji: '🛡️',
+                      badge: '+3',
                       count: pt3Count,
                       onIncrement:
                           isRunning ? () => notifier.scorePt3(fighter) : null,
@@ -272,13 +420,13 @@ class HorizontalScoringView extends ConsumerWidget {
                     ),
                   ),
 
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
 
                   // Column 3: +2 (Takedown/Sweep)
                   Expanded(
                     child: _buildScoringColumn(
-                      label: l10n.takedownSweep,
-                      points: 2,
+                      emoji: '⚡',
+                      badge: '+2',
                       count: pt2Count,
                       onIncrement:
                           isRunning ? () => notifier.scorePt2(fighter) : null,
@@ -289,98 +437,43 @@ class HorizontalScoringView extends ConsumerWidget {
                     ),
                   ),
 
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 8),
 
                   // Advantage/Penalty column
                   SizedBox(
-                    width: 80,
+                    width: 70,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         // Advantages
-                        Text(
-                          l10n.advantage,
-                          style: TextStyle(
-                            color: colors.onSurface.withOpacity(0.7),
-                            fontSize: 9,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '$advantages',
-                          style: TextStyle(
-                            color: colors.onSurface,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildSmallButton(
-                              icon: Icons.add,
-                              color: BJJColors.gold,
-                              onPressed: isRunning
-                                  ? () => notifier.scoreAdv(fighter)
-                                  : null,
-                            ),
-                            const SizedBox(width: 2),
-                            _buildSmallButton(
-                              icon: Icons.remove,
-                              color: Colors.red,
-                              onPressed: isRunning && advantages > 0
-                                  ? () => notifier.undo()
-                                  : null,
-                            ),
-                          ],
+                        _buildAdvPenColumn(
+                          colors: colors,
+                          emoji: '⭐',
+                          label: 'A',
+                          count: advantages,
+                          onIncrement: isRunning
+                              ? () => notifier.scoreAdv(fighter)
+                              : null,
+                          onDecrement: isRunning && advantages > 0
+                              ? () => notifier.undo()
+                              : null,
                         ),
 
                         const SizedBox(height: 8),
 
                         // Penalties
-                        Text(
-                          l10n.penalty,
-                          style: TextStyle(
-                            color: colors.onSurface.withOpacity(0.7),
-                            fontSize: 9,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '$penalties',
-                          style: TextStyle(
-                            color: colors.onSurface,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildSmallButton(
-                              icon: Icons.add,
-                              color: BJJColors.gold,
-                              onPressed: isRunning
-                                  ? () => notifier.scorePen(fighter)
-                                  : null,
-                            ),
-                            _buildSmallButton(
-                              icon: Icons.remove,
-                              color: Colors.red,
-                              onPressed: isRunning && penalties > 0
-                                  ? () => notifier.undo()
-                                  : null,
-                            ),
-                          ],
+                        _buildAdvPenColumn(
+                          colors: colors,
+                          emoji: '⚠️',
+                          label: 'P',
+                          count: penalties,
+                          onIncrement: isRunning
+                              ? () => notifier.scorePen(fighter)
+                              : null,
+                          onDecrement: isRunning && penalties > 0
+                              ? () => notifier.undo()
+                              : null,
                         ),
                       ],
                     ),
@@ -390,114 +483,6 @@ class HorizontalScoringView extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildScoringColumn({
-    required String label,
-    required int points,
-    required int count,
-    required VoidCallback? onIncrement,
-    required VoidCallback? onDecrement,
-    required ColorScheme colors,
-  }) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Label (compact)
-        SizedBox(
-          height: 28,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: colors.onSurface.withOpacity(0.7),
-              fontSize: 9,
-              height: 1.1,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-
-        const SizedBox(height: 4),
-
-        // Count (reduced)
-        Text(
-          '$count',
-          style: TextStyle(
-            color: colors.onSurface,
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-
-        const SizedBox(height: 4),
-
-        // Increment/Decrement buttons (smaller)
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildScoringButton(
-              label: '+',
-              points: points,
-              color: Colors.blue,
-              onPressed: onIncrement,
-            ),
-            const SizedBox(width: 2),
-            _buildScoringButton(
-              label: '-',
-              points: null,
-              color: Colors.red,
-              onPressed: onDecrement,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildScoringButton({
-    required String label,
-    required int? points,
-    required Color color,
-    required VoidCallback? onPressed,
-  }) {
-    return SizedBox(
-      width: 38,
-      height: 38,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (points != null)
-              Text(
-                '$points',
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.normal,
-                ),
-              ),
-          ],
-        ),
       ),
     );
   }
