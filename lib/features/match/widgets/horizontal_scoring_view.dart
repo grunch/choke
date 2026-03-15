@@ -190,9 +190,9 @@ class HorizontalScoringView extends ConsumerWidget {
     return SafeArea(
       child: Row(
         children: [
-          // Left panel: Scoring for both fighters
+          // Left panel: Scoring for both fighters (flex 3)
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Container(
               color: colors.surface,
               child: Column(
@@ -245,101 +245,133 @@ class HorizontalScoringView extends ConsumerWidget {
             ),
           ),
 
-          // Right panel: Timer + controls
-          Container(
-            width: 300,
-            color: Colors.black,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Fighter 1 score (large)
-                Text(
-                  '${match.f1Score}',
-                  style: TextStyle(
-                    color: f1Color,
-                    fontSize: 120,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+          // Right panel: Timer + scores (flex 2, responsive)
+          Expanded(
+            flex: 2,
+            child: Container(
+              color: Colors.black,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Adaptive font sizes based on available height
+                  final scoreSize =
+                      (constraints.maxHeight * 0.18).clamp(40.0, 100.0);
+                  final timerSize =
+                      (constraints.maxHeight * 0.12).clamp(32.0, 70.0);
+                  final spacing =
+                      (constraints.maxHeight * 0.02).clamp(4.0, 16.0);
 
-                const SizedBox(height: 24),
-
-                // Timer
-                Text(
-                  _formatTime(state.remainingSeconds),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 80,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Pause/Reset controls
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Pause/Resume
-                    IconButton(
-                      onPressed: state.isRunning
-                          ? () {/* TODO: pause */}
-                          : () {/* TODO: resume */},
-                      icon: Icon(
-                        state.isRunning ? Icons.pause : Icons.play_arrow,
-                        size: 40,
-                        color: Colors.white,
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Fighter 1 score (adaptive)
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '${match.f1Score}',
+                          style: TextStyle(
+                            color: f1Color,
+                            fontSize: scoreSize,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(width: 16),
+                      SizedBox(height: spacing),
 
-                    // Timer adjust buttons
-                    IconButton(
-                      onPressed: () {/* TODO: +1 min */},
-                      icon: const Icon(
-                        Icons.add,
-                        size: 32,
-                        color: Colors.white70,
+                      // Timer (adaptive)
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          _formatTime(state.remainingSeconds),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: timerSize,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
                       ),
-                    ),
-                    const Icon(Icons.timer, size: 32, color: Colors.white70),
-                    IconButton(
-                      onPressed: () {/* TODO: -1 min */},
-                      icon: const Icon(
-                        Icons.remove,
-                        size: 32,
-                        color: Colors.white70,
+
+                      SizedBox(height: spacing),
+
+                      // Pause/Reset controls (compact)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Pause/Resume
+                          IconButton(
+                            onPressed: state.isRunning
+                                ? () {/* TODO: pause */}
+                                : () {/* TODO: resume */},
+                            icon: Icon(
+                              state.isRunning ? Icons.pause : Icons.play_arrow,
+                              size: (constraints.maxHeight * 0.06)
+                                  .clamp(20.0, 36.0),
+                              color: Colors.white,
+                            ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          // Timer adjust buttons
+                          IconButton(
+                            onPressed: () {/* TODO: +1 min */},
+                            icon: Icon(
+                              Icons.add,
+                              size: (constraints.maxHeight * 0.05)
+                                  .clamp(18.0, 28.0),
+                              color: Colors.white70,
+                            ),
+                          ),
+                          Icon(
+                            Icons.timer,
+                            size: (constraints.maxHeight * 0.05)
+                                .clamp(18.0, 28.0),
+                            color: Colors.white70,
+                          ),
+                          IconButton(
+                            onPressed: () {/* TODO: -1 min */},
+                            icon: Icon(
+                              Icons.remove,
+                              size: (constraints.maxHeight * 0.05)
+                                  .clamp(18.0, 28.0),
+                              color: Colors.white70,
+                            ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          // Reset/Power
+                          IconButton(
+                            onPressed: () {/* TODO: reset */},
+                            icon: Icon(
+                              Icons.power_settings_new,
+                              size: (constraints.maxHeight * 0.06)
+                                  .clamp(20.0, 36.0),
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
 
-                    const SizedBox(width: 16),
+                      SizedBox(height: spacing),
 
-                    // Reset/Power
-                    IconButton(
-                      onPressed: () {/* TODO: reset */},
-                      icon: const Icon(
-                        Icons.power_settings_new,
-                        size: 40,
-                        color: Colors.white,
+                      // Fighter 2 score (adaptive)
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '${match.f2Score}',
+                          style: TextStyle(
+                            color: f2Color,
+                            fontSize: scoreSize,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // Fighter 2 score (large)
-                Text(
-                  '${match.f2Score}',
-                  style: TextStyle(
-                    color: f2Color,
-                    fontSize: 120,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -362,128 +394,130 @@ class HorizontalScoringView extends ConsumerWidget {
     required ColorScheme colors,
     required bool isRunning,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Fighter name
-          Text(
-            name,
-            style: TextStyle(
-              color: colors.onSurface,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 6),
-
-          // Scoring columns
-          Expanded(
-            child: SingleChildScrollView(
-              child: Row(
-                children: [
-                  // Column 1: +4 (Mount/Back take)
-                  Expanded(
-                    child: _buildScoringColumn(
-                      emoji: '🏅',
-                      badge: '+4',
-                      count: pt4Count,
-                      onIncrement:
-                          isRunning ? () => notifier.scorePt4(fighter) : null,
-                      onDecrement: isRunning && pt4Count > 0
-                          ? () {
-                              // Decrement by calling undo until pt4 decreases
-                              // This is a simplified approach - ideally we'd have a dedicated decrement method
-                              notifier.undo();
-                            }
-                          : null,
-                      colors: colors,
-                    ),
-                  ),
-
-                  const SizedBox(width: 4),
-
-                  // Column 2: +3 (Guard pass)
-                  Expanded(
-                    child: _buildScoringColumn(
-                      emoji: '🛡️',
-                      badge: '+3',
-                      count: pt3Count,
-                      onIncrement:
-                          isRunning ? () => notifier.scorePt3(fighter) : null,
-                      onDecrement: isRunning && pt3Count > 0
-                          ? () => notifier.undo()
-                          : null,
-                      colors: colors,
-                    ),
-                  ),
-
-                  const SizedBox(width: 4),
-
-                  // Column 3: +2 (Takedown/Sweep)
-                  Expanded(
-                    child: _buildScoringColumn(
-                      emoji: '⚡',
-                      badge: '+2',
-                      count: pt2Count,
-                      onIncrement:
-                          isRunning ? () => notifier.scorePt2(fighter) : null,
-                      onDecrement: isRunning && pt2Count > 0
-                          ? () => notifier.undo()
-                          : null,
-                      colors: colors,
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  // Advantage/Penalty column
-                  SizedBox(
-                    width: 70,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Advantages
-                        _buildAdvPenColumn(
-                          colors: colors,
-                          emoji: '⭐',
-                          label: 'A',
-                          count: advantages,
-                          onIncrement: isRunning
-                              ? () => notifier.scoreAdv(fighter)
-                              : null,
-                          onDecrement: isRunning && advantages > 0
-                              ? () => notifier.undo()
-                              : null,
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        // Penalties
-                        _buildAdvPenColumn(
-                          colors: colors,
-                          emoji: '⚠️',
-                          label: 'P',
-                          count: penalties,
-                          onIncrement: isRunning
-                              ? () => notifier.scorePen(fighter)
-                              : null,
-                          onDecrement: isRunning && penalties > 0
-                              ? () => notifier.undo()
-                              : null,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Fighter name (compact)
+              Text(
+                name,
+                style: TextStyle(
+                  color: colors.onSurface,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
+
+              const SizedBox(height: 4),
+
+              // Scoring columns (fill available space)
+              Expanded(
+                child: Row(
+                  children: [
+                    // Column 1: +4 (Mount/Back take)
+                    Expanded(
+                      child: _buildScoringColumn(
+                        emoji: '🏅',
+                        badge: '+4',
+                        count: pt4Count,
+                        onIncrement:
+                            isRunning ? () => notifier.scorePt4(fighter) : null,
+                        onDecrement: isRunning && pt4Count > 0
+                            ? () {
+                                // Decrement by calling undo until pt4 decreases
+                                // This is a simplified approach - ideally we'd have a dedicated decrement method
+                                notifier.undo();
+                              }
+                            : null,
+                        colors: colors,
+                      ),
+                    ),
+
+                    const SizedBox(width: 4),
+
+                    // Column 2: +3 (Guard pass)
+                    Expanded(
+                      child: _buildScoringColumn(
+                        emoji: '🛡️',
+                        badge: '+3',
+                        count: pt3Count,
+                        onIncrement:
+                            isRunning ? () => notifier.scorePt3(fighter) : null,
+                        onDecrement: isRunning && pt3Count > 0
+                            ? () => notifier.undo()
+                            : null,
+                        colors: colors,
+                      ),
+                    ),
+
+                    const SizedBox(width: 4),
+
+                    // Column 3: +2 (Takedown/Sweep)
+                    Expanded(
+                      child: _buildScoringColumn(
+                        emoji: '⚡',
+                        badge: '+2',
+                        count: pt2Count,
+                        onIncrement:
+                            isRunning ? () => notifier.scorePt2(fighter) : null,
+                        onDecrement: isRunning && pt2Count > 0
+                            ? () => notifier.undo()
+                            : null,
+                        colors: colors,
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Advantage/Penalty column
+                    SizedBox(
+                      width: 70,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Advantages
+                          _buildAdvPenColumn(
+                            colors: colors,
+                            emoji: '⭐',
+                            label: 'A',
+                            count: advantages,
+                            onIncrement: isRunning
+                                ? () => notifier.scoreAdv(fighter)
+                                : null,
+                            onDecrement: isRunning && advantages > 0
+                                ? () => notifier.undo()
+                                : null,
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          // Penalties
+                          _buildAdvPenColumn(
+                            colors: colors,
+                            emoji: '⚠️',
+                            label: 'P',
+                            count: penalties,
+                            onIncrement: isRunning
+                                ? () => notifier.scorePen(fighter)
+                                : null,
+                            onDecrement: isRunning && penalties > 0
+                                ? () => notifier.undo()
+                                : null,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
