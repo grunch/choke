@@ -250,13 +250,16 @@ class HorizontalScoringView extends ConsumerWidget {
                 builder: (context, constraints) {
                   // Adaptive font sizes based on available height
                   final scoreSize =
-                      (constraints.maxHeight * 0.22).clamp(40.0, 110.0);
+                      (constraints.maxHeight * 0.20).clamp(36.0, 100.0);
                   final timerSize =
-                      (constraints.maxHeight * 0.15).clamp(32.0, 80.0);
+                      (constraints.maxHeight * 0.13).clamp(28.0, 70.0);
+                  final buttonSize =
+                      (constraints.maxHeight * 0.06).clamp(20.0, 32.0);
                   final spacing =
-                      (constraints.maxHeight * 0.02).clamp(4.0, 12.0);
+                      (constraints.maxHeight * 0.015).clamp(2.0, 8.0);
 
                   return Column(
+                    mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // Fighter 1 score (adaptive)
@@ -275,15 +278,19 @@ class HorizontalScoringView extends ConsumerWidget {
                       SizedBox(height: spacing),
 
                       // Pause/Resume (single button only)
-                      IconButton(
-                        onPressed: state.isRunning
-                            ? () {/* TODO: pause */}
-                            : () {/* TODO: resume */},
-                        icon: Icon(
-                          state.isRunning ? Icons.pause : Icons.play_arrow,
-                          size:
-                              (constraints.maxHeight * 0.08).clamp(24.0, 40.0),
-                          color: Colors.white,
+                      SizedBox(
+                        width: buttonSize,
+                        height: buttonSize,
+                        child: IconButton(
+                          onPressed: state.isRunning
+                              ? () {/* TODO: pause */}
+                              : () {/* TODO: resume */},
+                          padding: EdgeInsets.zero,
+                          icon: Icon(
+                            state.isRunning ? Icons.pause : Icons.play_arrow,
+                            size: buttonSize * 0.6,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
 
