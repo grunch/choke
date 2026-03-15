@@ -27,10 +27,9 @@ String _formatTime(int seconds) {
 class HorizontalScoringView extends ConsumerWidget {
   const HorizontalScoringView({super.key});
 
-  /// Build compact scoring column with emoji badge instead of text label
+  /// Build compact scoring column with modern badge design
   Widget _buildScoringColumn({
     required ColorScheme colors,
-    required String emoji,
     required String badge,
     required int count,
     required VoidCallback? onIncrement,
@@ -39,21 +38,21 @@ class HorizontalScoringView extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Emoji + badge
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 16)),
-            const SizedBox(width: 2),
-            Text(
-              badge,
-              style: TextStyle(
-                color: colors.onSurface.withOpacity(0.6),
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
+        // Modern badge (no emoji)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: colors.primary.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            badge,
+            style: TextStyle(
+              color: colors.primary,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
             ),
-          ],
+          ),
         ),
         const SizedBox(height: 2),
         // Count
@@ -105,10 +104,9 @@ class HorizontalScoringView extends ConsumerWidget {
     );
   }
 
-  /// Build compact advantage/penalty column with emoji
+  /// Build ultra-compact advantage/penalty column
   Widget _buildAdvPenColumn({
     required ColorScheme colors,
-    required String emoji,
     required String label,
     required int count,
     required VoidCallback? onIncrement,
@@ -117,36 +115,35 @@ class HorizontalScoringView extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Emoji + label (reduced)
+        // Label only (no emoji)
         Text(
-          '$emoji$label',
+          label,
           style: TextStyle(
             color: colors.onSurface.withOpacity(0.6),
-            fontSize: 9,
+            fontSize: 8,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 1),
-        // Count (reduced)
+        // Count (tiny)
         Text(
           count.toString(),
           style: TextStyle(
             color: colors.onSurface,
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 1),
-        // Buttons (smaller)
+        // Buttons (mini)
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 20,
-              height: 20,
+              width: 18,
+              height: 18,
               child: IconButton(
                 onPressed: onIncrement,
                 padding: EdgeInsets.zero,
-                iconSize: 12,
+                iconSize: 10,
                 icon: const Icon(Icons.add),
                 style: IconButton.styleFrom(
                   backgroundColor: colors.primary.withOpacity(0.1),
@@ -154,14 +151,13 @@ class HorizontalScoringView extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 1),
             SizedBox(
-              width: 20,
-              height: 20,
+              width: 18,
+              height: 18,
               child: IconButton(
                 onPressed: onDecrement,
                 padding: EdgeInsets.zero,
-                iconSize: 12,
+                iconSize: 10,
                 icon: const Icon(Icons.remove),
                 style: IconButton.styleFrom(
                   backgroundColor: colors.error.withOpacity(0.1),
@@ -190,9 +186,9 @@ class HorizontalScoringView extends ConsumerWidget {
     return SafeArea(
       child: Row(
         children: [
-          // Left panel: Scoring for both fighters (flex 3)
+          // Left panel: Scoring for both fighters (flex 4, more space)
           Expanded(
-            flex: 3,
+            flex: 4,
             child: Container(
               color: colors.surface,
               child: Column(
@@ -245,20 +241,20 @@ class HorizontalScoringView extends ConsumerWidget {
             ),
           ),
 
-          // Right panel: Timer + scores (flex 2, responsive)
+          // Right panel: Timer + scores (flex 1, more compact)
           Expanded(
-            flex: 2,
+            flex: 1,
             child: Container(
               color: Colors.black,
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   // Adaptive font sizes based on available height
                   final scoreSize =
-                      (constraints.maxHeight * 0.18).clamp(40.0, 100.0);
+                      (constraints.maxHeight * 0.22).clamp(40.0, 110.0);
                   final timerSize =
-                      (constraints.maxHeight * 0.12).clamp(32.0, 70.0);
+                      (constraints.maxHeight * 0.15).clamp(32.0, 80.0);
                   final spacing =
-                      (constraints.maxHeight * 0.02).clamp(4.0, 16.0);
+                      (constraints.maxHeight * 0.02).clamp(4.0, 12.0);
 
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -278,6 +274,21 @@ class HorizontalScoringView extends ConsumerWidget {
 
                       SizedBox(height: spacing),
 
+                      // Pause/Resume (single button only)
+                      IconButton(
+                        onPressed: state.isRunning
+                            ? () {/* TODO: pause */}
+                            : () {/* TODO: resume */},
+                        icon: Icon(
+                          state.isRunning ? Icons.pause : Icons.play_arrow,
+                          size:
+                              (constraints.maxHeight * 0.08).clamp(24.0, 40.0),
+                          color: Colors.white,
+                        ),
+                      ),
+
+                      SizedBox(height: spacing * 0.5),
+
                       // Timer (adaptive)
                       FittedBox(
                         fit: BoxFit.scaleDown,
@@ -290,68 +301,6 @@ class HorizontalScoringView extends ConsumerWidget {
                             fontFamily: 'monospace',
                           ),
                         ),
-                      ),
-
-                      SizedBox(height: spacing),
-
-                      // Pause/Reset controls (compact)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Pause/Resume
-                          IconButton(
-                            onPressed: state.isRunning
-                                ? () {/* TODO: pause */}
-                                : () {/* TODO: resume */},
-                            icon: Icon(
-                              state.isRunning ? Icons.pause : Icons.play_arrow,
-                              size: (constraints.maxHeight * 0.06)
-                                  .clamp(20.0, 36.0),
-                              color: Colors.white,
-                            ),
-                          ),
-
-                          const SizedBox(width: 8),
-
-                          // Timer adjust buttons
-                          IconButton(
-                            onPressed: () {/* TODO: +1 min */},
-                            icon: Icon(
-                              Icons.add,
-                              size: (constraints.maxHeight * 0.05)
-                                  .clamp(18.0, 28.0),
-                              color: Colors.white70,
-                            ),
-                          ),
-                          Icon(
-                            Icons.timer,
-                            size: (constraints.maxHeight * 0.05)
-                                .clamp(18.0, 28.0),
-                            color: Colors.white70,
-                          ),
-                          IconButton(
-                            onPressed: () {/* TODO: -1 min */},
-                            icon: Icon(
-                              Icons.remove,
-                              size: (constraints.maxHeight * 0.05)
-                                  .clamp(18.0, 28.0),
-                              color: Colors.white70,
-                            ),
-                          ),
-
-                          const SizedBox(width: 8),
-
-                          // Reset/Power
-                          IconButton(
-                            onPressed: () {/* TODO: reset */},
-                            icon: Icon(
-                              Icons.power_settings_new,
-                              size: (constraints.maxHeight * 0.06)
-                                  .clamp(20.0, 36.0),
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
                       ),
 
                       SizedBox(height: spacing),
@@ -420,7 +369,6 @@ class HorizontalScoringView extends ConsumerWidget {
                     // Column 1: +4 (Mount/Back take)
                     Expanded(
                       child: _buildScoringColumn(
-                        emoji: '🏅',
                         badge: '+4',
                         count: pt4Count,
                         onIncrement:
@@ -441,7 +389,6 @@ class HorizontalScoringView extends ConsumerWidget {
                     // Column 2: +3 (Guard pass)
                     Expanded(
                       child: _buildScoringColumn(
-                        emoji: '🛡️',
                         badge: '+3',
                         count: pt3Count,
                         onIncrement:
@@ -458,7 +405,6 @@ class HorizontalScoringView extends ConsumerWidget {
                     // Column 3: +2 (Takedown/Sweep)
                     Expanded(
                       child: _buildScoringColumn(
-                        emoji: '⚡',
                         badge: '+2',
                         count: pt2Count,
                         onIncrement:
@@ -472,9 +418,9 @@ class HorizontalScoringView extends ConsumerWidget {
 
                     const SizedBox(width: 8),
 
-                    // Advantage/Penalty column (compact)
+                    // Advantage/Penalty column (ultra-compact)
                     SizedBox(
-                      width: 60,
+                      width: 50,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
@@ -482,7 +428,6 @@ class HorizontalScoringView extends ConsumerWidget {
                           // Advantages
                           _buildAdvPenColumn(
                             colors: colors,
-                            emoji: '⭐',
                             label: 'A',
                             count: advantages,
                             onIncrement: isRunning
@@ -493,12 +438,11 @@ class HorizontalScoringView extends ConsumerWidget {
                                 : null,
                           ),
 
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
 
                           // Penalties
                           _buildAdvPenColumn(
                             colors: colors,
-                            emoji: '⚠️',
                             label: 'P',
                             count: penalties,
                             onIncrement: isRunning
