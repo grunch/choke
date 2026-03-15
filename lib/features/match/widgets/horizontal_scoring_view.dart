@@ -117,36 +117,36 @@ class HorizontalScoringView extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Emoji + label
+        // Emoji + label (reduced)
         Text(
-          '$emoji $label',
+          '$emoji$label',
           style: TextStyle(
             color: colors.onSurface.withOpacity(0.6),
-            fontSize: 10,
+            fontSize: 9,
           ),
         ),
-        const SizedBox(height: 2),
-        // Count
+        const SizedBox(height: 1),
+        // Count (reduced)
         Text(
           count.toString(),
           style: TextStyle(
             color: colors.onSurface,
-            fontSize: 20,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 2),
-        // Buttons
+        const SizedBox(height: 1),
+        // Buttons (smaller)
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 24,
-              height: 24,
+              width: 20,
+              height: 20,
               child: IconButton(
                 onPressed: onIncrement,
                 padding: EdgeInsets.zero,
-                iconSize: 14,
+                iconSize: 12,
                 icon: const Icon(Icons.add),
                 style: IconButton.styleFrom(
                   backgroundColor: colors.primary.withOpacity(0.1),
@@ -154,14 +154,14 @@ class HorizontalScoringView extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 2),
+            const SizedBox(width: 1),
             SizedBox(
-              width: 24,
-              height: 24,
+              width: 20,
+              height: 20,
               child: IconButton(
                 onPressed: onDecrement,
                 padding: EdgeInsets.zero,
-                iconSize: 14,
+                iconSize: 12,
                 icon: const Icon(Icons.remove),
                 style: IconButton.styleFrom(
                   backgroundColor: colors.error.withOpacity(0.1),
@@ -472,9 +472,9 @@ class HorizontalScoringView extends ConsumerWidget {
 
                     const SizedBox(width: 8),
 
-                    // Advantage/Penalty column
+                    // Advantage/Penalty column (compact)
                     SizedBox(
-                      width: 70,
+                      width: 60,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
@@ -493,7 +493,7 @@ class HorizontalScoringView extends ConsumerWidget {
                                 : null,
                           ),
 
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 4),
 
                           // Penalties
                           _buildAdvPenColumn(
