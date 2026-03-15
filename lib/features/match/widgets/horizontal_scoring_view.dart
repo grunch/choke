@@ -215,7 +215,7 @@ class HorizontalScoringView extends ConsumerWidget {
     required bool isRunning,
   }) {
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -224,162 +224,169 @@ class HorizontalScoringView extends ConsumerWidget {
             name,
             style: TextStyle(
               color: colors.onSurface,
-              fontSize: 20,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
 
           // Scoring columns
           Expanded(
-            child: Row(
-              children: [
-                // Column 1: +4 (Mount/Back take)
-                Expanded(
-                  child: _buildScoringColumn(
-                    label: l10n.mountBackTake,
-                    points: 4,
-                    count: pt4Count,
-                    onIncrement:
-                        isRunning ? () => notifier.scorePt4(fighter) : null,
-                    onDecrement: isRunning && pt4Count > 0
-                        ? () {
-                            // Decrement by calling undo until pt4 decreases
-                            // This is a simplified approach - ideally we'd have a dedicated decrement method
-                            notifier.undo();
-                          }
-                        : null,
-                    colors: colors,
+            child: SingleChildScrollView(
+              child: Row(
+                children: [
+                  // Column 1: +4 (Mount/Back take)
+                  Expanded(
+                    child: _buildScoringColumn(
+                      label: l10n.mountBackTake,
+                      points: 4,
+                      count: pt4Count,
+                      onIncrement:
+                          isRunning ? () => notifier.scorePt4(fighter) : null,
+                      onDecrement: isRunning && pt4Count > 0
+                          ? () {
+                              // Decrement by calling undo until pt4 decreases
+                              // This is a simplified approach - ideally we'd have a dedicated decrement method
+                              notifier.undo();
+                            }
+                          : null,
+                      colors: colors,
+                    ),
                   ),
-                ),
 
-                const SizedBox(width: 8),
+                  const SizedBox(width: 8),
 
-                // Column 2: +3 (Guard pass)
-                Expanded(
-                  child: _buildScoringColumn(
-                    label: l10n.guardPass,
-                    points: 3,
-                    count: pt3Count,
-                    onIncrement:
-                        isRunning ? () => notifier.scorePt3(fighter) : null,
-                    onDecrement: isRunning && pt3Count > 0
-                        ? () => notifier.undo()
-                        : null,
-                    colors: colors,
+                  // Column 2: +3 (Guard pass)
+                  Expanded(
+                    child: _buildScoringColumn(
+                      label: l10n.guardPass,
+                      points: 3,
+                      count: pt3Count,
+                      onIncrement:
+                          isRunning ? () => notifier.scorePt3(fighter) : null,
+                      onDecrement: isRunning && pt3Count > 0
+                          ? () => notifier.undo()
+                          : null,
+                      colors: colors,
+                    ),
                   ),
-                ),
 
-                const SizedBox(width: 8),
+                  const SizedBox(width: 8),
 
-                // Column 3: +2 (Takedown/Sweep)
-                Expanded(
-                  child: _buildScoringColumn(
-                    label: l10n.takedownSweep,
-                    points: 2,
-                    count: pt2Count,
-                    onIncrement:
-                        isRunning ? () => notifier.scorePt2(fighter) : null,
-                    onDecrement: isRunning && pt2Count > 0
-                        ? () => notifier.undo()
-                        : null,
-                    colors: colors,
+                  // Column 3: +2 (Takedown/Sweep)
+                  Expanded(
+                    child: _buildScoringColumn(
+                      label: l10n.takedownSweep,
+                      points: 2,
+                      count: pt2Count,
+                      onIncrement:
+                          isRunning ? () => notifier.scorePt2(fighter) : null,
+                      onDecrement: isRunning && pt2Count > 0
+                          ? () => notifier.undo()
+                          : null,
+                      colors: colors,
+                    ),
                   ),
-                ),
 
-                const SizedBox(width: 16),
+                  const SizedBox(width: 16),
 
-                // Advantage/Penalty column
-                SizedBox(
-                  width: 100,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Advantages
-                      Text(
-                        l10n.advantage,
-                        style: TextStyle(
-                          color: colors.onSurface.withOpacity(0.7),
-                          fontSize: 11,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$advantages',
-                        style: TextStyle(
-                          color: colors.onSurface,
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildSmallButton(
-                            icon: Icons.add,
-                            color: BJJColors.gold,
-                            onPressed: isRunning
-                                ? () => notifier.scoreAdv(fighter)
-                                : null,
+                  // Advantage/Penalty column
+                  SizedBox(
+                    width: 80,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Advantages
+                        Text(
+                          l10n.advantage,
+                          style: TextStyle(
+                            color: colors.onSurface.withOpacity(0.7),
+                            fontSize: 9,
                           ),
-                          const SizedBox(width: 4),
-                          _buildSmallButton(
-                            icon: Icons.remove,
-                            color: Colors.red,
-                            onPressed: isRunning && advantages > 0
-                                ? () => notifier.undo()
-                                : null,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '$advantages',
+                          style: TextStyle(
+                            color: colors.onSurface,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildSmallButton(
+                              icon: Icons.add,
+                              color: BJJColors.gold,
+                              onPressed: isRunning
+                                  ? () => notifier.scoreAdv(fighter)
+                                  : null,
+                            ),
+                            const SizedBox(width: 2),
+                            _buildSmallButton(
+                              icon: Icons.remove,
+                              color: Colors.red,
+                              onPressed: isRunning && advantages > 0
+                                  ? () => notifier.undo()
+                                  : null,
+                            ),
+                          ],
+                        ),
 
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 8),
 
-                      // Penalties
-                      Text(
-                        l10n.penalty,
-                        style: TextStyle(
-                          color: colors.onSurface.withOpacity(0.7),
-                          fontSize: 11,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '$penalties',
-                        style: TextStyle(
-                          color: colors.onSurface,
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _buildSmallButton(
-                            icon: Icons.add,
-                            color: BJJColors.gold,
-                            onPressed: isRunning
-                                ? () => notifier.scorePen(fighter)
-                                : null,
+                        // Penalties
+                        Text(
+                          l10n.penalty,
+                          style: TextStyle(
+                            color: colors.onSurface.withOpacity(0.7),
+                            fontSize: 9,
                           ),
-                          _buildSmallButton(
-                            icon: Icons.remove,
-                            color: Colors.red,
-                            onPressed: isRunning && penalties > 0
-                                ? () => notifier.undo()
-                                : null,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '$penalties',
+                          style: TextStyle(
+                            color: colors.onSurface,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildSmallButton(
+                              icon: Icons.add,
+                              color: BJJColors.gold,
+                              onPressed: isRunning
+                                  ? () => notifier.scorePen(fighter)
+                                  : null,
+                            ),
+                            _buildSmallButton(
+                              icon: Icons.remove,
+                              color: Colors.red,
+                              onPressed: isRunning && penalties > 0
+                                  ? () => notifier.undo()
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -397,34 +404,39 @@ class HorizontalScoringView extends ConsumerWidget {
   }) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Label
-        Text(
-          label,
-          style: TextStyle(
-            color: colors.onSurface.withOpacity(0.7),
-            fontSize: 11,
+        // Label (compact)
+        SizedBox(
+          height: 28,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: colors.onSurface.withOpacity(0.7),
+              fontSize: 9,
+              height: 1.1,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
 
-        // Count (large)
+        // Count (reduced)
         Text(
           '$count',
           style: TextStyle(
             color: colors.onSurface,
-            fontSize: 48,
+            fontSize: 32,
             fontWeight: FontWeight.bold,
           ),
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
 
-        // Increment/Decrement buttons
+        // Increment/Decrement buttons (smaller)
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -434,7 +446,7 @@ class HorizontalScoringView extends ConsumerWidget {
               color: Colors.blue,
               onPressed: onIncrement,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 2),
             _buildScoringButton(
               label: '-',
               points: null,
@@ -454,8 +466,8 @@ class HorizontalScoringView extends ConsumerWidget {
     required VoidCallback? onPressed,
   }) {
     return SizedBox(
-      width: 50,
-      height: 50,
+      width: 38,
+      height: 38,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
@@ -463,7 +475,7 @@ class HorizontalScoringView extends ConsumerWidget {
           foregroundColor: Colors.white,
           padding: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
           ),
         ),
         child: Column(
@@ -472,7 +484,7 @@ class HorizontalScoringView extends ConsumerWidget {
             Text(
               label,
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -480,7 +492,7 @@ class HorizontalScoringView extends ConsumerWidget {
               Text(
                 '$points',
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: 10,
                   fontWeight: FontWeight.normal,
                 ),
               ),
@@ -496,8 +508,8 @@ class HorizontalScoringView extends ConsumerWidget {
     required VoidCallback? onPressed,
   }) {
     return SizedBox(
-      width: 36,
-      height: 36,
+      width: 28,
+      height: 28,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
@@ -506,7 +518,7 @@ class HorizontalScoringView extends ConsumerWidget {
           padding: EdgeInsets.zero,
           shape: const CircleBorder(),
         ),
-        child: Icon(icon, size: 18),
+        child: Icon(icon, size: 14),
       ),
     );
   }
