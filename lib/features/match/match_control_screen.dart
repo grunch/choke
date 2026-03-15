@@ -4,6 +4,7 @@ import 'package:choke/l10n/generated/app_localizations.dart';
 import '../../shared/theme/app_theme.dart';
 import 'models/match.dart';
 import 'providers/match_control_provider.dart';
+import 'widgets/horizontal_scoring_view.dart';
 
 /// Parse hex color string (#RRGGBB) to Color with fallback
 Color _hexToColor(String hex, Color fallback) {
@@ -48,187 +49,222 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
     final f2Color = _hexToColor(match.f2Color, colors.outline);
     final l10n = AppLocalizations.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.matchId(match.id)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => _onBack(context, state),
-        ),
-        actions: [
-          if (state.isPublishing)
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: colors.secondary,
-                ),
+    return OrientationBuilder(
+      builder: (context, orientation) {
+        // Use horizontal layout for landscape orientation
+        if (orientation == Orientation.landscape) {
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(l10n.matchId(match.id)),
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => _onBack(context, state),
               ),
-            ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Timer
-            _buildTimer(context, state),
-
-            const SizedBox(height: 16),
-
-            // Score cards
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildScoreCard(
-                      context,
-                      name: match.f1Name,
-                      score: match.f1Score,
-                      advantages: match.f1Adv,
-                      penalties: match.f1Pen,
-                      color: f1Color,
-                      isLeading: match.f1Score > match.f2Score,
-                    ),
-                  ),
+              actions: [
+                if (state.isPublishing)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: colors.surface,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        l10n.vsLabel,
-                        style: TextStyle(
-                          color: colors.onSurface,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
+                    padding: const EdgeInsets.only(right: 16),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colors.secondary,
                       ),
                     ),
                   ),
-                  Expanded(
-                    child: _buildScoreCard(
-                      context,
-                      name: match.f2Name,
-                      score: match.f2Score,
-                      advantages: match.f2Adv,
-                      penalties: match.f2Pen,
-                      color: f2Color,
-                      isLeading: match.f2Score > match.f1Score,
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ),
+            body: const HorizontalScoringView(),
+          );
+        }
 
-            const SizedBox(height: 16),
-
-            // Scoring panel
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: colors.surfaceContainerHighest,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(32),
-                    topRight: Radius.circular(32),
+        // Default vertical layout for portrait
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(l10n.matchId(match.id)),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => _onBack(context, state),
+            ),
+            actions: [
+              if (state.isPublishing)
+                Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colors.secondary,
+                    ),
                   ),
                 ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            ],
+          ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Timer
+                _buildTimer(context, state),
+
+                const SizedBox(height: 16),
+
+                // Score cards
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
                     children: [
-                      // Fighter selector
-                      _buildFighterSelector(context, match, f1Color, f2Color),
-
-                      const SizedBox(height: 20),
-
-                      // Scoring buttons
-                      if (state.isRunning) ...[
-                        _buildScoringButton(
-                          context: context,
-                          icon: Icons.sports_mma,
-                          label: l10n.takedownSweep,
-                          points: '+2',
-                          color: colors.primary,
-                          onTap: () => notifier.scorePt2(_selectedFighter),
+                      Expanded(
+                        child: _buildScoreCard(
+                          context,
+                          name: match.f1Name,
+                          score: match.f1Score,
+                          advantages: match.f1Adv,
+                          penalties: match.f1Pen,
+                          color: f1Color,
+                          isLeading: match.f1Score > match.f2Score,
                         ),
-                        const SizedBox(height: 10),
-                        _buildScoringButton(
-                          context: context,
-                          icon: Icons.arrow_circle_up,
-                          label: l10n.guardPass,
-                          points: '+3',
-                          color: colors.primary,
-                          onTap: () => notifier.scorePt3(_selectedFighter),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildScoringButton(
-                          context: context,
-                          icon: Icons.circle,
-                          label: l10n.mountBackTake,
-                          points: '+4',
-                          color: colors.secondary,
-                          onTap: () => notifier.scorePt4(_selectedFighter),
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildCompactButton(
-                                context: context,
-                                label: l10n.advantage,
-                                icon: Icons.add,
-                                color: BJJColors.gold,
-                                onTap: () =>
-                                    notifier.scoreAdv(_selectedFighter),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _buildCompactButton(
-                                context: context,
-                                label: l10n.penalty,
-                                icon: Icons.remove,
-                                color: colors.error,
-                                onTap: () =>
-                                    notifier.scorePen(_selectedFighter),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: state.canUndo ? notifier.undo : null,
-                            icon: const Icon(Icons.undo, size: 18),
-                            label: Text(l10n.undoLastAction),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: colors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            l10n.vsLabel,
+                            style: TextStyle(
+                              color: colors.onSurface,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
                             ),
                           ),
                         ),
-                      ],
-
-                      const SizedBox(height: 20),
-
-                      // Status actions
-                      _buildStatusActions(context, state, notifier),
+                      ),
+                      Expanded(
+                        child: _buildScoreCard(
+                          context,
+                          name: match.f2Name,
+                          score: match.f2Score,
+                          advantages: match.f2Adv,
+                          penalties: match.f2Pen,
+                          color: f2Color,
+                          isLeading: match.f2Score > match.f1Score,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
+
+                const SizedBox(height: 16),
+
+                // Scoring panel
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colors.surfaceContainerHighest,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(32),
+                        topRight: Radius.circular(32),
+                      ),
+                    ),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Fighter selector
+                          _buildFighterSelector(
+                              context, match, f1Color, f2Color),
+
+                          const SizedBox(height: 20),
+
+                          // Scoring buttons
+                          if (state.isRunning) ...[
+                            _buildScoringButton(
+                              context: context,
+                              icon: Icons.sports_mma,
+                              label: l10n.takedownSweep,
+                              points: '+2',
+                              color: colors.primary,
+                              onTap: () => notifier.scorePt2(_selectedFighter),
+                            ),
+                            const SizedBox(height: 10),
+                            _buildScoringButton(
+                              context: context,
+                              icon: Icons.arrow_circle_up,
+                              label: l10n.guardPass,
+                              points: '+3',
+                              color: colors.primary,
+                              onTap: () => notifier.scorePt3(_selectedFighter),
+                            ),
+                            const SizedBox(height: 10),
+                            _buildScoringButton(
+                              context: context,
+                              icon: Icons.circle,
+                              label: l10n.mountBackTake,
+                              points: '+4',
+                              color: colors.secondary,
+                              onTap: () => notifier.scorePt4(_selectedFighter),
+                            ),
+                            const SizedBox(height: 14),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    context: context,
+                                    label: l10n.advantage,
+                                    icon: Icons.add,
+                                    color: BJJColors.gold,
+                                    onTap: () =>
+                                        notifier.scoreAdv(_selectedFighter),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _buildCompactButton(
+                                    context: context,
+                                    label: l10n.penalty,
+                                    icon: Icons.remove,
+                                    color: colors.error,
+                                    onTap: () =>
+                                        notifier.scorePen(_selectedFighter),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: state.canUndo ? notifier.undo : null,
+                                icon: const Icon(Icons.undo, size: 18),
+                                label: Text(l10n.undoLastAction),
+                                style: OutlinedButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 14),
+                                ),
+                              ),
+                            ),
+                          ],
+
+                          const SizedBox(height: 20),
+
+                          // Status actions
+                          _buildStatusActions(context, state, notifier),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
