@@ -4,6 +4,7 @@ import 'package:choke/l10n/generated/app_localizations.dart';
 import '../../shared/theme/app_theme.dart';
 import 'models/match.dart';
 import 'providers/match_control_provider.dart';
+import 'widgets/horizontal_scoring_view.dart';
 
 /// Parse hex color string (#RRGGBB) to Color with fallback
 Color _hexToColor(String hex, Color fallback) {
@@ -48,6 +49,18 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
     final f2Color = _hexToColor(match.f2Color, colors.outline);
     final l10n = AppLocalizations.of(context);
 
+    // Detect orientation
+    final orientation = MediaQuery.of(context).orientation;
+    final isLandscape = orientation == Orientation.landscape;
+
+    // Landscape mode: Show horizontal scoring view (no AppBar)
+    if (isLandscape) {
+      return const Scaffold(
+        body: HorizontalScoringView(),
+      );
+    }
+
+    // Portrait mode: Show vertical mode (current UI)
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.matchId(match.id)),
