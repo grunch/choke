@@ -104,10 +104,10 @@ class HorizontalScoringView extends ConsumerWidget {
     );
   }
 
-  /// Build ultra-compact advantage/penalty column
+  /// Build ultra-compact advantage/penalty column with emoji
   Widget _buildAdvPenColumn({
     required ColorScheme colors,
-    required String label,
+    required String emoji,
     required int count,
     required VoidCallback? onIncrement,
     required VoidCallback? onDecrement,
@@ -115,14 +115,10 @@ class HorizontalScoringView extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Label only (no emoji)
+        // Emoji only (save space)
         Text(
-          label,
-          style: TextStyle(
-            color: colors.onSurface.withOpacity(0.6),
-            fontSize: 8,
-            fontWeight: FontWeight.bold,
-          ),
+          emoji,
+          style: const TextStyle(fontSize: 14),
         ),
         // Count (tiny)
         Text(
@@ -262,6 +258,19 @@ class HorizontalScoringView extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // Match ID (compact, above score)
+                      Text(
+                        '#${match.id.substring(0, 5)}',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize:
+                              (constraints.maxHeight * 0.025).clamp(10.0, 14.0),
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+
+                      SizedBox(height: spacing * 0.5),
+
                       // Fighter 1 score (adaptive)
                       FittedBox(
                         fit: BoxFit.scaleDown,
@@ -277,21 +286,48 @@ class HorizontalScoringView extends ConsumerWidget {
 
                       SizedBox(height: spacing),
 
-                      // Pause/Resume (single button only)
-                      SizedBox(
-                        width: buttonSize,
-                        height: buttonSize,
-                        child: IconButton(
-                          onPressed: state.isRunning
-                              ? () {/* TODO: pause */}
-                              : () {/* TODO: resume */},
-                          padding: EdgeInsets.zero,
-                          icon: Icon(
-                            state.isRunning ? Icons.pause : Icons.play_arrow,
-                            size: buttonSize * 0.6,
-                            color: Colors.white,
+                      // Control buttons row (pause + undo)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Pause/Resume button
+                          SizedBox(
+                            width: buttonSize,
+                            height: buttonSize,
+                            child: IconButton(
+                              onPressed: state.isRunning
+                                  ? () {/* TODO: pause */}
+                                  : () {/* TODO: resume */},
+                              padding: EdgeInsets.zero,
+                              icon: Icon(
+                                state.isRunning
+                                    ? Icons.pause
+                                    : Icons.play_arrow,
+                                size: buttonSize * 0.6,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
-                        ),
+
+                          SizedBox(width: spacing),
+
+                          // Undo button
+                          SizedBox(
+                            width: buttonSize,
+                            height: buttonSize,
+                            child: IconButton(
+                              onPressed: state.isRunning
+                                  ? () => notifier.undo()
+                                  : null,
+                              padding: EdgeInsets.zero,
+                              icon: Text(
+                                '↩️',
+                                style: TextStyle(fontSize: buttonSize * 0.6),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
 
                       SizedBox(height: spacing * 0.5),
@@ -432,10 +468,10 @@ class HorizontalScoringView extends ConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Advantages
+                          // Advantages (🫳 open hand)
                           _buildAdvPenColumn(
                             colors: colors,
-                            label: 'A',
+                            emoji: '🫳',
                             count: advantages,
                             onIncrement: isRunning
                                 ? () => notifier.scoreAdv(fighter)
@@ -447,10 +483,10 @@ class HorizontalScoringView extends ConsumerWidget {
 
                           const SizedBox(height: 2),
 
-                          // Penalties
+                          // Penalties (✊ fist)
                           _buildAdvPenColumn(
                             colors: colors,
-                            label: 'P',
+                            emoji: '✊',
                             count: penalties,
                             onIncrement: isRunning
                                 ? () => notifier.scorePen(fighter)
