@@ -285,15 +285,27 @@ class HorizontalScoringView extends ConsumerWidget {
 
                       SizedBox(height: spacing * 0.5),
 
-                      // Fighter 1 score (adaptive)
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          '${match.f1Score}',
-                          style: TextStyle(
-                            color: f1Color,
-                            fontSize: scoreSize,
-                            fontWeight: FontWeight.bold,
+                      // Fighter 1 score (adaptive, with colored background)
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: scoreSize * 0.3,
+                          vertical: scoreSize * 0.15,
+                        ),
+                        decoration: BoxDecoration(
+                          color: f1Color,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            '${match.f1Score}',
+                            style: TextStyle(
+                              color: f1Color.computeLuminance() > 0.5
+                                  ? Colors.black
+                                  : Colors.white,
+                              fontSize: scoreSize,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -370,15 +382,27 @@ class HorizontalScoringView extends ConsumerWidget {
 
                       SizedBox(height: spacing),
 
-                      // Fighter 2 score (adaptive)
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          '${match.f2Score}',
-                          style: TextStyle(
-                            color: f2Color,
-                            fontSize: scoreSize,
-                            fontWeight: FontWeight.bold,
+                      // Fighter 2 score (adaptive, with colored background)
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: scoreSize * 0.3,
+                          vertical: scoreSize * 0.15,
+                        ),
+                        decoration: BoxDecoration(
+                          color: f2Color,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            '${match.f2Score}',
+                            style: TextStyle(
+                              color: f2Color.computeLuminance() > 0.5
+                                  ? Colors.black
+                                  : Colors.white,
+                              fontSize: scoreSize,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
