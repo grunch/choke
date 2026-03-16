@@ -38,19 +38,24 @@ class HorizontalScoringView extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Modern badge (no emoji)
+        // Modern badge (clean design)
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: colors.primary.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(4),
+            color: colors.primary.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: colors.primary.withOpacity(0.3),
+              width: 1,
+            ),
           ),
           child: Text(
             badge,
             style: TextStyle(
               color: colors.primary,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
             ),
           ),
         ),
@@ -258,14 +263,23 @@ class HorizontalScoringView extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Match ID (compact, above score)
-                      Text(
-                        '#${match.id.substring(0, 5)}',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize:
-                              (constraints.maxHeight * 0.025).clamp(10.0, 14.0),
-                          fontWeight: FontWeight.w300,
+                      // Match ID (compact badge, above score)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '#${match.id.substring(0, 5)}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.6),
+                            fontSize: (constraints.maxHeight * 0.025)
+                                .clamp(9.0, 12.0),
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: 0.5,
+                          ),
                         ),
                       ),
 
@@ -312,18 +326,26 @@ class HorizontalScoringView extends ConsumerWidget {
 
                           SizedBox(width: spacing),
 
-                          // Undo button
+                          // Undo button (more visible)
                           SizedBox(
                             width: buttonSize,
                             height: buttonSize,
-                            child: IconButton(
-                              onPressed: state.isRunning
-                                  ? () => notifier.undo()
-                                  : null,
-                              padding: EdgeInsets.zero,
-                              icon: Text(
-                                '↩️',
-                                style: TextStyle(fontSize: buttonSize * 0.6),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: state.isRunning
+                                    ? Colors.white.withOpacity(0.1)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: IconButton(
+                                onPressed: state.isRunning
+                                    ? () => notifier.undo()
+                                    : null,
+                                padding: EdgeInsets.zero,
+                                icon: Text(
+                                  '↩️',
+                                  style: TextStyle(fontSize: buttonSize * 0.55),
+                                ),
                               ),
                             ),
                           ),
