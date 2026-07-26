@@ -11,6 +11,7 @@ import 'package:choke/services/key_management/key_manager.dart';
 import 'package:choke/services/nostr/crypto/nostr_crypto.dart';
 import 'package:choke/services/nostr/nostr_service.dart';
 import 'package:choke/shared/theme/app_theme.dart';
+import 'package:choke/shared/widgets/status_filter_bar.dart';
 
 import '../../support/nostr_fakes.dart';
 
@@ -136,6 +137,7 @@ void main() {
         const ScoreboardScreen(),
         overrides: [
           scoreboardMatchesProvider.overrideWithValue([_match()]),
+          scoreboardFilteredMatchesProvider.overrideWithValue([_match()]),
         ],
       ));
       await tester.pump();
@@ -156,6 +158,7 @@ void main() {
         const ScoreboardScreen(),
         overrides: [
           scoreboardMatchesProvider.overrideWithValue(const []),
+          scoreboardFilteredMatchesProvider.overrideWithValue(const []),
         ],
       ));
       await tester.pump();
@@ -251,6 +254,7 @@ void main() {
         const ScoreboardMatchScreen(matchId: 'gone'),
         overrides: [
           scoreboardMatchesProvider.overrideWithValue(const []),
+          scoreboardFilteredMatchesProvider.overrideWithValue(const []),
         ],
       ));
       await tester.pump();
@@ -258,6 +262,106 @@ void main() {
       // Assert
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       expect(find.text(l10n.scoreboardEmptyTitle), findsOneWidget);
+    });
+  });
+
+  group('ScoreboardScreen status filter', () {
+    testWidgets('shows a chip per status, counting everything in scope',
+        (tester) async {
+      // Arrange — counts come from the whole set, not from what survives the
+      // filter, or a hidden status would always read zero
+      SharedPreferences.setMockInitialValues(
+        {'choke:scoreboard-pubkey': _watched},
+      );
+      final live = _match();
+      final done = _match(status: MatchStatus.finished);
+
+      // Act
+      await tester.pumpWidget(_wrap(
+        const ScoreboardScreen(),
+        overrides: [
+          scoreboardMatchesProvider.overrideWithValue([live, done]),
+          scoreboardFilteredMatchesProvider.overrideWithValue([live]),
+        ],
+      ));
+      await tester.pump();
+      await tester.pump();
+
+      // Assert — four chips, and the finished one counts its match even though
+      // the list is not showing it
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.byType(StatusFilterBar), findsOneWidget);
+
+      // Scoped to the bar: the cards carry a status chip of their own, so a
+      // bare text finder would count those too.
+      Finder inBar(String label) => find.descendant(
+            of: find.byType(StatusFilterBar),
+            matching: find.text(label),
+          );
+      expect(inBar(l10n.statusFinished), findsOneWidget);
+      expect(inBar(l10n.statusInProgress), findsOneWidget);
+      expect(inBar(l10n.statusWaiting), findsOneWidget);
+      expect(inBar(l10n.statusCanceled), findsOneWidget);
+    });
+
+    testWidgets('tapping a chip toggles that status into the filter',
+        (tester) async {
+      // Arrange
+      SharedPreferences.setMockInitialValues(
+        {'choke:scoreboard-pubkey': _watched},
+      );
+      late WidgetRef capturedRef;
+      await tester.pumpWidget(_wrap(
+        Consumer(builder: (context, ref, _) {
+          capturedRef = ref;
+          return const ScoreboardScreen();
+        }),
+        overrides: [
+          scoreboardMatchesProvider.overrideWithValue([_match()]),
+          scoreboardFilteredMatchesProvider.overrideWithValue([_match()]),
+        ],
+      ));
+      await tester.pump();
+      await tester.pump();
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(
+        capturedRef.read(scoreboardStatusFilterProvider),
+        isNot(contains(MatchStatus.finished)),
+      );
+
+      final chip = find.descendant(
+        of: find.byType(StatusFilterBar),
+        matching: find.text(l10n.statusFinished),
+      );
+
+      // Act
+      await tester.tap(chip);
+      await tester.pump();
+
+      // Assert
+      expect(
+        capturedRef.read(scoreboardStatusFilterProvider),
+        contains(MatchStatus.finished),
+      );
+
+      // Act — and off again
+      await tester.tap(chip);
+      await tester.pump();
+
+      // Assert
+      expect(
+        capturedRef.read(scoreboardStatusFilterProvider),
+        isNot(contains(MatchStatus.finished)),
+      );
+    });
+
+    testWidgets('no chips before a pubkey is being watched', (tester) async {
+      // Arrange + Act — nothing to filter yet
+      await tester.pumpWidget(_wrap(const ScoreboardScreen()));
+      await tester.pump();
+
+      // Assert
+      expect(find.byType(StatusFilterBar), findsNothing);
     });
   });
 }

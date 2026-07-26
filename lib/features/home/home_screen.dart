@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/match_card.dart';
+import '../../shared/widgets/status_filter_bar.dart';
 import '../match/create_match_screen.dart';
 import '../match/match_control_screen.dart';
 import '../match/models/match.dart';
@@ -83,8 +84,11 @@ class HomeScreen extends ConsumerWidget {
             // Status filter cards
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-              child:
-                  _buildStatusCards(context, ref, statusFilter, allMatches, tk),
+              child: StatusFilterBar(
+                matches: allMatches,
+                selected: statusFilter,
+                onToggle: (status) => _toggleStatus(ref, status),
+              ),
             ),
 
             // Match list
@@ -153,93 +157,10 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatusCards(
-    BuildContext context,
-    WidgetRef ref,
-    Set<MatchStatus> selected,
-    List<Match> allMatches,
-    ChokeTokens tk,
-  ) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final status in MatchStatus.values)
-          _buildStatusCard(context, ref, status, selected, allMatches, tk),
-      ],
-    );
-  }
-
-  Widget _buildStatusCard(
-    BuildContext context,
-    WidgetRef ref,
-    MatchStatus status,
-    Set<MatchStatus> selected,
-    List<Match> allMatches,
-    ChokeTokens tk,
-  ) {
-    final l10n = AppLocalizations.of(context);
-    final isSelected = selected.contains(status);
-    final count = allMatches.where((m) => m.status == status).length;
-    final color = matchStatusAccent(tk, status);
-
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: '${matchStatusLabel(l10n, status)}: $count',
-      child: GestureDetector(
-        onTap: () {
-          final current = Set<MatchStatus>.from(ref.read(statusFilterProvider));
-          if (isSelected) {
-            current.remove(status);
-          } else {
-            current.add(status);
-          }
-          ref.read(statusFilterProvider.notifier).state = current;
-        },
-        child: Container(
-          // Enforce the 44px minimum interactive height for an accessible tap
-          // target; the visible layout and styling stay compact.
-          constraints: const BoxConstraints(minHeight: 44),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? color.withOpacity(.12) : tk.card,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? color.withOpacity(.5) : tk.cardBorder,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                matchStatusLabel(l10n, status),
-                style: TextStyle(
-                  color: isSelected ? color : tk.muted,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '$count',
-                style: TextStyle(
-                  color: count > 0 ? color : tk.faint,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  void _toggleStatus(WidgetRef ref, MatchStatus status) {
+    final current = Set<MatchStatus>.from(ref.read(statusFilterProvider));
+    if (!current.remove(status)) current.add(status);
+    ref.read(statusFilterProvider.notifier).state = current;
   }
 
   Widget _buildEmptyState(BuildContext context) {

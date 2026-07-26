@@ -6,6 +6,7 @@ import 'package:choke/l10n/generated/app_localizations.dart';
 import '../../services/nostr/crypto/nostr_crypto.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/match_card.dart';
+import '../../shared/widgets/status_filter_bar.dart';
 import '../match/models/match.dart';
 import 'providers/scoreboard_providers.dart';
 import 'scoreboard_match_screen.dart';
@@ -56,6 +57,13 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
     ref.read(watchedPubkeyProvider.notifier).watch(null);
   }
 
+  void _toggleStatus(MatchStatus status) {
+    final current =
+        Set<MatchStatus>.from(ref.read(scoreboardStatusFilterProvider));
+    if (!current.remove(status)) current.add(status);
+    ref.read(scoreboardStatusFilterProvider.notifier).state = current;
+  }
+
   void _open(Match match) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -70,7 +78,10 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
     final theme = Theme.of(context);
     final tk = ChokeTokens.of(context);
     final watched = ref.watch(watchedPubkeyProvider);
-    final matches = ref.watch(scoreboardMatchesProvider);
+    // Two lists: everything in scope, which the chips count from, and what
+    // survives the filter, which is what the list shows.
+    final allMatches = ref.watch(scoreboardMatchesProvider);
+    final matches = ref.watch(scoreboardFilteredMatchesProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -123,6 +134,15 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
               child: _buildPubkeyField(l10n, tk, watched),
             ),
+            if (watched != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                child: StatusFilterBar(
+                  matches: allMatches,
+                  selected: ref.watch(scoreboardStatusFilterProvider),
+                  onToggle: _toggleStatus,
+                ),
+              ),
             Expanded(
               child: switch ((watched, matches.isEmpty)) {
                 (null, _) => _buildWelcome(l10n, tk),

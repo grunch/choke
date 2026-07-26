@@ -211,3 +211,29 @@ final scoreboardMatchesProvider = Provider<List<Match>>((ref) {
 
   return fresh;
 });
+
+/// Which statuses the scoreboard shows.
+///
+/// Its own, not the home feed's: hiding finished matches while watching
+/// somebody else's mats should not hide them on your own.
+///
+/// Defaults to what is happening now, the same as home — a board is about the
+/// mats in front of you, and yesterday's results are one tap away.
+final scoreboardStatusFilterProvider = StateProvider<Set<MatchStatus>>((ref) {
+  return {
+    MatchStatus.waiting,
+    MatchStatus.inProgress,
+  };
+});
+
+/// What the list actually shows: recent matches, minus the statuses filtered
+/// out.
+///
+/// Kept apart from [scoreboardMatchesProvider] because the chips count from
+/// *that* one. Counting from this would make every hidden status read zero,
+/// which is exactly the number that would talk the user out of tapping it.
+final scoreboardFilteredMatchesProvider = Provider<List<Match>>((ref) {
+  final matches = ref.watch(scoreboardMatchesProvider);
+  final allowed = ref.watch(scoreboardStatusFilterProvider);
+  return matches.where((m) => allowed.contains(m.status)).toList();
+});
