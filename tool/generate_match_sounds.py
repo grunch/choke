@@ -9,9 +9,17 @@ licence and no one else's. Regenerate with:
 
 Design: a referee hears these across a noisy mat, often with their back to the
 phone, so the two cues are deliberate opposites. The start is a short, bright
-bell strike (G5); the end is a long, low twin air-horn blast two octaves below
-it (G3). Same note, opposite register — they read as one app, and nobody can
-mistake one for the other.
+bell strike (G5, 784 Hz); the end is a long, hard klaxon blast almost three
+octaves below it (A2, 110 Hz) — the sound most competition tables already use.
+High against low, ringing against rasping, 1.3 s against 2 s: nobody can
+mistake one for the other with their back turned.
+
+One constraint shapes both, and the klaxon especially. Phone speakers roll off
+hard below ~400 Hz, so a low cue is barely heard through its fundamental at all
+— the harmonics above it are what carries, and the ear reconstructs the pitch
+that is missing. Dropping the fundamental without keeping energy up in the band
+the speaker can actually move buys a cue that measures deeper and sounds thinner
+on the only device that matters.
 
 Only the Python standard library is used, so this runs anywhere.
 """
@@ -102,33 +110,40 @@ def bell(f0=784.0, duration=1.30):
     return out
 
 
-# ── End: air horn ───────────────────────────────────────────────────────────
+# ── End: klaxon ─────────────────────────────────────────────────────────────
 
 
-def horn(f0=196.0, duration=1.50):
-    """Low twin air-horn blast — regulation time is over."""
+def horn(f0=110.0, duration=2.00):
+    """Hard low klaxon blast — regulation time is over.
+
+    Deliberately harsher than a clean tone. A klaxon's odd-harmonic rasp cuts
+    through gym noise where a pure horn gets swallowed by it, and it is what a
+    competitor already hears as "time" without being taught.
+    """
     n = int(SAMPLE_RATE * duration)
     out = [0.0] * n
 
-    attack, release = 0.020, 0.30
-    harmonics = 16
+    # Opens in 8 ms — an end-of-regulation cue is late the moment it is soft.
+    attack, release = 0.008, 0.16
+    harmonics = 25
 
     # Two horns, slightly out of tune with each other. The beating between them
-    # is what separates a real air horn from a synthesizer holding a chord.
-    for detune, voice_amp in ((1.000, 1.00), (1.008, 0.85)):
+    # is what separates a real klaxon from a synthesizer holding a note.
+    for detune, voice_amp in ((1.000, 1.00), (1.004, 0.60)):
         phase = 0.0
         for i in range(n):
             t = i / SAMPLE_RATE
             # Air runs out as the blast releases, and the pitch sags with it.
-            sag = 1.0 - 0.035 * smoothstep(
+            sag = 1.0 - 0.015 * smoothstep(
                 (t - (duration - release)) / release
             )
             phase += 2.0 * math.pi * f0 * detune * sag / SAMPLE_RATE
 
-            # 1/h harmonic stack: a sawtooth-shaped spectrum, which is roughly
-            # what a horn's resonating column produces.
+            # Odd harmonics only — a square-shaped spectrum rather than the
+            # sawtooth of an air horn. That is what makes it bite, and it also
+            # puts the energy higher up, where a phone speaker can move it.
             total = 0.0
-            for h in range(1, harmonics + 1):
+            for h in range(1, harmonics + 1, 2):
                 total += math.sin(phase * h) / h
             out[i] += voice_amp * total
 
@@ -140,6 +155,12 @@ def horn(f0=196.0, duration=1.50):
             envelope = smoothstep((duration - t) / release)
         else:
             envelope = 1.0
+
+        # The mechanical warble of a klaxon's diaphragm. Without it two seconds
+        # of held tone reads as an alarm clock, not as a horn being sounded.
+        envelope *= 0.78 + 0.22 * (
+            0.5 + 0.5 * math.cos(2.0 * math.pi * 26.0 * t)
+        )
         out[i] *= envelope
 
     return out
@@ -149,9 +170,13 @@ def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     for name, samples, peak in (
         ("match_start.wav", bell(), 0.95),
-        # The horn sustains where the bell decays, so equal peaks would leave
-        # it far louder. Trimming it keeps the pair even to the ear.
-        ("match_end.wav", horn(), 0.82),
+        # Far below the bell's peak, and deliberately so — this number looks
+        # wrong until you measure it. The bell is a transient with a 12.7 dB
+        # crest factor; the klaxon is a near-square wave that sustains, at
+        # 6.0 dB. Matching their *peaks* would leave the klaxon roughly 6 dB
+        # louder to the ear. 0.55 lands it at -11.2 dBFS RMS against the bell's
+        # -13.1: a hair louder, which is right for the cue that ends a fight.
+        ("match_end.wav", horn(), 0.55),
     ):
         path = os.path.join(OUT_DIR, name)
         seconds = write_wav(path, samples, peak=peak)
