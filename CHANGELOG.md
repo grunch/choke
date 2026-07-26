@@ -1,5 +1,27 @@
 # Changelog
 
+## [v1.6.4] - 2026-07-26
+
+### Added
+- feat: swap the end horn for a harder, lower klaxon (fd88bb9)
+- feat: let Settings mute the match cues (880b99b)
+- feat: sound the match clock — a bell on start, a horn at zero (e5f53a3)
+
+### Fixed
+- fix: address CodeRabbit review on the match cues (c01cb60)
+- fix: let a reconnect actually reset the sweep pace; share the relay defaults (4ec57dc)
+- fix: stop shipping a rate-limited relay, and back off when refused (72191b3)
+- fix: publish on the first relay acceptance, not the slowest (5c5d92a)
+- fix: do not accept a language choice that was never stored (dcd947c)
+- fix: persist the language selection across app restarts (ad45497)
+
+### Documentation
+- docs: correct the publishEvent contract, time the burst test (48b07fd)
+
+### Changed
+- chore: update changelog and version for v1.6.3 (fbac68a)
+
+
 ## [v1.6.3] - 2026-07-20
 
 ### Added
