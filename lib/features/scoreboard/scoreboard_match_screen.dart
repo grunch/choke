@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 
-import '../../shared/theme/app_theme.dart';
+import 'board_palette.dart';
 import '../../shared/widgets/match_card.dart';
 import '../match/models/match.dart';
 import '../match/models/submission_catalog.dart';
@@ -35,11 +35,6 @@ class ScoreboardMatchScreen extends ConsumerStatefulWidget {
 }
 
 class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
-  static const _background = Color(0xFF05070E);
-  static const _dim = Color(0x9E05070E);
-  static const _labelGrey = Color(0xFF5F6D8A);
-  static const _pillGrey = Color(0xFF8A97B2);
-
   Timer? _ticker;
 
   /// Now, in unix seconds, advanced once a second so the clock counts down.
@@ -75,10 +70,12 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     final matches = ref.watch(scoreboardMatchesProvider);
     final match = matches.where((m) => m.id == widget.matchId).firstOrNull;
 
-    if (match == null) return _buildGone(l10n);
+    final palette = BoardPalette.of(context);
+
+    if (match == null) return _buildGone(l10n, palette);
 
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: palette.background,
       body: LayoutBuilder(
         builder: (context, constraints) {
           // Everything scales off the height, so the board reads the same on a
@@ -88,10 +85,10 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
             children: [
               _buildHalf(context, l10n, match, unit, isF1: true),
               _buildHalf(context, l10n, match, unit, isF1: false),
-              _buildLoserDim(match),
+              _buildLoserDim(match, palette),
               _buildCenter(context, l10n, match, unit),
               _buildWinnerBanner(context, l10n, match, unit),
-              _buildBack(l10n),
+              _buildBack(l10n, palette),
             ],
           );
         },
@@ -108,6 +105,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     double unit, {
     required bool isF1,
   }) {
+    final palette = BoardPalette.of(context);
     final colors = Theme.of(context).colorScheme;
     final color = hexToColor(
       isF1 ? match.f1Color : match.f2Color,
@@ -135,11 +133,11 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
                   begin: isF1 ? Alignment.centerLeft : Alignment.centerRight,
                   end: isF1 ? Alignment.centerRight : Alignment.centerLeft,
                   colors: [
-                    color.withValues(alpha: .30),
-                    color.withValues(alpha: .05),
+                    color.withValues(alpha: palette.halfWashStrong),
+                    color.withValues(alpha: palette.halfWashFade),
                     Colors.transparent,
                   ],
-                  stops: const [0, .55, .78],
+                  stops: [0, palette.halfWashFadeStop, palette.halfWashEndStop],
                 ),
               ),
               child: const SizedBox.expand(),
@@ -153,7 +151,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
                   color: color,
                   boxShadow: [
                     BoxShadow(
-                      color: color.withValues(alpha: .6),
+                      color: color.withValues(alpha: palette.edgeGlowAlpha),
                       blurRadius: 50,
                     ),
                   ],
@@ -169,11 +167,15 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
               ),
               child: Column(
                 children: [
-                  _buildName(name, color, unit),
-                  Expanded(child: Center(child: _buildScore(score, color, unit))),
-                  _buildBreakdown(l10n, breakdown, unit),
+                  _buildName(name, color, unit, palette),
+                  Expanded(
+                    child: Center(
+                      child: _buildScore(score, color, unit, palette),
+                    ),
+                  ),
+                  _buildBreakdown(l10n, breakdown, unit, palette),
                   SizedBox(height: unit * 2.5),
-                  _buildChips(l10n, adv, pen, unit),
+                  _buildChips(l10n, adv, pen, unit, palette),
                 ],
               ),
             ),
@@ -183,7 +185,8 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     );
   }
 
-  Widget _buildName(String name, Color color, double unit) {
+  Widget _buildName(
+      String name, Color color, double unit, BoardPalette palette) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -194,7 +197,10 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
             color: color,
             borderRadius: BorderRadius.circular(6),
             boxShadow: [
-              BoxShadow(color: color.withValues(alpha: .6), blurRadius: 20),
+              BoxShadow(
+                color: color.withValues(alpha: palette.dotGlowAlpha),
+                blurRadius: 20,
+              ),
             ],
           ),
         ),
@@ -205,7 +211,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: Colors.white,
+              color: palette.text,
               fontWeight: FontWeight.w800,
               fontSize: (unit * 7).clamp(14.0, 58.0),
               letterSpacing: 1,
@@ -217,20 +223,27 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     );
   }
 
-  Widget _buildScore(int score, Color color, double unit) {
+  Widget _buildScore(
+      int score, Color color, double unit, BoardPalette palette) {
     return Text(
       '$score',
       style: TextStyle(
-        color: Colors.white,
+        color: palette.text,
         fontWeight: FontWeight.w900,
         fontSize: (unit * 30).clamp(48.0, 232.0),
         height: 1,
-        shadows: [Shadow(color: color.withValues(alpha: .6), blurRadius: 55)],
+        shadows: [
+          Shadow(
+            color: color.withValues(alpha: palette.scoreGlowAlpha),
+            blurRadius: 55,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildBreakdown(AppLocalizations l10n, List<int> counts, double unit) {
+  Widget _buildBreakdown(AppLocalizations l10n, List<int> counts, double unit,
+      BoardPalette palette) {
     const values = [2, 3, 4];
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -242,7 +255,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
               Text(
                 l10n.scoreboardPointsShort(values[i]),
                 style: TextStyle(
-                  color: _labelGrey,
+                  color: palette.label,
                   fontWeight: FontWeight.bold,
                   fontSize: (unit * 2).clamp(9.0, 19.0),
                   letterSpacing: 1.6,
@@ -252,7 +265,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
               Text(
                 '${counts[i]}',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: palette.text,
                   fontWeight: FontWeight.w800,
                   fontSize: (unit * 4).clamp(16.0, 36.0),
                   height: 1,
@@ -265,24 +278,29 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     );
   }
 
-  Widget _buildChips(AppLocalizations l10n, int adv, int pen, double unit) {
+  Widget _buildChips(AppLocalizations l10n, int adv, int pen, double unit,
+      BoardPalette palette) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _buildCountChip(
           l10n.scoreboardAdvShort,
           adv,
-          const Color(0xFFF4B400),
-          const Color(0xFFFFD451),
+          palette.advLabel,
+          palette.advValue,
+          palette.advSurface,
           unit,
+          palette,
         ),
         SizedBox(width: unit * 1.6),
         _buildCountChip(
           l10n.scoreboardPenShort,
           pen,
-          const Color(0xFFF87171),
-          const Color(0xFFFCA5A5),
+          palette.penLabel,
+          palette.penValue,
+          palette.penSurface,
           unit,
+          palette,
         ),
       ],
     );
@@ -293,14 +311,18 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     int count,
     Color labelColor,
     Color countColor,
+    Color surface,
     double unit,
+    BoardPalette palette,
   ) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: unit * 2, vertical: unit * 1.1),
       decoration: BoxDecoration(
-        color: labelColor.withValues(alpha: .14),
+        color: surface.withValues(alpha: palette.chipFillAlpha),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: labelColor.withValues(alpha: .5)),
+        border: Border.all(
+          color: surface.withValues(alpha: palette.chipBorderAlpha),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -329,7 +351,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
   }
 
   /// Dim the half belonging to whoever lost, once somebody has.
-  Widget _buildLoserDim(Match match) {
+  Widget _buildLoserDim(Match match, BoardPalette palette) {
     final winner = match.winner;
     if (winner == null || match.status != MatchStatus.finished) {
       return const SizedBox.shrink();
@@ -339,9 +361,12 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
       alignment: winner == MatchWinner.f1
           ? Alignment.centerRight
           : Alignment.centerLeft,
-      child: const FractionallySizedBox(
+      child: FractionallySizedBox(
         widthFactor: 0.5,
-        child: ColoredBox(color: _dim, child: SizedBox.expand()),
+        child: ColoredBox(
+          color: palette.loserVeil,
+          child: const SizedBox.expand(),
+        ),
       ),
     );
   }
@@ -354,6 +379,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     Match match,
     double unit,
   ) {
+    final palette = BoardPalette.of(context);
     final showTimer = match.status == MatchStatus.waiting ||
         match.status == MatchStatus.inProgress;
 
@@ -371,12 +397,12 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
                     ? Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildTimerCard(l10n, match, unit),
+                          _buildTimerCard(l10n, match, unit, palette),
                           SizedBox(height: unit * 3),
                           Text(
                             l10n.vs.toUpperCase(),
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: .16),
+                              color: palette.vs,
                               fontWeight: FontWeight.w800,
                               fontSize: (unit * 3.4).clamp(14.0, 32.0),
                               letterSpacing: 1.4,
@@ -399,30 +425,44 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     Match match,
     double unit,
   ) {
-    final tk = ChokeTokens.of(context);
+    final palette = BoardPalette.of(context);
     final colors = Theme.of(context).colorScheme;
 
     // A finished match speaks in the winner's colour, so the pill and the banner
     // agree with each other at a glance.
     final (label, color) = switch (match) {
-      Match(isPaused: true) => (l10n.statusPaused, const Color(0xFFF5B800)),
-      Match(status: MatchStatus.waiting) => (l10n.statusWaiting, _pillGrey),
+      Match(isPaused: true) => (l10n.statusPaused, palette.paused),
+      Match(status: MatchStatus.waiting) => (l10n.statusWaiting, palette.waiting),
       Match(status: MatchStatus.inProgress) => (
           l10n.statusInProgress,
-          const Color(0xFF2EE08A),
+          palette.liveText,
         ),
       Match(status: MatchStatus.canceled) => (
           l10n.statusCanceled,
-          tk.statusCanceledFg,
+          palette.canceled,
         ),
       _ => (
           l10n.statusFinished,
           switch (match.winner) {
             MatchWinner.f1 => hexToColor(match.f1Color, colors.outline),
             MatchWinner.f2 => hexToColor(match.f2Color, colors.outline),
-            null => Colors.white,
+            null => palette.neutralWinner,
           },
         ),
+    };
+
+    // Only a finished match wears a colour that came off the wire, so it is the
+    // only one that needs darkening to survive a light background. Every other
+    // pill is a colour this palette chose for this theme, and putting one of
+    // those through `readable` darkens it a second time.
+    final isFinished = match.status == MatchStatus.finished;
+    final word = isFinished ? palette.readable(color) : color;
+
+    // A running match draws its surface from a different green than its word:
+    // the word carries the contrast, the surface stays quiet.
+    final surface = switch (match.status) {
+      MatchStatus.inProgress when !match.isPaused => palette.liveSurface,
+      _ => color,
     };
 
     final isRunning = match.status == MatchStatus.inProgress && !match.isPaused;
@@ -430,14 +470,21 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: unit * 2.4, vertical: unit),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: .12),
+        color: surface.withValues(alpha: palette.pillFillAlpha),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: .5)),
+        border: Border.all(
+          color: surface.withValues(alpha: palette.pillBorderAlpha),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _StatusDot(color: color, blinking: isRunning, size: unit * 1.6),
+          _StatusDot(
+            color: surface,
+            blinking: isRunning,
+            size: unit * 1.6,
+            glowAlpha: palette.pillDotGlowAlpha,
+          ),
           SizedBox(width: unit * 1.2),
           Flexible(
             child: Text(
@@ -445,7 +492,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: color,
+                color: word,
                 fontWeight: FontWeight.bold,
                 fontSize: (unit * 2.5).clamp(10.0, 24.0),
                 letterSpacing: 1.6,
@@ -457,7 +504,8 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     );
   }
 
-  Widget _buildTimerCard(AppLocalizations l10n, Match match, double unit) {
+  Widget _buildTimerCard(AppLocalizations l10n, Match match, double unit,
+      BoardPalette palette) {
     final remaining = match.remainingSecondsAt(_now);
     final minutes = (remaining ~/ 60).toString().padLeft(2, '0');
     final seconds = (remaining % 60).toString().padLeft(2, '0');
@@ -465,11 +513,15 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: unit * 3, vertical: unit * 2.5),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .03),
+        color: palette.cardSurface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: .09)),
-        boxShadow: const [
-          BoxShadow(color: Color(0x73000000), blurRadius: 60),
+        border: Border.all(color: palette.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: palette.cardShadow,
+            blurRadius: palette.cardShadowBlur,
+            offset: palette.cardShadowOffset,
+          ),
         ],
       ),
       child: Column(
@@ -477,7 +529,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
           Text(
             l10n.scoreboardTime,
             style: TextStyle(
-              color: _labelGrey,
+              color: palette.label,
               fontWeight: FontWeight.bold,
               fontSize: (unit * 1.8).clamp(9.0, 17.0),
               letterSpacing: 3,
@@ -487,9 +539,10 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
           Text(
             '$minutes:$seconds',
             style: TextStyle(
-              color: Colors.white,
+              color: palette.text,
               fontWeight: FontWeight.w800,
               fontSize: (unit * 9).clamp(28.0, 76.0),
+              fontFeatures: const [FontFeature.tabularFigures()],
               height: 1,
             ),
           ),
@@ -516,13 +569,18 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     final method = match.method;
     if (method == null) return const SizedBox.shrink();
 
+    final palette = BoardPalette.of(context);
     final colors = Theme.of(context).colorScheme;
     final winner = match.winner;
     final color = switch (winner) {
       MatchWinner.f1 => hexToColor(match.f1Color, colors.outline),
       MatchWinner.f2 => hexToColor(match.f2Color, colors.outline),
-      null => Colors.white,
+      null => palette.neutralWinner,
     };
+    // 3A keeps the border and the fill in the fighter's own colour and darkens
+    // only what carries words, which is what makes a bright gi colour legible
+    // on white without changing the colour the room recognises.
+    final word = palette.readable(color);
     final detail = _detailOf(l10n, match);
 
     return Center(
@@ -531,8 +589,23 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
         padding:
             EdgeInsets.symmetric(horizontal: unit * 5, vertical: unit * 3.5),
         decoration: BoxDecoration(
-          color: const Color(0xB805070E),
-          borderRadius: BorderRadius.circular(24),
+          // Its own surface, not the clock card's. The card is a faint panel the
+          // board shows through; this has to be opaque enough that the fighter
+          // washes do not come through the announcement of who won.
+          color: palette.bannerSurface,
+          borderRadius: BorderRadius.circular(22),
+          border: palette.bannerOutlined
+              ? Border.all(color: color.withValues(alpha: palette.pillBorderAlpha))
+              : null,
+          boxShadow: palette.bannerOutlined
+              ? [
+                  BoxShadow(
+                    color: palette.cardShadow,
+                    blurRadius: palette.cardShadowBlur,
+                    offset: palette.cardShadowOffset,
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -541,7 +614,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
               (winner == null ? l10n.scoreboardResult : l10n.scoreboardWinner)
                   .toUpperCase(),
               style: TextStyle(
-                color: _pillGrey,
+                color: palette.label,
                 fontWeight: FontWeight.bold,
                 fontSize: (unit * 2.5).clamp(10.0, 24.0),
                 letterSpacing: 3.6,
@@ -556,12 +629,15 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: color,
+                  color: word,
                   fontWeight: FontWeight.w800,
                   fontSize: (unit * 12).clamp(24.0, 86.0),
                   height: 1,
                   shadows: [
-                    Shadow(color: color.withValues(alpha: .6), blurRadius: 46),
+                    Shadow(
+                      color: color.withValues(alpha: palette.scoreGlowAlpha),
+                      blurRadius: 46,
+                    ),
                   ],
                 ),
               ),
@@ -573,14 +649,16 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
                 vertical: unit * 1.6,
               ),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: .14),
+                color: color.withValues(alpha: palette.chipFillAlpha),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color.withValues(alpha: .5)),
+                border: Border.all(
+                  color: color.withValues(alpha: palette.pillBorderAlpha),
+                ),
               ),
               child: Text(
                 methodLabel(l10n, method).toUpperCase(),
                 style: TextStyle(
-                  color: color,
+                  color: word,
                   fontWeight: FontWeight.w800,
                   fontSize: (unit * 3.4).clamp(14.0, 32.0),
                   letterSpacing: 1.2,
@@ -593,7 +671,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
                 detail,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: _pillGrey,
+                  color: palette.label,
                   fontWeight: FontWeight.w600,
                   fontSize: (unit * 2.6).clamp(11.0, 25.0),
                 ),
@@ -621,7 +699,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
 
   // ─── Chrome ─────────────────────────────────────────────────────────────
 
-  Widget _buildBack(AppLocalizations l10n) {
+  Widget _buildBack(AppLocalizations l10n, BoardPalette palette) {
     return Positioned(
       top: 8,
       left: 8,
@@ -631,7 +709,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
           icon: const Icon(Icons.chevron_left, size: 18),
           label: Text(l10n.goBack),
           style: TextButton.styleFrom(
-            foregroundColor: Colors.white.withValues(alpha: .6),
+            foregroundColor: palette.backLabel,
           ),
         ),
       ),
@@ -642,22 +720,22 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
   ///
   /// It can happen while this screen is open: the feed keeps a day, and a board
   /// left running overnight will watch a match disappear out from under it.
-  Widget _buildGone(AppLocalizations l10n) {
+  Widget _buildGone(AppLocalizations l10n, BoardPalette palette) {
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: palette.background,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.search_off, size: 44, color: _pillGrey),
+              Icon(Icons.search_off, size: 44, color: palette.label),
               const SizedBox(height: 14),
               Text(
                 l10n.scoreboardEmptyTitle,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: _pillGrey,
+                style: TextStyle(
+                  color: palette.label,
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
                 ),
@@ -684,11 +762,16 @@ class _StatusDot extends StatefulWidget {
     required this.color,
     required this.blinking,
     required this.size,
+    required this.glowAlpha,
   });
 
   final Color color;
   final bool blinking;
   final double size;
+
+  /// Zero on a light board: a blur under a saturated colour on near-white is a
+  /// smudge, and this is the one thing here that moves.
+  final double glowAlpha;
 
   @override
   State<_StatusDot> createState() => _StatusDotState();
@@ -739,7 +822,14 @@ class _StatusDotState extends State<_StatusDot>
       decoration: BoxDecoration(
         color: widget.color,
         shape: BoxShape.circle,
-        boxShadow: [BoxShadow(color: widget.color, blurRadius: 14)],
+        boxShadow: widget.glowAlpha == 0
+            ? null
+            : [
+                BoxShadow(
+                  color: widget.color.withValues(alpha: widget.glowAlpha),
+                  blurRadius: 14,
+                ),
+              ],
       ),
     );
 

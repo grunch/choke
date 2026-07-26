@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:choke/features/match/models/match.dart';
 import 'package:choke/features/scoreboard/providers/scoreboard_providers.dart';
+import 'package:choke/features/scoreboard/board_palette.dart';
 import 'package:choke/features/scoreboard/scoreboard_match_screen.dart';
 import 'package:choke/features/scoreboard/scoreboard_screen.dart';
 import 'package:choke/services/deep_links/share_link.dart';
@@ -415,6 +416,149 @@ void main() {
       expect(ref.read(brokenShareLinkProvider), isFalse);
       expect(find.text(l10n.scoreboardBrokenLinkTitle), findsNothing);
       expect(find.text('Buchecha'), findsOneWidget);
+    });
+  });
+
+  group('BoardPalette', () {
+    test('picks 3A for a light theme and the original for a dark one', () {
+      // Arrange + Act + Assert — the switch itself, without a board around it
+      expect(BoardPalette.light.background, const Color(0xFFF4F6FB));
+      expect(BoardPalette.dark.background, const Color(0xFF05070E));
+    });
+
+    test('darkens a fighter colour for light, leaves it alone for dark', () {
+      // A gi colour picked to glow on black is too light to read as a word on
+      // white. 3A takes each channel to 72%.
+      const jade = Color(0xFF13C880);
+
+      final onLight = BoardPalette.light.readable(jade);
+      final onDark = BoardPalette.dark.readable(jade);
+
+      expect(onDark, jade, reason: 'the colour the fighter chose is the point');
+      expect(onLight, isNot(jade));
+      expect((onLight.r * 255).round(), (0x13 * 0.72).round());
+      expect((onLight.g * 255).round(), (0xC8 * 0.72).round());
+      expect((onLight.b * 255).round(), (0x80 * 0.72).round());
+    });
+
+    test('veils the losing half in its own background, not in black', () {
+      // On a light board a dark veil reads as a shadow rather than as a half
+      // that has been washed out.
+      expect(BoardPalette.light.loserVeil.r, BoardPalette.light.background.r);
+      expect(BoardPalette.dark.loserVeil.r, BoardPalette.dark.background.r);
+    });
+
+    test('the banner is not the clock card', () {
+      // Collapsing the two because 3A gives them the same white is what left the
+      // dark theme announcing its winner on a 3%-opaque panel, with the fighter
+      // washes showing straight through.
+      expect(
+        BoardPalette.dark.bannerSurface,
+        isNot(BoardPalette.dark.cardSurface),
+      );
+      expect(BoardPalette.dark.bannerSurface.a, greaterThan(0.6),
+          reason: 'opaque enough that the washes do not come through');
+      expect(BoardPalette.dark.cardSurface.a, lessThan(0.1),
+          reason: 'the card, by contrast, is meant to be seen through');
+      expect(BoardPalette.dark.bannerOutlined, isFalse,
+          reason: 'the dark banner never had a border or a shadow');
+      expect(BoardPalette.light.bannerOutlined, isTrue, reason: '3A asks for both');
+    });
+
+    test('preserves the dark surfaces it started from', () {
+      // The light-theme tests cannot see a dark-theme regression by
+      // construction, and that is exactly how the banner one got through.
+      expect(BoardPalette.dark.background, const Color(0xFF05070E));
+      expect(BoardPalette.dark.cardSurface, const Color(0x08FFFFFF));
+      expect(BoardPalette.dark.bannerSurface, const Color(0xB805070E));
+      expect(BoardPalette.dark.loserVeil, const Color(0x9E05070E));
+      expect(BoardPalette.dark.label, const Color(0xFF5F6D8A));
+      expect(BoardPalette.dark.vs, const Color(0x29FFFFFF));
+    });
+
+    test('carries the alphas, not just the colours', () {
+      // Porting the hues and leaving the dark theme's opacities is the
+      // difference between moving a palette and implementing a design.
+      expect(BoardPalette.light.pillFillAlpha, .14);
+      expect(BoardPalette.light.pillBorderAlpha, .45);
+      expect(BoardPalette.light.chipFillAlpha, .12);
+      expect(BoardPalette.light.chipBorderAlpha, .42);
+      expect(BoardPalette.dark.pillFillAlpha, .12);
+      expect(BoardPalette.dark.chipBorderAlpha, .5);
+    });
+
+    test('the blinking dot does not smudge a light board', () {
+      expect(BoardPalette.light.pillDotGlowAlpha, 0);
+      expect(BoardPalette.dark.pillDotGlowAlpha, greaterThan(0));
+    });
+
+    test('glows less in daylight', () {
+      // A glow is light in the dark and a shadow in daylight; the same alpha
+      // cannot do both.
+      expect(
+        BoardPalette.light.edgeGlowAlpha,
+        lessThan(BoardPalette.dark.edgeGlowAlpha),
+      );
+    });
+  });
+
+  group('ScoreboardMatchScreen theming', () {
+    Future<void> pumpThemed(WidgetTester tester, ThemeData theme) async {
+      tester.view.physicalSize = const Size(1600, 740);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.reset);
+
+      final match = _match();
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          nostrCryptoProvider.overrideWithValue(FakeNostrCrypto()),
+          nostrServiceProvider.overrideWithValue(_OfflineNostrService()),
+          scoreboardMatchesProvider.overrideWithValue([match]),
+        ],
+        child: MaterialApp(
+          theme: theme,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: ScoreboardMatchScreen(matchId: match.id),
+        ),
+      ));
+      await tester.pump();
+    }
+
+    Color boardBackground(WidgetTester tester) {
+      final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
+      return scaffold.backgroundColor!;
+    }
+
+    testWidgets('a light app paints the board on 3A\'s surface',
+        (tester) async {
+      // Act
+      await pumpThemed(tester, AppTheme.lightTheme);
+
+      // Assert
+      expect(boardBackground(tester), BoardPalette.light.background);
+    });
+
+    testWidgets('a dark app keeps the original surface', (tester) async {
+      // Act
+      await pumpThemed(tester, AppTheme.darkTheme);
+
+      // Assert
+      expect(boardBackground(tester), BoardPalette.dark.background);
+    });
+
+    testWidgets('the fighter names are legible against the light surface',
+        (tester) async {
+      // The failure this guards against is the cheap version of the change —
+      // swap the background and leave the text white on near-white.
+      //
+      // Act
+      await pumpThemed(tester, AppTheme.lightTheme);
+
+      // Assert
+      final name = tester.widget<Text>(find.text('BUCHECHA'));
+      expect(name.style!.color, BoardPalette.light.text);
+      expect(name.style!.color, isNot(Colors.white));
     });
   });
 }
