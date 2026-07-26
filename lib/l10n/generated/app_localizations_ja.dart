@@ -671,4 +671,14 @@ class AppLocalizationsJa extends AppLocalizations {
   String scoreboardPointsShort(int points) {
     return '$points ポイント';
   }
+
+  @override
+  String get scoreboardBrokenLinkTitle => 'このリンクは壊れています';
+
+  @override
+  String get scoreboardBrokenLinkBody =>
+      '特定のスコアボードを指していましたが、公開鍵を読み取れませんでした。共有した人にもう一度送ってもらってください。';
+
+  @override
+  String get scoreboardBrokenLinkDismiss => '自分のスコアボードを見る';
 }

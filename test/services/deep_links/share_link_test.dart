@@ -15,14 +15,20 @@ const _watched =
 void main() {
   final crypto = FakeNostrCrypto();
 
-  group('pubkeyFromShareLink', () {
+  /// The hex a link names, or null for anything that is not a board link.
+  String? boardOf(Uri uri) {
+    final link = readShareLink(uri, crypto);
+    return link is SharedBoard ? link.pubkeyHex : null;
+  }
+
+  group('readShareLink', () {
     test('reads the link Account actually shares', () {
       // Arrange — the exact URL liveBoardShareUrl builds, so the sharer and the
       // reader cannot drift apart without this failing
       final uri = Uri.parse(liveBoardShareUrl('npub1fake'));
 
       // Act + Assert
-      expect(pubkeyFromShareLink(uri, crypto), _watched);
+      expect(boardOf(uri), _watched);
     });
 
     test('reads a bare hex pubkey too', () {
@@ -30,7 +36,7 @@ void main() {
       final uri = Uri.parse('https://bjjscore.live/?npub=${'a' * 64}');
 
       // Act + Assert
-      expect(pubkeyFromShareLink(uri, crypto), 'a' * 64);
+      expect(boardOf(uri), 'a' * 64);
     });
 
     test('accepts the pubkey parameter the web board also accepts', () {
@@ -39,7 +45,7 @@ void main() {
       final uri = Uri.parse('https://bjjscore.live/?pubkey=npub1fake');
 
       // Act + Assert
-      expect(pubkeyFromShareLink(uri, crypto), _watched);
+      expect(boardOf(uri), _watched);
     });
 
     test('ignores whitespace around a pasted key', () {
@@ -47,7 +53,7 @@ void main() {
       final uri = Uri.parse('https://bjjscore.live/?npub=%20npub1fake%20');
 
       // Act + Assert
-      expect(pubkeyFromShareLink(uri, crypto), _watched);
+      expect(boardOf(uri), _watched);
     });
 
     test('refuses a link belonging to somebody else', () {
@@ -56,23 +62,68 @@ void main() {
       final uri = Uri.parse('https://evil.example/?npub=npub1fake');
 
       // Act + Assert
-      expect(pubkeyFromShareLink(uri, crypto), isNull);
+      expect(boardOf(uri), isNull);
     });
 
     test('refuses a link that names no usable key', () {
       // Act + Assert
       expect(
-        pubkeyFromShareLink(Uri.parse('https://bjjscore.live/'), crypto),
+        boardOf(Uri.parse('https://bjjscore.live/')),
         isNull,
       );
       expect(
-        pubkeyFromShareLink(Uri.parse('https://bjjscore.live/?npub='), crypto),
+        boardOf(Uri.parse('https://bjjscore.live/?npub=')),
         isNull,
       );
       expect(
-        pubkeyFromShareLink(
+        boardOf(Uri.parse('https://bjjscore.live/?npub=nonsense')),
+        isNull,
+      );
+    });
+
+    test('a URI with no host is never ours, pubkey or not', () {
+      // `/?npub=x` and a scheme-less `bjjscore.live/?npub=x` both parse with an
+      // empty host. Treating them as ours put a full-screen "that link is
+      // broken" in front of somebody over a route they never followed.
+      for (final raw in [
+        '/?npub=nonsense',
+        'bjjscore.live/?npub=nonsense',
+        '/?npub=npub1fake',
+        '/',
+      ]) {
+        expect(
+          readShareLink(Uri.parse(raw), crypto),
+          isA<NotAShareLink>(),
+          reason: raw,
+        );
+      }
+    });
+
+    test('tells a broken key apart from no key at all', () {
+      // The whole point of the three cases: one of these named a board and
+      // failed, the others never named one.
+      expect(
+        readShareLink(
             Uri.parse('https://bjjscore.live/?npub=nonsense'), crypto),
-        isNull,
+        isA<BrokenShareLink>(),
+      );
+      expect(
+        readShareLink(Uri.parse('https://bjjscore.live/'), crypto),
+        isA<NotAShareLink>(),
+      );
+      expect(
+        readShareLink(Uri.parse('https://bjjscore.live/?npub='), crypto),
+        isA<NotAShareLink>(),
+      );
+      expect(
+        readShareLink(Uri.parse('https://evil.example/?npub=nonsense'), crypto),
+        isA<NotAShareLink>(),
+        reason: 'another host is not ours to judge',
+      );
+      expect(
+        readShareLink(Uri.parse('/'), crypto),
+        isA<NotAShareLink>(),
+        reason: 'the ordinary launch route',
       );
     });
   });
@@ -113,8 +164,7 @@ void main() {
       expect(ref.read(selectedTabProvider), AppTab.scoreboard);
     });
 
-    testWidgets('leaves everything alone for a link it does not understand',
-        (tester) async {
+    testWidgets('reports a link whose pubkey cannot be read', (tester) async {
       // Arrange — someone is already watching a board
       final ref = await pumpRef(tester);
       await ref.read(watchedPubkeyProvider.notifier).watch('c' * 64);
@@ -127,11 +177,72 @@ void main() {
       );
       await tester.pump();
 
-      // Assert — forgetting the board they were watching, to show them an empty
-      // one, would be worse than ignoring a link that made no sense
-      expect(handled, isFalse);
+      // Assert — the user followed a link for one board; leaving another one on
+      // screen would be a substitution they cannot see
+      expect(handled, isTrue);
+      expect(ref.read(brokenShareLinkProvider), isTrue);
+      expect(ref.read(selectedTabProvider), AppTab.scoreboard);
+
+      // …and their own board is kept, not thrown away over somebody else's
+      // broken link
       expect(ref.read(watchedPubkeyProvider), 'c' * 64);
+    });
+
+    testWidgets('a good link afterwards clears the broken state',
+        (tester) async {
+      // Arrange
+      final ref = await pumpRef(tester);
+      openShareLink(
+        Uri.parse('https://bjjscore.live/?npub=nonsense'),
+        crypto,
+        ref,
+      );
+      await tester.pump();
+      expect(ref.read(brokenShareLinkProvider), isTrue);
+
+      // Act
+      openShareLink(Uri.parse(liveBoardShareUrl('npub1fake')), crypto, ref);
+      await tester.pump();
+
+      // Assert
+      expect(ref.read(brokenShareLinkProvider), isFalse);
+      expect(ref.read(watchedPubkeyProvider), _watched);
+    });
+
+    testWidgets('an empty parameter is no link, not a broken one',
+        (tester) async {
+      // Arrange — `?npub=` on its own should not accuse anybody of anything
+      final ref = await pumpRef(tester);
+
+      // Act
+      final handled = openShareLink(
+        Uri.parse('https://bjjscore.live/?npub='),
+        crypto,
+        ref,
+      );
+      await tester.pump();
+
+      // Assert
+      expect(handled, isFalse);
+      expect(ref.read(brokenShareLinkProvider), isFalse);
       expect(ref.read(selectedTabProvider), AppTab.home);
+    });
+
+    testWidgets('another host is not ours to complain about', (tester) async {
+      // Arrange
+      final ref = await pumpRef(tester);
+
+      // Act
+      final handled = openShareLink(
+        Uri.parse('https://evil.example/?npub=nonsense'),
+        crypto,
+        ref,
+      );
+      await tester.pump();
+
+      // Assert
+      expect(handled, isFalse);
+      expect(ref.read(brokenShareLinkProvider), isFalse);
     });
 
     testWidgets('ignores the plain launch route', (tester) async {
@@ -144,6 +255,8 @@ void main() {
 
       // Assert
       expect(handled, isFalse);
+      expect(ref.read(brokenShareLinkProvider), isFalse,
+          reason: 'opening the app normally must not report a broken link');
       expect(ref.read(selectedTabProvider), AppTab.home);
     });
   });
@@ -183,8 +296,10 @@ void main() {
         debugPrint = previous;
       }
 
-      // Assert
-      expect(handled, isFalse);
+      // Assert — a pubkey that cannot be read is now reported rather than
+      // swallowed, but what it contained still must not reach the log
+      expect(handled, isTrue);
+      expect(ref.read(brokenShareLinkProvider), isTrue);
       expect(logged, isNotEmpty, reason: 'it should say something');
       expect(logged.join('\n'), isNot(contains(nsec)));
       expect(logged.join('\n'), isNot(contains('nsec1')));
