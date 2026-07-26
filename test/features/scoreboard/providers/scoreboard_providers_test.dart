@@ -174,7 +174,7 @@ void main() {
       expect(feed.state, isEmpty);
     });
 
-    test('closes its subscription when it goes away', () {
+    test('closes the subscription it opened when it goes away', () {
       // Arrange
       final feed = ScoreboardFeedNotifier(nostr, watched);
 
@@ -182,7 +182,39 @@ void main() {
       feed.dispose();
 
       // Assert — otherwise every pubkey the user tried keeps streaming
-      expect(nostr.unsubscribed, ['scoreboard_$watched']);
+      expect(nostr.unsubscribed, hasLength(1));
+      expect(nostr.unsubscribed.single, startsWith('sb_'));
+    });
+
+    test('uses a subscription id a relay will actually accept', () {
+      // A NIP-01 subscription id is capped at 64 characters and a relay drops
+      // the whole REQ over it — nos.lol answers `CLOSED … "ERROR: bad req:
+      // invalid subscription id"`. `scoreboard_` plus a 64-character pubkey came
+      // to 75, and the section received nothing at all while publishing and the
+      // app's own subscription both looked fine.
+      //
+      // Arrange
+      final feed = ScoreboardFeedNotifier(nostr, watched);
+
+      // Act
+      feed.dispose();
+
+      // Assert
+      expect(nostr.unsubscribed.single.length, lessThanOrEqualTo(64));
+    });
+
+    test('tells two watched authors apart', () {
+      // Arrange — a shared id would let one feed's teardown close the other's
+      // subscription
+      const other =
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+
+      // Act
+      ScoreboardFeedNotifier(nostr, watched).dispose();
+      ScoreboardFeedNotifier(nostr, other).dispose();
+
+      // Assert
+      expect(nostr.unsubscribed.first, isNot(nostr.unsubscribed.last));
     });
 
     test('does not close a subscription it never opened', () {

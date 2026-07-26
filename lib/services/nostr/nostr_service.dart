@@ -205,13 +205,22 @@ class NostrService {
   /// the two disagree about whose matches they are looking at.
   String? get userPubkey => _userPubkey;
 
-  /// Subscribe to kind 31415 events from a specific author
+  /// Subscribe to kind 31415 events from a specific author.
+  ///
+  /// The default id is deliberately short. NIP-01 caps a subscription id at 64
+  /// characters and a relay refuses the whole REQ over it — nos.lol answers
+  /// `CLOSED … "ERROR: bad req: invalid subscription id"` — so `author_` plus a
+  /// 64-character pubkey would be 71 and would never receive an event.
   void subscribeToAuthor(String authorPubkey, {String? subscriptionId}) {
     _backend.subscribe(
-      subscriptionId ?? 'author_$authorPubkey',
+      subscriptionId ?? 'author_${_shortKey(authorPubkey)}',
       Filter(kinds: [31415], authors: [authorPubkey]),
     );
   }
+
+  /// Enough of a pubkey to tell two of them apart inside a subscription id.
+  static String _shortKey(String pubkey) =>
+      pubkey.length <= 16 ? pubkey : pubkey.substring(0, 16);
 
   /// Unsubscribe from a subscription
   void unsubscribe(String subscriptionId) =>

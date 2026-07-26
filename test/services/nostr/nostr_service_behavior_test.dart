@@ -186,11 +186,18 @@ void main() {
       // Act
       service.subscribeToAuthor('c' * 64);
 
-      // Assert
-      final filter = backend.subscriptions['author_${'c' * 64}'];
-      expect(filter, isNotNull);
+      // Assert — the id names the author, but only as much of it as fits: NIP-01
+      // caps a subscription id at 64 characters and a relay drops the whole REQ
+      // over it, so a full pubkey in the id would never receive an event.
+      final id = backend.subscriptions.keys.single;
+      expect(id, startsWith('author_'));
+      expect(id.length, lessThanOrEqualTo(64));
+      expect(id, contains('cccc'));
+
+      final filter = backend.subscriptions[id];
       expect(filter!.kinds, [31415]);
-      expect(filter.authors, ['c' * 64]);
+      expect(filter.authors, ['c' * 64],
+          reason: 'the filter still carries the whole key');
     });
 
     test('subscribeToAuthor honors an explicit subscription id', () {

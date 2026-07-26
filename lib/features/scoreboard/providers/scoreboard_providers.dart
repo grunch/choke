@@ -101,10 +101,26 @@ class ScoreboardFeedNotifier extends StateNotifier<List<Match>> {
 
   StreamSubscription<NostrEvent>? _subscription;
 
-  /// Deliberately not the id [NostrService.subscribeToAuthor] picks by default,
-  /// so that closing this one can never close a subscription another part of the
-  /// app opened for the same author.
-  String get _subscriptionId => 'scoreboard_$_pubkey';
+  /// A NIP-01 subscription id is capped at 64 characters, and a relay that gets
+  /// a longer one rejects the whole REQ — nos.lol answers
+  /// `CLOSED … "ERROR: bad req: invalid subscription id"` and sends nothing.
+  /// `scoreboard_` plus a 64-character pubkey is 75, which is how this shipped
+  /// broken: publishing worked, the app's own `user_events` worked, and the
+  /// scoreboard silently received nothing at all.
+  ///
+  /// Still derived from the pubkey rather than a constant, so that a departing
+  /// feed cannot close the subscription an arriving one just opened. Sixteen hex
+  /// characters is 64 bits of the key — far more than enough to tell two watched
+  /// authors apart.
+  static const _idPrefix = 'sb_';
+  static const _idKeyChars = 16;
+
+  String get _subscriptionId {
+    final key = _pubkey ?? '';
+    final short =
+        key.length <= _idKeyChars ? key : key.substring(0, _idKeyChars);
+    return '$_idPrefix$short';
+  }
 
   /// Newest event seen per match, so a relay replaying an older revision of an
   /// addressable event cannot undo a newer one.
