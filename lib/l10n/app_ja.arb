@@ -200,5 +200,27 @@
   "submissionsRemove": "削除",
   "submissionsRestore": "初期設定に戻す",
   "submissionsDuplicate": "すでにリストにあります",
-  "submissionsEmpty": "サブミッションがありません。追加するか、初期設定に戻してください。"
+  "submissionsEmpty": "サブミッションがありません。追加するか、初期設定に戻してください。",
+  "navScoreboard": "スコアボード",
+  "scoreboardPubkeyHint": "主催者の npub または 16 進公開鍵",
+  "scoreboardWatch": "見る",
+  "scoreboardStopWatching": "表示をやめる",
+  "scoreboardInvalidPubkey": "無効な公開鍵：npub または 64 文字の 16 進数が必要です",
+  "scoreboardWelcomeTitle": "他の会場の試合を見る",
+  "scoreboardWelcomeBody": "主催者が共有した公開鍵を貼ると、その試合がここにリアルタイムで表示されます。",
+  "scoreboardEmptyTitle": "まだ試合がありません",
+  "scoreboardEmptyBody": "この主催者の試合イベントを待っています…",
+  "scoreboardTime": "タイム",
+  "scoreboardWinner": "勝者",
+  "scoreboardResult": "結果",
+  "scoreboardAdvShort": "アド",
+  "scoreboardPenShort": "反則",
+  "scoreboardPointsShort": "{points} ポイント",
+  "@scoreboardPointsShort": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  }
 }

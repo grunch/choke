@@ -200,5 +200,27 @@
   "submissionsRemove": "Remover",
   "submissionsRestore": "Restaurar as padrão",
   "submissionsDuplicate": "Já está na lista",
-  "submissionsEmpty": "Não resta nenhuma finalização. Adicione uma ou restaure as padrão."
+  "submissionsEmpty": "Não resta nenhuma finalização. Adicione uma ou restaure as padrão.",
+  "navScoreboard": "Placar",
+  "scoreboardPubkeyHint": "npub ou chave pública hex do organizador",
+  "scoreboardWatch": "Ver",
+  "scoreboardStopWatching": "Parar de ver",
+  "scoreboardInvalidPubkey": "Chave pública inválida: precisa ser npub ou hex de 64 caracteres",
+  "scoreboardWelcomeTitle": "Acompanhe os tatames de outros",
+  "scoreboardWelcomeBody": "Cole a chave pública que um organizador compartilhou e as lutas dele aparecem aqui ao vivo.",
+  "scoreboardEmptyTitle": "Ainda sem lutas",
+  "scoreboardEmptyBody": "Aguardando eventos de luta deste organizador…",
+  "scoreboardTime": "TEMPO",
+  "scoreboardWinner": "VENCEDOR",
+  "scoreboardResult": "RESULTADO",
+  "scoreboardAdvShort": "VANT",
+  "scoreboardPenShort": "PUN",
+  "scoreboardPointsShort": "{points} PTS",
+  "@scoreboardPointsShort": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  }
 }

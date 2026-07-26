@@ -51,18 +51,46 @@ void main() {
     );
   }
 
+  /// Drive a lifecycle sequence the way the OS actually does.
+  ///
+  /// The states are a path, not a set: Android and iOS walk resumed → inactive →
+  /// hidden → paused on the way out and back again on the way in, and Flutter's
+  /// own AppLifecycleListener asserts on any jump that skips a step. Sending
+  /// paused → resumed directly is a transition no device performs, and any
+  /// widget in the tree that listens for lifecycle changes — a TextField, for
+  /// one — will rightly complain about it.
+  Future<void> walk(
+    WidgetTester tester,
+    List<AppLifecycleState> states,
+  ) async {
+    for (final state in states) {
+      tester.binding.handleAppLifecycleStateChanged(state);
+      await tester.pump();
+    }
+  }
+
+  /// Away and back, in full.
+  const goingAway = [
+    AppLifecycleState.inactive,
+    AppLifecycleState.hidden,
+    AppLifecycleState.paused,
+  ];
+  const comingBack = [
+    AppLifecycleState.hidden,
+    AppLifecycleState.inactive,
+    AppLifecycleState.resumed,
+  ];
+
   testWidgets('recycles every relay connection when the app resumes',
       (tester) async {
     // Arrange — backgrounding kills sockets without a close frame, so resume
     // must not trust any connection that looks open
     await pumpApp(tester);
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-    await tester.pump();
+    await walk(tester, goingAway);
     expect(service.reconnectCalls, 0);
 
     // Act
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pump();
+    await walk(tester, comingBack);
 
     // Assert
     expect(service.reconnectCalls, 1);
@@ -73,19 +101,13 @@ void main() {
     // Arrange
     await pumpApp(tester);
 
-    // Act — the transitions short of resuming
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-    await tester.pump();
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
-    await tester.pump();
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-    await tester.pump();
+    // Act — every transition short of resuming
+    await walk(tester, goingAway);
 
     // Assert — recycling sockets mid-use would drop live subscriptions
     expect(service.reconnectCalls, 0);
 
     // Restore the default state so later tests see a live app
-    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-    await tester.pump();
+    await walk(tester, comingBack);
   });
 }

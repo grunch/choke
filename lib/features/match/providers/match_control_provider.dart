@@ -141,18 +141,11 @@ class MatchControlNotifier extends StateNotifier<MatchControlState> {
     }
   }
 
-  static int _calculateRemaining(Match match) {
-    if (match.status == MatchStatus.waiting) {
-      return match.duration;
-    }
-    if (match.startAt == null || match.startAt == 0) {
-      return match.duration;
-    }
-    // While paused the clock reads as it did at the moment it was stopped.
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final elapsed = (match.pausedAt ?? now) - match.startAt!;
-    return (match.duration - elapsed).clamp(0, match.duration);
-  }
+  /// The clock lives on [Match], so that this screen and the read-only
+  /// scoreboard cannot drift into telling two different times.
+  static int _calculateRemaining(Match match) => match.remainingSecondsAt(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
 
   /// Start the match: set status to inProgress, set startAt, start timer
   void startMatch() {

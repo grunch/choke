@@ -645,4 +645,54 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get submissionsEmpty =>
       'No submissions left. Add one, or restore the defaults.';
+
+  @override
+  String get navScoreboard => 'Scoreboard';
+
+  @override
+  String get scoreboardPubkeyHint => 'Organizer npub or hex pubkey';
+
+  @override
+  String get scoreboardWatch => 'Watch';
+
+  @override
+  String get scoreboardStopWatching => 'Stop watching';
+
+  @override
+  String get scoreboardInvalidPubkey =>
+      'Invalid pubkey: must be an npub or 64-char hex';
+
+  @override
+  String get scoreboardWelcomeTitle => 'Watch somebody else’s mats';
+
+  @override
+  String get scoreboardWelcomeBody =>
+      'Paste the pubkey an organizer shared and their matches appear here live.';
+
+  @override
+  String get scoreboardEmptyTitle => 'No matches yet';
+
+  @override
+  String get scoreboardEmptyBody =>
+      'Waiting for match events from this organizer…';
+
+  @override
+  String get scoreboardTime => 'TIME';
+
+  @override
+  String get scoreboardWinner => 'WINNER';
+
+  @override
+  String get scoreboardResult => 'RESULT';
+
+  @override
+  String get scoreboardAdvShort => 'ADV';
+
+  @override
+  String get scoreboardPenShort => 'PEN';
+
+  @override
+  String scoreboardPointsShort(int points) {
+    return '$points PTS';
+  }
 }

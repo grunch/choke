@@ -624,4 +624,51 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get submissionsEmpty => 'サブミッションがありません。追加するか、初期設定に戻してください。';
+
+  @override
+  String get navScoreboard => 'スコアボード';
+
+  @override
+  String get scoreboardPubkeyHint => '主催者の npub または 16 進公開鍵';
+
+  @override
+  String get scoreboardWatch => '見る';
+
+  @override
+  String get scoreboardStopWatching => '表示をやめる';
+
+  @override
+  String get scoreboardInvalidPubkey => '無効な公開鍵：npub または 64 文字の 16 進数が必要です';
+
+  @override
+  String get scoreboardWelcomeTitle => '他の会場の試合を見る';
+
+  @override
+  String get scoreboardWelcomeBody => '主催者が共有した公開鍵を貼ると、その試合がここにリアルタイムで表示されます。';
+
+  @override
+  String get scoreboardEmptyTitle => 'まだ試合がありません';
+
+  @override
+  String get scoreboardEmptyBody => 'この主催者の試合イベントを待っています…';
+
+  @override
+  String get scoreboardTime => 'タイム';
+
+  @override
+  String get scoreboardWinner => '勝者';
+
+  @override
+  String get scoreboardResult => '結果';
+
+  @override
+  String get scoreboardAdvShort => 'アド';
+
+  @override
+  String get scoreboardPenShort => '反則';
+
+  @override
+  String scoreboardPointsShort(int points) {
+    return '$points ポイント';
+  }
 }

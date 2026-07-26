@@ -804,5 +804,70 @@
   "submissionsEmpty": "No submissions left. Add one, or restore the defaults.",
   "@submissionsEmpty": {
     "description": "Submissions picker/editor: every submission has been removed"
+  },
+  "navScoreboard": "Scoreboard",
+  "@navScoreboard": {
+    "description": "Bottom navigation label for the read-only Scoreboard tab"
+  },
+  "scoreboardPubkeyHint": "Organizer npub or hex pubkey",
+  "@scoreboardPubkeyHint": {
+    "description": "Placeholder in the field where the viewer pastes the organizer pubkey"
+  },
+  "scoreboardWatch": "Watch",
+  "@scoreboardWatch": {
+    "description": "Button that starts watching the entered pubkey"
+  },
+  "scoreboardStopWatching": "Stop watching",
+  "@scoreboardStopWatching": {
+    "description": "Button that stops watching and forgets the pubkey"
+  },
+  "scoreboardInvalidPubkey": "Invalid pubkey: must be an npub or 64-char hex",
+  "@scoreboardInvalidPubkey": {
+    "description": "Error shown when the pasted pubkey is neither an npub nor 64-char hex"
+  },
+  "scoreboardWelcomeTitle": "Watch somebody else’s mats",
+  "@scoreboardWelcomeTitle": {
+    "description": "Title before any pubkey has been entered"
+  },
+  "scoreboardWelcomeBody": "Paste the pubkey an organizer shared and their matches appear here live.",
+  "@scoreboardWelcomeBody": {
+    "description": "Body before any pubkey has been entered"
+  },
+  "scoreboardEmptyTitle": "No matches yet",
+  "@scoreboardEmptyTitle": {
+    "description": "Title when a pubkey is being watched but no matches have arrived"
+  },
+  "scoreboardEmptyBody": "Waiting for match events from this organizer…",
+  "@scoreboardEmptyBody": {
+    "description": "Body when a pubkey is being watched but no matches have arrived"
+  },
+  "scoreboardTime": "TIME",
+  "@scoreboardTime": {
+    "description": "Label over the clock on the full-screen scoreboard"
+  },
+  "scoreboardWinner": "WINNER",
+  "@scoreboardWinner": {
+    "description": "Label over the winner name on a finished match"
+  },
+  "scoreboardResult": "RESULT",
+  "@scoreboardResult": {
+    "description": "Label used instead of WINNER when a match was a draw"
+  },
+  "scoreboardAdvShort": "ADV",
+  "@scoreboardAdvShort": {
+    "description": "Short label on the advantages chip; kept short to fit the wall display"
+  },
+  "scoreboardPenShort": "PEN",
+  "@scoreboardPenShort": {
+    "description": "Short label on the penalties chip; kept short to fit the wall display"
+  },
+  "scoreboardPointsShort": "{points} PTS",
+  "@scoreboardPointsShort": {
+    "description": "Point-value column header in the score breakdown, e.g. 2 PTS",
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
   }
 }

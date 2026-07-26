@@ -11,6 +11,7 @@ import 'shared/providers/match_sound_provider.dart';
 import 'features/home/home_screen.dart';
 
 import 'features/account/account_screen.dart';
+import 'features/scoreboard/scoreboard_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/match/providers/submissions_provider.dart';
 import 'features/settings/providers/relay_config_provider.dart';
@@ -183,6 +184,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
+    const ScoreboardScreen(),
     const AccountScreen(),
     const SettingsScreen(),
   ];
@@ -199,6 +201,7 @@ class _MainNavigationState extends State<MainNavigation> {
         onTap: (index) => setState(() => _currentIndex = index),
         items: [
           (Icons.home_outlined, l10n.navHome),
+          (Icons.scoreboard_outlined, l10n.navScoreboard),
           (Icons.person_outline, l10n.navAccount),
           (Icons.settings_outlined, l10n.navSettings),
         ],

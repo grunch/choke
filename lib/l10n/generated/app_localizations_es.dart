@@ -650,4 +650,54 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get submissionsEmpty =>
       'No queda ninguna sumisión. Agrega una o restaura las predeterminadas.';
+
+  @override
+  String get navScoreboard => 'Tablero';
+
+  @override
+  String get scoreboardPubkeyHint => 'npub o clave pública hex del organizador';
+
+  @override
+  String get scoreboardWatch => 'Ver';
+
+  @override
+  String get scoreboardStopWatching => 'Dejar de ver';
+
+  @override
+  String get scoreboardInvalidPubkey =>
+      'Clave pública inválida: debe ser npub o hex de 64 caracteres';
+
+  @override
+  String get scoreboardWelcomeTitle => 'Mirá los tatamis de otros';
+
+  @override
+  String get scoreboardWelcomeBody =>
+      'Pegá la clave pública que compartió un organizador y sus luchas aparecen acá en vivo.';
+
+  @override
+  String get scoreboardEmptyTitle => 'Todavía no hay luchas';
+
+  @override
+  String get scoreboardEmptyBody =>
+      'Esperando eventos de lucha de este organizador…';
+
+  @override
+  String get scoreboardTime => 'TIEMPO';
+
+  @override
+  String get scoreboardWinner => 'GANADOR';
+
+  @override
+  String get scoreboardResult => 'RESULTADO';
+
+  @override
+  String get scoreboardAdvShort => 'VENT';
+
+  @override
+  String get scoreboardPenShort => 'PEN';
+
+  @override
+  String scoreboardPointsShort(int points) {
+    return '$points PTS';
+  }
 }

@@ -1,0 +1,753 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:choke/l10n/generated/app_localizations.dart';
+
+import '../../shared/theme/app_theme.dart';
+import '../../shared/widgets/match_card.dart';
+import '../match/models/match.dart';
+import '../match/models/submission_catalog.dart';
+import '../match/widgets/outcome_label.dart';
+import 'providers/scoreboard_providers.dart';
+
+/// The wall display: one match, big enough to read from across a mat.
+///
+/// Landscape only. The layout is two halves side by side, one per fighter, and
+/// there is no honest way to fold that into a portrait phone — so the screen asks
+/// for the orientation it needs, the way a video player does, and gives it back
+/// on the way out.
+///
+/// Strictly read-only. It renders what the relays say and has no way to change
+/// it; the match belongs to whoever is refereeing it somewhere else.
+class ScoreboardMatchScreen extends ConsumerStatefulWidget {
+  const ScoreboardMatchScreen({super.key, required this.matchId});
+
+  /// Looked up by id on every build rather than passed in whole, so the screen
+  /// re-renders as revisions arrive. Handing it a [Match] would freeze the match
+  /// at the moment it was tapped.
+  final String matchId;
+
+  @override
+  ConsumerState<ScoreboardMatchScreen> createState() =>
+      _ScoreboardMatchScreenState();
+}
+
+class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
+  static const _background = Color(0xFF05070E);
+  static const _dim = Color(0x9E05070E);
+  static const _labelGrey = Color(0xFF5F6D8A);
+  static const _pillGrey = Color(0xFF8A97B2);
+
+  Timer? _ticker;
+
+  /// Now, in unix seconds, advanced once a second so the clock counts down.
+  ///
+  /// The match carries no clock — [Match.remainingSecondsAt] derives it — so
+  /// ticking "now" is the whole animation.
+  int _now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _now = DateTime.now().millisecondsSinceEpoch ~/ 1000);
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final matches = ref.watch(scoreboardMatchesProvider);
+    final match = matches.where((m) => m.id == widget.matchId).firstOrNull;
+
+    if (match == null) return _buildGone(l10n);
+
+    return Scaffold(
+      backgroundColor: _background,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Everything scales off the height, so the board reads the same on a
+          // phone held sideways and on a tablet.
+          final unit = constraints.maxHeight / 100;
+          return Stack(
+            children: [
+              _buildHalf(context, l10n, match, unit, isF1: true),
+              _buildHalf(context, l10n, match, unit, isF1: false),
+              _buildLoserDim(match),
+              _buildCenter(context, l10n, match, unit),
+              _buildWinnerBanner(context, l10n, match, unit),
+              _buildBack(l10n),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // ─── Fighter halves ─────────────────────────────────────────────────────
+
+  Widget _buildHalf(
+    BuildContext context,
+    AppLocalizations l10n,
+    Match match,
+    double unit, {
+    required bool isF1,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    final color = hexToColor(
+      isF1 ? match.f1Color : match.f2Color,
+      colors.outline,
+    );
+    final name = isF1 ? match.f1Name : match.f2Name;
+    final score = isF1 ? match.f1EffectivePoints : match.f2EffectivePoints;
+    final adv =
+        isF1 ? match.f1EffectiveAdvantages : match.f2EffectiveAdvantages;
+    final pen = isF1 ? match.f1Pen : match.f2Pen;
+    final breakdown = isF1
+        ? [match.f1Pt2, match.f1Pt3, match.f1Pt4]
+        : [match.f2Pt2, match.f2Pt3, match.f2Pt4];
+
+    return Align(
+      alignment: isF1 ? Alignment.centerLeft : Alignment.centerRight,
+      child: FractionallySizedBox(
+        widthFactor: 0.5,
+        child: Stack(
+          children: [
+            // Colour wash, fading toward the middle of the screen.
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: isF1 ? Alignment.centerLeft : Alignment.centerRight,
+                  end: isF1 ? Alignment.centerRight : Alignment.centerLeft,
+                  colors: [
+                    color.withValues(alpha: .30),
+                    color.withValues(alpha: .05),
+                    Colors.transparent,
+                  ],
+                  stops: const [0, .55, .78],
+                ),
+              ),
+              child: const SizedBox.expand(),
+            ),
+            // The edge bar, and its glow.
+            Align(
+              alignment: isF1 ? Alignment.centerLeft : Alignment.centerRight,
+              child: Container(
+                width: 11,
+                decoration: BoxDecoration(
+                  color: color,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: .6),
+                      blurRadius: 50,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                isF1 ? unit * 4 : unit * 2,
+                unit * 5,
+                isF1 ? unit * 2 : unit * 4,
+                unit * 5,
+              ),
+              child: Column(
+                children: [
+                  _buildName(name, color, unit),
+                  Expanded(child: Center(child: _buildScore(score, color, unit))),
+                  _buildBreakdown(l10n, breakdown, unit),
+                  SizedBox(height: unit * 2.5),
+                  _buildChips(l10n, adv, pen, unit),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildName(String name, Color color, double unit) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: unit * 2.6,
+          height: unit * 2.6,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: [
+              BoxShadow(color: color.withValues(alpha: .6), blurRadius: 20),
+            ],
+          ),
+        ),
+        SizedBox(width: unit * 1.4),
+        Flexible(
+          child: Text(
+            name.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: (unit * 7).clamp(14.0, 58.0),
+              letterSpacing: 1,
+              height: 1.1,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScore(int score, Color color, double unit) {
+    return Text(
+      '$score',
+      style: TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w900,
+        fontSize: (unit * 30).clamp(48.0, 232.0),
+        height: 1,
+        shadows: [Shadow(color: color.withValues(alpha: .6), blurRadius: 55)],
+      ),
+    );
+  }
+
+  Widget _buildBreakdown(AppLocalizations l10n, List<int> counts, double unit) {
+    const values = [2, 3, 4];
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (var i = 0; i < values.length; i++) ...[
+          if (i > 0) SizedBox(width: unit * 4),
+          Column(
+            children: [
+              Text(
+                l10n.scoreboardPointsShort(values[i]),
+                style: TextStyle(
+                  color: _labelGrey,
+                  fontWeight: FontWeight.bold,
+                  fontSize: (unit * 2).clamp(9.0, 19.0),
+                  letterSpacing: 1.6,
+                ),
+              ),
+              SizedBox(height: unit),
+              Text(
+                '${counts[i]}',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: (unit * 4).clamp(16.0, 36.0),
+                  height: 1,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildChips(AppLocalizations l10n, int adv, int pen, double unit) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _buildCountChip(
+          l10n.scoreboardAdvShort,
+          adv,
+          const Color(0xFFF4B400),
+          const Color(0xFFFFD451),
+          unit,
+        ),
+        SizedBox(width: unit * 1.6),
+        _buildCountChip(
+          l10n.scoreboardPenShort,
+          pen,
+          const Color(0xFFF87171),
+          const Color(0xFFFCA5A5),
+          unit,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCountChip(
+    String label,
+    int count,
+    Color labelColor,
+    Color countColor,
+    double unit,
+  ) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: unit * 2, vertical: unit * 1.1),
+      decoration: BoxDecoration(
+        color: labelColor.withValues(alpha: .14),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: labelColor.withValues(alpha: .5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: labelColor,
+              fontWeight: FontWeight.bold,
+              fontSize: (unit * 2.5).clamp(11.0, 24.0),
+              letterSpacing: 1,
+            ),
+          ),
+          SizedBox(width: unit * .9),
+          Text(
+            '$count',
+            style: TextStyle(
+              color: countColor,
+              fontWeight: FontWeight.w800,
+              fontSize: (unit * 2.8).clamp(12.0, 27.0),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Dim the half belonging to whoever lost, once somebody has.
+  Widget _buildLoserDim(Match match) {
+    final winner = match.winner;
+    if (winner == null || match.status != MatchStatus.finished) {
+      return const SizedBox.shrink();
+    }
+
+    return Align(
+      alignment: winner == MatchWinner.f1
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
+      child: const FractionallySizedBox(
+        widthFactor: 0.5,
+        child: ColoredBox(color: _dim, child: SizedBox.expand()),
+      ),
+    );
+  }
+
+  // ─── Centre column ──────────────────────────────────────────────────────
+
+  Widget _buildCenter(
+    BuildContext context,
+    AppLocalizations l10n,
+    Match match,
+    double unit,
+  ) {
+    final showTimer = match.status == MatchStatus.waiting ||
+        match.status == MatchStatus.inProgress;
+
+    return Align(
+      alignment: Alignment.topCenter,
+      child: FractionallySizedBox(
+        widthFactor: 0.28,
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: unit * 5),
+          child: Column(
+            children: [
+              _buildStatusPill(context, l10n, match, unit),
+              Expanded(
+                child: showTimer
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildTimerCard(l10n, match, unit),
+                          SizedBox(height: unit * 3),
+                          Text(
+                            l10n.vs.toUpperCase(),
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: .16),
+                              fontWeight: FontWeight.w800,
+                              fontSize: (unit * 3.4).clamp(14.0, 32.0),
+                              letterSpacing: 1.4,
+                            ),
+                          ),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusPill(
+    BuildContext context,
+    AppLocalizations l10n,
+    Match match,
+    double unit,
+  ) {
+    final tk = ChokeTokens.of(context);
+    final colors = Theme.of(context).colorScheme;
+
+    // A finished match speaks in the winner's colour, so the pill and the banner
+    // agree with each other at a glance.
+    final (label, color) = switch (match) {
+      Match(isPaused: true) => (l10n.statusPaused, const Color(0xFFF5B800)),
+      Match(status: MatchStatus.waiting) => (l10n.statusWaiting, _pillGrey),
+      Match(status: MatchStatus.inProgress) => (
+          l10n.statusInProgress,
+          const Color(0xFF2EE08A),
+        ),
+      Match(status: MatchStatus.canceled) => (
+          l10n.statusCanceled,
+          tk.statusCanceledFg,
+        ),
+      _ => (
+          l10n.statusFinished,
+          switch (match.winner) {
+            MatchWinner.f1 => hexToColor(match.f1Color, colors.outline),
+            MatchWinner.f2 => hexToColor(match.f2Color, colors.outline),
+            null => Colors.white,
+          },
+        ),
+    };
+
+    final isRunning = match.status == MatchStatus.inProgress && !match.isPaused;
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: unit * 2.4, vertical: unit),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: .5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _StatusDot(color: color, blinking: isRunning, size: unit * 1.6),
+          SizedBox(width: unit * 1.2),
+          Flexible(
+            child: Text(
+              label.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: (unit * 2.5).clamp(10.0, 24.0),
+                letterSpacing: 1.6,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimerCard(AppLocalizations l10n, Match match, double unit) {
+    final remaining = match.remainingSecondsAt(_now);
+    final minutes = (remaining ~/ 60).toString().padLeft(2, '0');
+    final seconds = (remaining % 60).toString().padLeft(2, '0');
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: unit * 3, vertical: unit * 2.5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .03),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: .09)),
+        boxShadow: const [
+          BoxShadow(color: Color(0x73000000), blurRadius: 60),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            l10n.scoreboardTime,
+            style: TextStyle(
+              color: _labelGrey,
+              fontWeight: FontWeight.bold,
+              fontSize: (unit * 1.8).clamp(9.0, 17.0),
+              letterSpacing: 3,
+            ),
+          ),
+          SizedBox(height: unit * 1.5),
+          Text(
+            '$minutes:$seconds',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: (unit * 9).clamp(28.0, 76.0),
+              height: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Result ─────────────────────────────────────────────────────────────
+
+  /// Who won, and how, over the middle of the board.
+  ///
+  /// The winner comes from the event and is never derived from the numbers: a
+  /// fighter can lead 5–2 and lose to an armbar, and this banner is read by a
+  /// room full of people.
+  Widget _buildWinnerBanner(
+    BuildContext context,
+    AppLocalizations l10n,
+    Match match,
+    double unit,
+  ) {
+    if (match.status != MatchStatus.finished) return const SizedBox.shrink();
+
+    final method = match.method;
+    if (method == null) return const SizedBox.shrink();
+
+    final colors = Theme.of(context).colorScheme;
+    final winner = match.winner;
+    final color = switch (winner) {
+      MatchWinner.f1 => hexToColor(match.f1Color, colors.outline),
+      MatchWinner.f2 => hexToColor(match.f2Color, colors.outline),
+      null => Colors.white,
+    };
+    final detail = _detailOf(l10n, match);
+
+    return Center(
+      child: Container(
+        constraints: BoxConstraints(maxWidth: unit * 86),
+        padding:
+            EdgeInsets.symmetric(horizontal: unit * 5, vertical: unit * 3.5),
+        decoration: BoxDecoration(
+          color: const Color(0xB805070E),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              (winner == null ? l10n.scoreboardResult : l10n.scoreboardWinner)
+                  .toUpperCase(),
+              style: TextStyle(
+                color: _pillGrey,
+                fontWeight: FontWeight.bold,
+                fontSize: (unit * 2.5).clamp(10.0, 24.0),
+                letterSpacing: 3.6,
+              ),
+            ),
+            if (winner != null) ...[
+              SizedBox(height: unit * 2),
+              Text(
+                (winner == MatchWinner.f1 ? match.f1Name : match.f2Name)
+                    .toUpperCase(),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  fontSize: (unit * 12).clamp(24.0, 86.0),
+                  height: 1,
+                  shadows: [
+                    Shadow(color: color.withValues(alpha: .6), blurRadius: 46),
+                  ],
+                ),
+              ),
+            ],
+            SizedBox(height: unit * 2),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: unit * 3,
+                vertical: unit * 1.6,
+              ),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: .14),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: color.withValues(alpha: .5)),
+              ),
+              child: Text(
+                methodLabel(l10n, method).toUpperCase(),
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  fontSize: (unit * 3.4).clamp(14.0, 32.0),
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+            if (detail != null) ...[
+              SizedBox(height: unit * 2),
+              Text(
+                detail,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _pillGrey,
+                  fontWeight: FontWeight.w600,
+                  fontSize: (unit * 2.6).clamp(11.0, 25.0),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The line under the method chip: which submission, or what the referee wrote
+  /// about a disqualification. Null when the method already says everything.
+  String? _detailOf(AppLocalizations l10n, Match match) {
+    final submission = match.submission;
+    if (submission != null && submission.isNotEmpty) {
+      return labelFor(l10n, submission);
+    }
+
+    final dqDetail = match.dqDetail;
+    if (dqDetail != null && dqDetail.isNotEmpty) return dqDetail;
+
+    return null;
+  }
+
+  // ─── Chrome ─────────────────────────────────────────────────────────────
+
+  Widget _buildBack(AppLocalizations l10n) {
+    return Positioned(
+      top: 8,
+      left: 8,
+      child: SafeArea(
+        child: TextButton.icon(
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.chevron_left, size: 18),
+          label: Text(l10n.goBack),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.white.withValues(alpha: .6),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The match aged out of the feed, or the relays never had it.
+  ///
+  /// It can happen while this screen is open: the feed keeps a day, and a board
+  /// left running overnight will watch a match disappear out from under it.
+  Widget _buildGone(AppLocalizations l10n) {
+    return Scaffold(
+      backgroundColor: _background,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.search_off, size: 44, color: _pillGrey),
+              const SizedBox(height: 14),
+              Text(
+                l10n.scoreboardEmptyTitle,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: _pillGrey,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Navigator.of(context).maybePop(),
+                child: Text(l10n.goBack),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The status dot, which pulses only while a match is actually running.
+///
+/// A paused or finished match holds still: a blinking light says "this is
+/// happening now", and it must not say that when it is not.
+class _StatusDot extends StatefulWidget {
+  const _StatusDot({
+    required this.color,
+    required this.blinking,
+    required this.size,
+  });
+
+  final Color color;
+  final bool blinking;
+  final double size;
+
+  @override
+  State<_StatusDot> createState() => _StatusDotState();
+}
+
+class _StatusDotState extends State<_StatusDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    // Built unconditionally, and here. A lazy `late final` would go unbuilt for a
+    // dot that never blinks — every finished match — and then be constructed by
+    // `dispose` reaching for `_controller`, which creates a ticker against an
+    // ancestor that is already gone and takes the rest of the teardown with it.
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    if (widget.blinking) _controller.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(_StatusDot old) {
+    super.didUpdateWidget(old);
+    if (widget.blinking == old.blinking) return;
+    if (widget.blinking) {
+      _controller.repeat(reverse: true);
+    } else {
+      _controller.stop();
+      _controller.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = widget.size.clamp(8.0, 14.0);
+    final dot = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: widget.color,
+        shape: BoxShape.circle,
+        boxShadow: [BoxShadow(color: widget.color, blurRadius: 14)],
+      ),
+    );
+
+    if (!widget.blinking) return dot;
+
+    return FadeTransition(
+      opacity: Tween<double>(begin: 1, end: .35).animate(_controller),
+      child: dot,
+    );
+  }
+}
