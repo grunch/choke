@@ -12,6 +12,7 @@ import 'package:choke/l10n/generated/app_localizations.dart';
 import 'package:choke/services/key_management/key_manager.dart';
 import 'package:choke/services/nostr/crypto/nostr_crypto.dart';
 import 'package:choke/services/nostr/nostr_service.dart';
+import 'package:choke/services/wakelock/screen_wakelock.dart';
 import 'package:choke/shared/theme/app_theme.dart';
 import 'package:choke/shared/widgets/status_filter_bar.dart';
 
@@ -59,11 +60,36 @@ Match _match({
   );
 }
 
+/// Records what the board asked of the platform, in order and in full —
+/// repeats included, because "it keeps asking" must stay observable. A release
+/// records as a final false.
+class _RecordingWakelock implements ScreenWakelock {
+  final List<bool> requests = [];
+
+  @override
+  ScreenWakelockLease lease() => _RecordingLease(this);
+}
+
+class _RecordingLease implements ScreenWakelockLease {
+  _RecordingLease(this._owner);
+
+  final _RecordingWakelock _owner;
+
+  @override
+  Future<void> keepAwake(bool on) async => _owner.requests.add(on);
+
+  @override
+  Future<void> release() async => _owner.requests.add(false);
+}
+
 Widget _wrap(Widget child, {List<Override> overrides = const []}) {
   return ProviderScope(
     overrides: [
       nostrCryptoProvider.overrideWithValue(FakeNostrCrypto()),
       nostrServiceProvider.overrideWithValue(_OfflineNostrService()),
+      // The real one talks to a method channel nothing answers in a test, and
+      // its timeout would outlive the test as a pending timer.
+      screenWakelockProvider.overrideWithValue(const NoopScreenWakelock()),
       ...overrides,
     ],
     child: MaterialApp(
@@ -513,6 +539,7 @@ void main() {
         overrides: [
           nostrCryptoProvider.overrideWithValue(FakeNostrCrypto()),
           nostrServiceProvider.overrideWithValue(_OfflineNostrService()),
+          screenWakelockProvider.overrideWithValue(const NoopScreenWakelock()),
           scoreboardMatchesProvider.overrideWithValue([match]),
         ],
         child: MaterialApp(
@@ -559,6 +586,125 @@ void main() {
       final name = tester.widget<Text>(find.text('BUCHECHA'));
       expect(name.style!.color, BoardPalette.light.text);
       expect(name.style!.color, isNot(Colors.white));
+    });
+  });
+
+  group('ScoreboardMatchScreen wakelock', () {
+    /// Records every request, repeats included — deduplicating here would make
+    /// "it keeps asking" unobservable, which is the lesson the control screen's
+    /// fake taught the hard way.
+    Future<void> pumpBoardWith(
+      WidgetTester tester,
+      _RecordingWakelock wakelock,
+      Match match,
+    ) async {
+      tester.view.physicalSize = const Size(1600, 740);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_wrap(
+        ScoreboardMatchScreen(matchId: match.id),
+        overrides: [
+          screenWakelockProvider.overrideWithValue(wakelock),
+          scoreboardMatchesProvider.overrideWithValue([match]),
+        ],
+      ));
+      await tester.pump();
+    }
+
+    testWidgets('holds the screen from the moment the board opens',
+        (tester) async {
+      // Arrange + Act
+      final wakelock = _RecordingWakelock();
+      await pumpBoardWith(tester, wakelock, _match());
+
+      // Assert
+      expect(wakelock.requests, isNotEmpty);
+      expect(wakelock.requests.every((on) => on), isTrue);
+    });
+
+    testWidgets('holds it for a match that has not started', (tester) async {
+      // Waiting for the first bell is watching, not idling.
+      final wakelock = _RecordingWakelock();
+      await pumpBoardWith(
+        tester,
+        wakelock,
+        _match(status: MatchStatus.waiting),
+      );
+
+      expect(wakelock.requests, contains(true));
+      expect(wakelock.requests, isNot(contains(false)));
+    });
+
+    testWidgets('holds it for a finished match too', (tester) async {
+      // The one place this deliberately differs from the control screen: a
+      // finished board is left up to be read across a room, and it must not go
+      // dark mid-read.
+      final wakelock = _RecordingWakelock();
+      await pumpBoardWith(
+        tester,
+        wakelock,
+        _match(
+          status: MatchStatus.finished,
+          winner: MatchWinner.f2,
+          method: MatchMethod.submission,
+        ),
+      );
+
+      expect(wakelock.requests, contains(true));
+      expect(wakelock.requests, isNot(contains(false)));
+    });
+
+    testWidgets('keeps re-asserting, so a dropped request is retried',
+        (tester) async {
+      // Arrange
+      final wakelock = _RecordingWakelock();
+      await pumpBoardWith(tester, wakelock, _match());
+      final atStart = wakelock.requests.length;
+
+      // Act — a quiet minute, nobody touching anything
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
+
+      // Assert — asking again is the only way a request the platform dropped
+      // ever gets made again
+      expect(wakelock.requests.length, greaterThan(atStart));
+      expect(wakelock.requests, isNot(contains(false)));
+    });
+
+    testWidgets('does not hold the screen for a match that is gone',
+        (tester) async {
+      // The dead-end page is the one most likely to be left face-up on a table
+      // overnight, and the one place pinning the display serves nobody.
+      //
+      // Arrange + Act — the board opens onto a match the feed no longer has
+      final wakelock = _RecordingWakelock();
+      tester.view.physicalSize = const Size(1600, 740);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(_wrap(
+        const ScoreboardMatchScreen(matchId: 'gone'),
+        overrides: [
+          screenWakelockProvider.overrideWithValue(wakelock),
+          scoreboardMatchesProvider.overrideWithValue(const []),
+        ],
+      ));
+      await tester.pump();
+
+      // Assert — it never voted to hold at all
+      expect(wakelock.requests, isNot(contains(true)));
+    });
+
+    testWidgets('releases the screen when the viewer leaves', (tester) async {
+      // Arrange
+      final wakelock = _RecordingWakelock();
+      await pumpBoardWith(tester, wakelock, _match());
+
+      // Act
+      await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+
+      // Assert
+      expect(wakelock.requests.last, isFalse);
     });
   });
 }
