@@ -55,9 +55,10 @@ Match _match({String id = 'abcd', int f1Pt2 = 0}) {
   );
 }
 
-NostrEvent _eventOf(Match match, {required String pubkey, int? createdAt}) {
+NostrEvent _eventOf(Match match,
+    {required String pubkey, int? createdAt, String id = 'e1'}) {
   return NostrEvent(
-    id: 'e1',
+    id: id,
     pubkey: pubkey,
     createdAt: createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000,
     kind: 31415,
@@ -444,6 +445,67 @@ void main() {
 
       // Assert — the board they just closed must not come back
       expect(notifier.state, isNull);
+    });
+  });
+
+  group('ScoreboardFeedNotifier equal-timestamp revisions', () {
+    late _SpyNostrService nostr;
+
+    setUp(() => nostr = _SpyNostrService());
+    tearDown(() => nostr.controller.close());
+
+    /// Push two revisions of one match, stamped the same second, in [order].
+    Future<List<int>> deliver(List<String> order) async {
+      final feed = ScoreboardFeedNotifier(nostr, watched);
+      addTearDown(feed.dispose);
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      const scores = {'aaaa': 2, 'ffff': 5};
+      for (final id in order) {
+        nostr.controller.add(_eventOf(
+          _match(f1Pt2: scores[id]!),
+          pubkey: watched,
+          createdAt: now,
+          id: id,
+        ));
+        await Future<void>.delayed(Duration.zero);
+      }
+      return feed.state.map((m) => m.f1Pt2).toList();
+    }
+
+    test('settle on the same revision whichever order they arrive in',
+        () async {
+      // Two valid revisions created in one second — a referee scoring twice —
+      // delivered in opposite orders by two relays. Resolving by arrival would
+      // leave two phones showing different scores for the same match, with no
+      // way to tell which is right.
+      //
+      // Act
+      final oneWay = await deliver(['aaaa', 'ffff']);
+      final theOther = await deliver(['ffff', 'aaaa']);
+
+      // Assert — and NIP-01 says the lowest id is the one they agree on
+      expect(oneWay, theOther);
+      expect(oneWay, [2], reason: 'aaaa < ffff');
+    });
+
+    test('a genuinely newer revision still wins', () async {
+      // Arrange
+      final feed = ScoreboardFeedNotifier(nostr, watched);
+      addTearDown(feed.dispose);
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      // Act — the newer one carries the HIGHER id, so an id-only rule would
+      // wrongly keep the old one
+      nostr.controller.add(_eventOf(_match(f1Pt2: 1),
+          pubkey: watched, createdAt: now, id: 'aaaa'));
+      await Future<void>.delayed(Duration.zero);
+      nostr.controller.add(_eventOf(_match(f1Pt2: 4),
+          pubkey: watched, createdAt: now + 1, id: 'ffff'));
+      await Future<void>.delayed(Duration.zero);
+
+      // Assert
+      expect(feed.state.single.f1Pt2, 4);
     });
   });
 }

@@ -57,6 +57,30 @@ class NostrEvent {
   }
 }
 
+/// Whether an arriving addressable event replaces the one already held.
+///
+/// NIP-01: a replacement needs a strictly newer `created_at`, and **on a tie the
+/// event with the lowest id wins**. The tie is not exotic — scoring twice inside
+/// one second is an ordinary thing for a referee to do — and without the id
+/// comparison the winner is whichever event the relays happened to deliver
+/// first, so two phones watching one board could settle on different revisions
+/// of the same match and show different scores.
+///
+/// One function because there is one rule: the service and every feed that
+/// keeps its own copy have to agree, and two implementations of "which is
+/// newer" is exactly how they would stop agreeing.
+bool addressableSupersedes({
+  required int arrivingCreatedAt,
+  required String arrivingId,
+  required int heldCreatedAt,
+  required String heldId,
+}) {
+  if (arrivingCreatedAt != heldCreatedAt) {
+    return arrivingCreatedAt > heldCreatedAt;
+  }
+  return arrivingId.compareTo(heldId) < 0;
+}
+
 /// Publishing matches to Nostr, reliably.
 ///
 /// The transport lives behind [NostrRelayBackend]. What stays here is
@@ -262,10 +286,16 @@ class NostrService {
       if (dTag.isNotEmpty && dTag.length > 1) {
         final addressKey = '${event.kind}:${event.pubkey}:${dTag[1]}';
 
-        // Check if we have a newer version
+        // Keep the revision NIP-01 says wins, not the one that arrived first.
         final existing = _addressableEvents[addressKey];
-        if (existing != null && existing.createdAt >= event.createdAt) {
-          debugPrint('NostrService: Ignoring older event $addressKey');
+        if (existing != null &&
+            !addressableSupersedes(
+              arrivingCreatedAt: event.createdAt,
+              arrivingId: event.id,
+              heldCreatedAt: existing.createdAt,
+              heldId: existing.id,
+            )) {
+          debugPrint('NostrService: Ignoring superseded event $addressKey');
           return;
         }
 

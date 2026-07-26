@@ -639,4 +639,49 @@ void main() {
       throwsUnimplementedError,
     );
   });
+
+  group('addressableSupersedes', () {
+    // NIP-01: a replacement needs a strictly newer created_at, and on a tie the
+    // event with the LOWEST id wins.
+    bool wins(int newAt, String newId, int oldAt, String oldId) =>
+        addressableSupersedes(
+          arrivingCreatedAt: newAt,
+          arrivingId: newId,
+          heldCreatedAt: oldAt,
+          heldId: oldId,
+        );
+
+    test('a newer timestamp replaces an older one', () {
+      expect(wins(200, 'ffff', 100, 'aaaa'), isTrue);
+    });
+
+    test('an older timestamp never replaces a newer one', () {
+      expect(wins(100, 'aaaa', 200, 'ffff'), isFalse,
+          reason: 'not even with the lower id');
+    });
+
+    test('on a tie the lowest id wins', () {
+      expect(wins(100, 'aaaa', 100, 'ffff'), isTrue);
+      expect(wins(100, 'ffff', 100, 'aaaa'), isFalse);
+    });
+
+    test('the same event does not replace itself', () {
+      expect(wins(100, 'aaaa', 100, 'aaaa'), isFalse);
+    });
+
+    test('the outcome does not depend on which arrived first', () {
+      // The whole point: two devices seeing the pair in opposite orders must
+      // end up holding the same revision.
+      const early = (at: 100, id: 'aaaa');
+      const late = (at: 100, id: 'ffff');
+
+      // Device A sees `late` first, then `early`.
+      final aKeepsEarly = wins(early.at, early.id, late.at, late.id);
+      // Device B sees `early` first, then `late`.
+      final bKeepsEarly = !wins(late.at, late.id, early.at, early.id);
+
+      expect(aKeepsEarly, isTrue);
+      expect(bKeepsEarly, isTrue);
+    });
+  });
 }
