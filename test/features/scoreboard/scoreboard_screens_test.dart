@@ -6,6 +6,7 @@ import 'package:choke/features/match/models/match.dart';
 import 'package:choke/features/scoreboard/providers/scoreboard_providers.dart';
 import 'package:choke/features/scoreboard/scoreboard_match_screen.dart';
 import 'package:choke/features/scoreboard/scoreboard_screen.dart';
+import 'package:choke/services/deep_links/share_link.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import 'package:choke/services/key_management/key_manager.dart';
 import 'package:choke/services/nostr/crypto/nostr_crypto.dart';
@@ -362,6 +363,49 @@ void main() {
 
       // Assert
       expect(find.byType(StatusFilterBar), findsNothing);
+    });
+  });
+
+  group('ScoreboardScreen broken link', () {
+    testWidgets('shows the board only after the user acknowledges the link',
+        (tester) async {
+      // Arrange — a board is already being watched, and a link naming a
+      // different one arrived broken. Its matches must not stand in for the
+      // board that was actually asked for.
+      SharedPreferences.setMockInitialValues(
+        {'choke:scoreboard-pubkey': _watched},
+      );
+      late WidgetRef ref;
+      await tester.pumpWidget(_wrap(
+        Consumer(builder: (context, r, _) {
+          ref = r;
+          return const ScoreboardScreen();
+        }),
+        overrides: [
+          brokenShareLinkProvider.overrideWith((ref) => true),
+          scoreboardMatchesProvider.overrideWithValue([_match()]),
+          scoreboardFilteredMatchesProvider.overrideWithValue([_match()]),
+        ],
+      ));
+      await tester.pump();
+      await tester.pump();
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      // Assert — the message, and none of the board behind it
+      expect(find.text(l10n.scoreboardBrokenLinkTitle), findsOneWidget);
+      expect(find.text('Buchecha'), findsNothing);
+      expect(find.byType(TextField), findsNothing,
+          reason: 'nothing to type into until they have read this');
+      expect(find.byType(StatusFilterBar), findsNothing);
+
+      // Act — they acknowledge it
+      await tester.tap(find.text(l10n.scoreboardBrokenLinkDismiss));
+      await tester.pump();
+
+      // Assert — now their own board comes back
+      expect(ref.read(brokenShareLinkProvider), isFalse);
+      expect(find.text(l10n.scoreboardBrokenLinkTitle), findsNothing);
+      expect(find.text('Buchecha'), findsOneWidget);
     });
   });
 }

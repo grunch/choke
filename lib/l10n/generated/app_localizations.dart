@@ -1397,6 +1397,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{points} PTS'**
   String scoreboardPointsShort(int points);
+
+  /// Title shown when a shared link named a board but its pubkey could not be read
+  ///
+  /// In en, this message translates to:
+  /// **'That link is broken'**
+  String get scoreboardBrokenLinkTitle;
+
+  /// Explanation shown with scoreboardBrokenLinkTitle
+  ///
+  /// In en, this message translates to:
+  /// **'It was meant for a specific board, but the pubkey in it could not be read. Ask whoever shared it to send it again.'**
+  String get scoreboardBrokenLinkBody;
+
+  /// Button that dismisses the broken-link state and returns to the board the user was already watching
+  ///
+  /// In en, this message translates to:
+  /// **'Show my board'**
+  String get scoreboardBrokenLinkDismiss;
 }
 
 class _AppLocalizationsDelegate

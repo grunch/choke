@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 
+import '../../services/deep_links/share_link.dart';
 import '../../services/nostr/crypto/nostr_crypto.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/match_card.dart';
@@ -77,6 +78,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final tk = ChokeTokens.of(context);
+    final brokenLink = ref.watch(brokenShareLinkProvider);
     final watched = ref.watch(watchedPubkeyProvider);
     // Two lists: everything in scope, which the chips count from, and what
     // survives the filter, which is what the list shows.
@@ -142,11 +144,12 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-              child: _buildPubkeyField(l10n, tk, watched),
-            ),
-            if (watched != null)
+            if (!brokenLink)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                child: _buildPubkeyField(l10n, tk, watched),
+              ),
+            if (watched != null && !brokenLink)
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
                 child: StatusFilterBar(
@@ -156,9 +159,12 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
                 ),
               ),
             Expanded(
-              child: switch ((watched, matches.isEmpty)) {
-                (null, _) => _buildWelcome(l10n, tk),
-                (_, true) => _buildEmpty(l10n, tk),
+              child: switch ((brokenLink, watched, matches.isEmpty)) {
+                // A link that named a board and could not be read outranks
+                // everything: whatever is behind this is not what was tapped.
+                (true, _, _) => _buildBrokenLink(l10n, tk),
+                (_, null, _) => _buildWelcome(l10n, tk),
+                (_, _, true) => _buildEmpty(l10n, tk),
                 _ => _buildList(matches),
               },
             ),
@@ -245,6 +251,47 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
           child: MatchCard(match: match, onTap: () => _open(match)),
         );
       },
+    );
+  }
+
+  /// The link named a board and its pubkey could not be read.
+  ///
+  /// Deliberately not a snackbar: a message that disappears on its own, over a
+  /// board belonging to somebody else, is the same silent substitution this
+  /// screen exists to avoid. The user dismisses it, so the app knows they know.
+  Widget _buildBrokenLink(AppLocalizations l10n, ChokeTokens tk) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.link_off, size: 44, color: tk.dangerFg),
+            const SizedBox(height: 14),
+            Text(
+              l10n.scoreboardBrokenLinkTitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: tk.dangerFg,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              l10n.scoreboardBrokenLinkBody,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: tk.faint),
+            ),
+            const SizedBox(height: 18),
+            FilledButton(
+              onPressed: () =>
+                  ref.read(brokenShareLinkProvider.notifier).state = false,
+              child: Text(l10n.scoreboardBrokenLinkDismiss),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

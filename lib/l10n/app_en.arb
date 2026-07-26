@@ -869,5 +869,17 @@
         "type": "int"
       }
     }
+  },
+  "scoreboardBrokenLinkTitle": "That link is broken",
+  "@scoreboardBrokenLinkTitle": {
+    "description": "Title shown when a shared link named a board but its pubkey could not be read"
+  },
+  "scoreboardBrokenLinkBody": "It was meant for a specific board, but the pubkey in it could not be read. Ask whoever shared it to send it again.",
+  "@scoreboardBrokenLinkBody": {
+    "description": "Explanation shown with scoreboardBrokenLinkTitle"
+  },
+  "scoreboardBrokenLinkDismiss": "Show my board",
+  "@scoreboardBrokenLinkDismiss": {
+    "description": "Button that dismisses the broken-link state and returns to the board the user was already watching"
   }
 }
