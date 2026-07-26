@@ -32,6 +32,18 @@ String nsecEncode({required String secretHex}) =>
 String? nsecDecode({required String nsec}) =>
     RustLib.instance.api.crateApiCryptoNsecDecode(nsec: nsec);
 
+/// The hex public key inside `npub`, or `None` if it is not a valid npub.
+///
+/// `None` rather than an error, for the same reason as `nsec_decode`: an npub is
+/// something a user pastes, and getting it wrong is not a bug.
+///
+/// Strictly bech32 — a bare hex key is *not* accepted here. Callers that take
+/// either form decide which one they were handed before calling, because the two
+/// cannot be told apart afterwards: any 64 hex characters parse as a public key,
+/// including a private one.
+String? npubDecode({required String npub}) =>
+    RustLib.instance.api.crateApiCryptoNpubDecode(npub: npub);
+
 /// Compute `event`'s id and sign it with `secret_hex`.
 SignedEventData finishEvent(
         {required UnsignedEventData event, required String secretHex}) =>

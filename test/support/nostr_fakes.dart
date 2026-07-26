@@ -28,6 +28,9 @@ class FakeNostrCrypto implements NostrCrypto {
   String? nsecDecode(String nsec) => nsec == 'nsec1fake' ? 'f' * 64 : null;
 
   @override
+  String? npubDecode(String npub) => npub == 'npub1fake' ? 'b' * 64 : null;
+
+  @override
   NostrEvent finishEvent(UnsignedNostrEvent event, String privateKeyHex) {
     return NostrEvent(
       id: 'a' * 64,

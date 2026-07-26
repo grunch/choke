@@ -185,19 +185,53 @@ class NostrService {
       throw Exception('No public key available');
     }
 
+    _userPubkey = publicKey;
+
     _backend.subscribe(
       'user_events',
       Filter(kinds: [31415], authors: [publicKey]),
     );
   }
 
-  /// Subscribe to kind 31415 events from a specific author
+  String? _userPubkey;
+
+  /// Re-read the identity and point the subscription at it.
+  ///
+  /// Call after the key changes. [subscribeToUserEvents] reuses the same
+  /// subscription id, and a REQ that repeats an id replaces it, so the relays
+  /// stop sending the old identity's matches and start sending the new one's.
+  ///
+  /// Without this the service keeps answering [userPubkey] with the key the app
+  /// started with, and the home feed — which believes it — throws away the
+  /// user's own matches under their new identity.
+  Future<void> refreshIdentity() => subscribeToUserEvents();
+
+  /// This device's own public key, once [subscribeToUserEvents] has looked it
+  /// up, and null before that.
+  ///
+  /// Exposed because [eventStream] carries the events of every subscription with
+  /// no way to tell which filter matched them, so a consumer that wants only
+  /// this user's matches — the home feed — has to be able to ask who this user
+  /// is. Threading the key in from the key manager separately would instead let
+  /// the two disagree about whose matches they are looking at.
+  String? get userPubkey => _userPubkey;
+
+  /// Subscribe to kind 31415 events from a specific author.
+  ///
+  /// The default id is deliberately short. NIP-01 caps a subscription id at 64
+  /// characters and a relay refuses the whole REQ over it — nos.lol answers
+  /// `CLOSED … "ERROR: bad req: invalid subscription id"` — so `author_` plus a
+  /// 64-character pubkey would be 71 and would never receive an event.
   void subscribeToAuthor(String authorPubkey, {String? subscriptionId}) {
     _backend.subscribe(
-      subscriptionId ?? 'author_$authorPubkey',
+      subscriptionId ?? 'author_${_shortKey(authorPubkey)}',
       Filter(kinds: [31415], authors: [authorPubkey]),
     );
   }
+
+  /// Enough of a pubkey to tell two of them apart inside a subscription id.
+  static String _shortKey(String pubkey) =>
+      pubkey.length <= 16 ? pubkey : pubkey.substring(0, 16);
 
   /// Unsubscribe from a subscription
   void unsubscribe(String subscriptionId) =>
@@ -477,6 +511,21 @@ class NostrService {
   NostrEvent? getAddressableEvent(String kind, String pubkey, String dTag) {
     final key = '$kind:$pubkey:$dTag';
     return _addressableEvents[key];
+  }
+
+  /// Every cached event of [kind] published by [pubkey].
+  ///
+  /// Exists because this service deduplicates addressable events for the whole
+  /// app: a relay replaying the state it already sent is dropped here, so a
+  /// consumer that starts later never sees it on [eventStream] and would sit
+  /// empty until the author published again. A late consumer asks for what it
+  /// missed instead.
+  List<NostrEvent> cachedEventsOf(int kind, String pubkey) {
+    final prefix = '$kind:$pubkey:';
+    return _addressableEvents.entries
+        .where((e) => e.key.startsWith(prefix))
+        .map((e) => e.value)
+        .toList();
   }
 
   /// Get list of connected relays

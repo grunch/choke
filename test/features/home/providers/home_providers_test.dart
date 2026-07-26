@@ -19,6 +19,30 @@ class _StreamNostrService extends NostrService {
 
   @override
   Stream<NostrEvent> get eventStream => controller.stream;
+
+  /// The author `_echoOf` stamps by default. The feed drops anything from
+  /// anybody else, so a service with no identity would drop every event these
+  /// tests push through it.
+  @override
+  String? get userPubkey => 'pk';
+}
+
+/// A service whose identity lookup never completed — the path where
+/// `subscribeToUserEvents` threw and `main` caught it.
+class _AnonymousNostrService extends _StreamNostrService {
+  @override
+  String? get userPubkey => null;
+}
+
+/// A service that already knows who it is, as one does after
+/// `subscribeToUserEvents`.
+class _IdentifiedNostrService extends _StreamNostrService {
+  _IdentifiedNostrService(this._me);
+
+  final String _me;
+
+  @override
+  String? get userPubkey => _me;
 }
 
 Match _match({int f1Pt2 = 0, MatchStatus status = MatchStatus.inProgress}) {
@@ -35,10 +59,10 @@ Match _match({int f1Pt2 = 0, MatchStatus status = MatchStatus.inProgress}) {
   );
 }
 
-NostrEvent _echoOf(Match match, int createdAt) {
+NostrEvent _echoOf(Match match, int createdAt, {String pubkey = 'pk'}) {
   return NostrEvent(
     id: 'e1',
-    pubkey: 'pk',
+    pubkey: pubkey,
     createdAt: createdAt,
     kind: 31415,
     tags: [
@@ -61,6 +85,72 @@ void main() {
   tearDown(() async {
     feed.dispose();
     await nostr.controller.close();
+  });
+
+  group('MatchFeedNotifier author filter', () {
+    // The scoreboard section subscribes to whatever pubkey the user pastes, and
+    // every subscription shares one event stream that says nothing about which
+    // filter matched. Without an author check, watching somebody else's matches
+    // would quietly file them into this user's own feed.
+    test('ignores a match published by somebody else', () async {
+      // Arrange
+      final nostr = _IdentifiedNostrService('me');
+      final feed = MatchFeedNotifier(nostr);
+      addTearDown(() async {
+        feed.dispose();
+        await nostr.controller.close();
+      });
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      // Act — a match arriving from the pubkey the scoreboard is watching
+      nostr.controller.add(_echoOf(_match(), now, pubkey: 'someone-else'));
+      await Future<void>.delayed(Duration.zero);
+
+      // Assert
+      expect(feed.state, isEmpty);
+    });
+
+    test('keeps a match this user published', () async {
+      // Arrange
+      final nostr = _IdentifiedNostrService('me');
+      final feed = MatchFeedNotifier(nostr);
+      addTearDown(() async {
+        feed.dispose();
+        await nostr.controller.close();
+      });
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      // Act
+      nostr.controller.add(_echoOf(_match(), now, pubkey: 'me'));
+      await Future<void>.delayed(Duration.zero);
+
+      // Assert
+      expect(feed.state, hasLength(1));
+    });
+
+    test('drops everything while the app does not know who it is', () async {
+      // Arrange — main awaits subscribeToUserEvents before runApp, so a null
+      // pubkey here is not an early frame: it is the path where looking the
+      // identity up failed and was caught. The app still launches, the user can
+      // still watch somebody else's board, and every subscription shares this
+      // stream — so accepting anything would file an organizer's matches as
+      // this user's own.
+      final nostr = _AnonymousNostrService();
+      final feed = MatchFeedNotifier(nostr);
+      addTearDown(() async {
+        feed.dispose();
+        await nostr.controller.close();
+      });
+      expect(nostr.userPubkey, isNull);
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      // Act
+      nostr.controller.add(_echoOf(_match(), now, pubkey: 'whoever'));
+      await Future<void>.delayed(Duration.zero);
+
+      // Assert
+      expect(feed.state, isEmpty);
+    });
   });
 
   group('MatchFeedNotifier', () {

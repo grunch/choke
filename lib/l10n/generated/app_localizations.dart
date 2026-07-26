@@ -1307,6 +1307,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No submissions left. Add one, or restore the defaults.'**
   String get submissionsEmpty;
+
+  /// Bottom navigation label for the read-only Scoreboard tab
+  ///
+  /// In en, this message translates to:
+  /// **'Scoreboard'**
+  String get navScoreboard;
+
+  /// Placeholder in the field where the viewer pastes the organizer pubkey
+  ///
+  /// In en, this message translates to:
+  /// **'Organizer npub or hex pubkey'**
+  String get scoreboardPubkeyHint;
+
+  /// Button that starts watching the entered pubkey
+  ///
+  /// In en, this message translates to:
+  /// **'Watch'**
+  String get scoreboardWatch;
+
+  /// Button that stops watching and forgets the pubkey
+  ///
+  /// In en, this message translates to:
+  /// **'Stop watching'**
+  String get scoreboardStopWatching;
+
+  /// Error shown when the pasted pubkey is neither an npub nor 64-char hex
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid pubkey: must be an npub or 64-char hex'**
+  String get scoreboardInvalidPubkey;
+
+  /// Title before any pubkey has been entered
+  ///
+  /// In en, this message translates to:
+  /// **'Watch somebody else’s mats'**
+  String get scoreboardWelcomeTitle;
+
+  /// Body before any pubkey has been entered
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the pubkey an organizer shared and their matches appear here live.'**
+  String get scoreboardWelcomeBody;
+
+  /// Title when a pubkey is being watched but no matches have arrived
+  ///
+  /// In en, this message translates to:
+  /// **'No matches yet'**
+  String get scoreboardEmptyTitle;
+
+  /// Body when a pubkey is being watched but no matches have arrived
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for match events from this organizer…'**
+  String get scoreboardEmptyBody;
+
+  /// Label over the clock on the full-screen scoreboard
+  ///
+  /// In en, this message translates to:
+  /// **'TIME'**
+  String get scoreboardTime;
+
+  /// Label over the winner name on a finished match
+  ///
+  /// In en, this message translates to:
+  /// **'WINNER'**
+  String get scoreboardWinner;
+
+  /// Label used instead of WINNER when a match was a draw
+  ///
+  /// In en, this message translates to:
+  /// **'RESULT'**
+  String get scoreboardResult;
+
+  /// Short label on the advantages chip; kept short to fit the wall display
+  ///
+  /// In en, this message translates to:
+  /// **'ADV'**
+  String get scoreboardAdvShort;
+
+  /// Short label on the penalties chip; kept short to fit the wall display
+  ///
+  /// In en, this message translates to:
+  /// **'PEN'**
+  String get scoreboardPenShort;
+
+  /// Point-value column header in the score breakdown, e.g. 2 PTS
+  ///
+  /// In en, this message translates to:
+  /// **'{points} PTS'**
+  String scoreboardPointsShort(int points);
 }
 
 class _AppLocalizationsDelegate

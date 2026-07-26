@@ -28,6 +28,19 @@ class MatchFeedNotifier extends StateNotifier<List<Match>> {
   void _onEvent(NostrEvent event) {
     if (event.kind != 31415) return;
 
+    // This feed is *my* matches. The event stream is shared by every
+    // subscription and says nothing about which filter matched, so without this
+    // the scoreboard section — which subscribes to whatever pubkey the user
+    // pastes, on purpose — would file other people's matches in here.
+    //
+    // Fail closed. There is no benign startup window here: main awaits
+    // subscribeToUserEvents before runApp, so by the time anything can arrive
+    // the key is either known or its lookup failed and was caught. A null
+    // pubkey is therefore the *error* path — and that is exactly when letting
+    // everything through would file a watched organizer's matches in here.
+    final me = _nostrService.userPubkey;
+    if (me == null || event.pubkey != me) return;
+
     try {
       final match = Match.fromNostrEvent(event);
       _upsert(match, event.createdAt);

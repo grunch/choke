@@ -200,5 +200,27 @@
   "submissionsRemove": "Quitar",
   "submissionsRestore": "Restaurar las predeterminadas",
   "submissionsDuplicate": "Ya está en la lista",
-  "submissionsEmpty": "No queda ninguna sumisión. Agrega una o restaura las predeterminadas."
+  "submissionsEmpty": "No queda ninguna sumisión. Agrega una o restaura las predeterminadas.",
+  "navScoreboard": "Tablero",
+  "scoreboardPubkeyHint": "npub o clave pública hex del organizador",
+  "scoreboardWatch": "Ver",
+  "scoreboardStopWatching": "Dejar de ver",
+  "scoreboardInvalidPubkey": "Clave pública inválida: debe ser npub o hex de 64 caracteres",
+  "scoreboardWelcomeTitle": "Mirá los tatamis de otros",
+  "scoreboardWelcomeBody": "Pegá la clave pública que compartió un organizador y sus luchas aparecen acá en vivo.",
+  "scoreboardEmptyTitle": "Todavía no hay luchas",
+  "scoreboardEmptyBody": "Esperando eventos de lucha de este organizador…",
+  "scoreboardTime": "TIEMPO",
+  "scoreboardWinner": "GANADOR",
+  "scoreboardResult": "RESULTADO",
+  "scoreboardAdvShort": "VENT",
+  "scoreboardPenShort": "PEN",
+  "scoreboardPointsShort": "{points} PTS",
+  "@scoreboardPointsShort": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  }
 }

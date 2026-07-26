@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+
+import '../../services/nostr/nostr_service.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../services/key_management/key_manager.dart';
@@ -15,6 +17,20 @@ const String kLiveBoardBaseUrl = 'https://bjjscore.live';
 
 /// Build the share link for an organizer's npub.
 String liveBoardShareUrl(String npub) => '$kLiveBoardBaseUrl/?npub=$npub';
+
+/// Point the relays and the home feed at the identity that is now stored.
+///
+/// Best-effort on purpose. The key has already been written by the time this
+/// runs, so a relay that will not take the new subscription must not turn a
+/// successful import into a failed one — and the next launch resubscribes from
+/// scratch anyway.
+Future<void> _refreshIdentity(WidgetRef ref) async {
+  try {
+    await ref.read(nostrServiceProvider).refreshIdentity();
+  } catch (e) {
+    debugPrint('Account: identity changed but the resubscribe failed: $e');
+  }
+}
 
 class AccountScreen extends ConsumerStatefulWidget {
   const AccountScreen({super.key});
@@ -153,6 +169,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                         final keyManager = ref.read(keyManagerProvider);
                         final success = await keyManager.importFromNsec(nsec);
 
+                        // The relays are still following the old identity, and
+                        // the home feed still believes it is this user's. Move
+                        // both across, or the app quietly stops showing the
+                        // matches it is about to publish.
+                        if (success) await _refreshIdentity(ref);
+
                         if (!mounted || !dialogBuildContext.mounted) return;
 
                         setDialogState(() => dialogImporting = false);
@@ -244,6 +266,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                         try {
                           final keyManager = ref.read(keyManagerProvider);
                           await keyManager.generateNewKeypair();
+                          await _refreshIdentity(ref);
                         } catch (_) {
                           // Not logging the exception object: it was raised
                           // while handling freshly generated key material, so

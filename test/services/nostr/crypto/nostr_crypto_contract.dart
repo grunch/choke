@@ -127,6 +127,36 @@ void runNostrCryptoContract(String name, NostrCrypto Function() create) {
         // Act & Assert
         expect(crypto.nsecDecode(npub), isNull);
       });
+
+      test('round-trips a public key through npub', () {
+        // Arrange — this is the form a pubkey arrives in when somebody shares it
+        final publicKey = crypto.getPublicKey(nip19PrivateKey);
+
+        // Act
+        final decoded = crypto.npubDecode(crypto.npubEncode(publicKey));
+
+        // Assert
+        expect(decoded, publicKey);
+      });
+
+      test('returns null for an npub that is not one', () {
+        // Act & Assert — anything a user can paste into a pubkey field
+        expect(crypto.npubDecode('not an npub'), isNull);
+        expect(crypto.npubDecode(''), isNull);
+        expect(
+          crypto.npubDecode(crypto.getPublicKey(nip19PrivateKey)),
+          isNull,
+          reason: 'raw hex is not bech32; the caller decides which one it has',
+        );
+      });
+
+      test('returns null for an nsec given where an npub is expected', () {
+        // The mirror of the test above, and the one that matters more: a private
+        // key must never pass as somebody's public identity. A user who pasted
+        // the wrong thing would otherwise have it sent to the relays as an
+        // author filter, and never be told.
+        expect(crypto.npubDecode(nip19Nsec), isNull);
+      });
     });
 
     group('signing', () {

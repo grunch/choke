@@ -441,6 +441,26 @@ class Match {
     }
   }
 
+  /// Seconds left on the clock as of [nowSeconds] (unix seconds).
+  ///
+  /// The clock is derived, never stored, so that everyone reading this match —
+  /// the referee scoring it, a spectator watching it on the scoreboard — gets
+  /// the same time out of the same event without either of them counting.
+  ///
+  /// A stoppage is charged to [startAt], which moves forward by its length, so
+  /// elapsed time is simply now minus start. While [pausedAt] is set the clock
+  /// reads what it read when it stopped.
+  int remainingSecondsAt(int nowSeconds) {
+    if (status == MatchStatus.waiting) return duration;
+    if (startAt == null || startAt == 0) return duration;
+
+    final elapsed = (pausedAt ?? nowSeconds) - startAt!;
+    return (duration - elapsed).clamp(0, duration);
+  }
+
+  /// The match is under way but its clock is stopped.
+  bool get isPaused => status == MatchStatus.inProgress && pausedAt != null;
+
   /// Calculate total score for fighter 1
   /// Formula: pt2*2 + pt3*3 + pt4*4
   int get f1Score => f1Pt2 * 2 + f1Pt3 * 3 + f1Pt4 * 4;

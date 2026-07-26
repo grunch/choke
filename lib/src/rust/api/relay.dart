@@ -7,7 +7,7 @@ import '../frb_generated.dart';
 import 'crypto.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `client`, `status_tx`
+// These functions are ignored because they are not marked as `pub`: `bump_generation`, `client`, `configured`, `current_generation`, `generation`, `ops`, `relay_add_locked`, `status_tx`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`
 
 /// Register a relay with the pool and dial it.
@@ -29,6 +29,29 @@ Future<void> relayDisconnect() =>
 /// TCP timeouts. When the app resumes we already know the sockets are suspect —
 /// the OS kills them without a close frame — and the referee's next tap must
 /// not wait for the kernel to work that out.
+///
+/// ## Why this rebuilds the relays instead of calling disconnect + connect
+///
+/// `nostr-sdk` 0.44's revival races its own teardown, and losing that race
+/// **strands the relay permanently**. `disconnect()` stores a termination
+/// permit (a tokio `Notify`) and returns with the status already `Terminated`;
+/// `connect()` then flips it to `Pending` and spawns a task — which sees the
+/// OLD task still registered and declines. The old task meanwhile wakes from
+/// `connect_and_run`, reads `Pending` (not terminated, so it keeps going),
+/// marks the relay `Disconnected`, and dies in its backoff sleep by consuming
+/// the stored permit. End state: status `Disconnected`, **no task**, and
+/// `connect()` is a no-op on `Disconnected` — nothing dials again until the
+/// process restarts. That is the app's "no connection until I kill it" bug,
+/// reproduced by the `resume never strands the transport` drill.
+///
+/// Nudging stragglers back to life with more disconnect/connect pairs just
+/// re-enters the same race (the drill stayed red under a 20-round nudge loop).
+/// The only sequence that cannot lose it is the one with no revival in it at
+/// all: **remove the relay and add it back**. A removed relay's watcher ends
+/// (its channel closes), and `relay_add` builds a fresh `Relay` — new `Notify`
+/// with no stored permit, no zombie task, a new watcher — and dials. Pool
+/// subscriptions survive by design: a newly added relay inherits them
+/// (`nostr-relay-pool` inherits pool subscriptions on `add_relay`).
 Future<void> relayReconnectAll() =>
     RustLib.instance.api.crateApiRelayRelayReconnectAll();
 

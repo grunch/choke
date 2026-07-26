@@ -11,6 +11,9 @@ import 'shared/providers/match_sound_provider.dart';
 import 'features/home/home_screen.dart';
 
 import 'features/account/account_screen.dart';
+import 'features/scoreboard/scoreboard_screen.dart';
+import 'services/deep_links/share_link.dart';
+import 'shared/providers/navigation_provider.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/match/providers/submissions_provider.dart';
 import 'features/settings/providers/relay_config_provider.dart';
@@ -136,6 +139,7 @@ class _ChokeAppState extends ConsumerState<ChokeApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _handleLaunchLink();
   }
 
   @override
@@ -149,6 +153,33 @@ class _ChokeAppState extends ConsumerState<ChokeApp>
     if (state == AppLifecycleState.resumed) {
       ref.read(nostrServiceProvider).reconnectAll();
     }
+  }
+
+  /// A shared board link arriving while the app is already running.
+  ///
+  /// Returning true claims the link. Returning false lets the framework carry
+  /// on treating it as a named route, which is right for anything that is not
+  /// ours — including the `/` the engine reports for an ordinary launch.
+  @override
+  Future<bool> didPushRouteInformation(RouteInformation info) async {
+    return _handleLink(info.uri);
+  }
+
+  bool _handleLink(Uri uri) {
+    if (!mounted) return false;
+    return openShareLink(uri, ref.read(nostrCryptoProvider), ref);
+  }
+
+  /// The link the app was launched by, if it was launched by one.
+  ///
+  /// Read once, after the first frame: the providers this ends up writing to
+  /// must not be modified while the tree is still building.
+  void _handleLaunchLink() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final route = WidgetsBinding.instance.platformDispatcher.defaultRouteName;
+      if (route.isEmpty || route == '/') return;
+      _handleLink(Uri.parse(route));
+    });
   }
 
   @override
@@ -170,35 +201,37 @@ class _ChokeAppState extends ConsumerState<ChokeApp>
   }
 }
 
-/// Main navigation with bottom navigation bar
-class MainNavigation extends StatefulWidget {
+/// Main navigation with bottom navigation bar.
+///
+/// The screens are kept alive in an [IndexedStack] rather than rebuilt on every
+/// tap, so the home feed and the scoreboard hold their relay subscriptions and
+/// scroll position while the user moves between them.
+class MainNavigation extends ConsumerWidget {
   const MainNavigation({super.key});
 
-  @override
-  State<MainNavigation> createState() => _MainNavigationState();
-}
-
-class _MainNavigationState extends State<MainNavigation> {
-  int _currentIndex = 0;
-
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const AccountScreen(),
-    const SettingsScreen(),
+  /// In [AppTab] order, which is the order of the bar.
+  static const List<Widget> _screens = [
+    HomeScreen(),
+    ScoreboardScreen(),
+    AccountScreen(),
+    SettingsScreen(),
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final tab = ref.watch(selectedTabProvider);
 
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: IndexedStack(index: tab.index, children: _screens),
       bottomNavigationBar: _ChokeNavBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        currentIndex: tab.index,
+        onTap: (index) => ref.read(selectedTabProvider.notifier).state =
+            AppTab.fromIndex(index),
         items: [
           (Icons.home_outlined, l10n.navHome),
+          (Icons.scoreboard_outlined, l10n.navScoreboard),
           (Icons.person_outline, l10n.navAccount),
           (Icons.settings_outlined, l10n.navSettings),
         ],

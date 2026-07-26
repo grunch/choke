@@ -51,6 +51,17 @@ abstract class NostrCrypto {
   /// can type, not a programming error.
   String? nsecDecode(String nsec);
 
+  /// The hex public key inside [npub], or null if it is not a valid npub.
+  ///
+  /// Null rather than throwing, for the same reason as [nsecDecode]: an npub is
+  /// something a user pastes.
+  ///
+  /// Strictly bech32. A bare hex key is not accepted, because the two forms
+  /// cannot be told apart once mixed — any 64 hex characters parse as a public
+  /// key, a private one included. Callers that accept either form must decide
+  /// which they were handed before calling this.
+  String? npubDecode(String npub);
+
   /// Compute [event]'s id and sign it with [privateKeyHex].
   NostrEvent finishEvent(UnsignedNostrEvent event, String privateKeyHex);
 
