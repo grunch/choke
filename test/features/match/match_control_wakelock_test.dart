@@ -28,12 +28,10 @@ class _FakeNostrService extends NostrService {
   }) async {}
 }
 
-/// Records what the screen asked of the platform, in order.
+/// Records what the screen asked of the platform, in order and in full.
 ///
-/// Every request is kept, including repeats. Deduplicating here — which is what
-/// the real implementation does internally — would hide the screen's actual
-/// behaviour behind the fake and make "it was never asked twice" impossible to
-/// observe, so that guarantee is tested against the service instead.
+/// Every vote is kept, including repeats — deduplicating here would hide the
+/// screen's behaviour behind the fake. A release records as a final false.
 class _RecordingWakelock implements ScreenWakelock {
   final List<bool> requests = [];
 
@@ -42,7 +40,19 @@ class _RecordingWakelock implements ScreenWakelock {
   bool? get held => requests.isEmpty ? null : requests.last;
 
   @override
-  Future<void> keepAwake(bool on) async => requests.add(on);
+  ScreenWakelockLease lease() => _RecordingLease(this);
+}
+
+class _RecordingLease implements ScreenWakelockLease {
+  _RecordingLease(this._owner);
+
+  final _RecordingWakelock _owner;
+
+  @override
+  Future<void> keepAwake(bool on) async => _owner.requests.add(on);
+
+  @override
+  Future<void> release() async => _owner.requests.add(false);
 }
 
 Match _runningMatch() => Match(

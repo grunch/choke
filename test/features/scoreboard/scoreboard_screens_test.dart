@@ -60,12 +60,26 @@ Match _match({
   );
 }
 
-/// Records what the board asked of the platform, in order and in full.
+/// Records what the board asked of the platform, in order and in full —
+/// repeats included, because "it keeps asking" must stay observable. A release
+/// records as a final false.
 class _RecordingWakelock implements ScreenWakelock {
   final List<bool> requests = [];
 
   @override
-  Future<void> keepAwake(bool on) async => requests.add(on);
+  ScreenWakelockLease lease() => _RecordingLease(this);
+}
+
+class _RecordingLease implements ScreenWakelockLease {
+  _RecordingLease(this._owner);
+
+  final _RecordingWakelock _owner;
+
+  @override
+  Future<void> keepAwake(bool on) async => _owner.requests.add(on);
+
+  @override
+  Future<void> release() async => _owner.requests.add(false);
 }
 
 Widget _wrap(Widget child, {List<Override> overrides = const []}) {
@@ -656,6 +670,29 @@ void main() {
       // ever gets made again
       expect(wakelock.requests.length, greaterThan(atStart));
       expect(wakelock.requests, isNot(contains(false)));
+    });
+
+    testWidgets('does not hold the screen for a match that is gone',
+        (tester) async {
+      // The dead-end page is the one most likely to be left face-up on a table
+      // overnight, and the one place pinning the display serves nobody.
+      //
+      // Arrange + Act — the board opens onto a match the feed no longer has
+      final wakelock = _RecordingWakelock();
+      tester.view.physicalSize = const Size(1600, 740);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(_wrap(
+        const ScoreboardMatchScreen(matchId: 'gone'),
+        overrides: [
+          screenWakelockProvider.overrideWithValue(wakelock),
+          scoreboardMatchesProvider.overrideWithValue(const []),
+        ],
+      ));
+      await tester.pump();
+
+      // Assert — it never voted to hold at all
+      expect(wakelock.requests, isNot(contains(true)));
     });
 
     testWidgets('releases the screen when the viewer leaves', (tester) async {

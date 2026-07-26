@@ -47,7 +47,7 @@ class MatchControlScreen extends ConsumerStatefulWidget {
 class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
   /// Held onto from [initState] because [dispose] runs once `ref` is no longer
   /// usable, and releasing the screen is the one thing that must still happen.
-  late final ScreenWakelock _wakelock;
+  late final ScreenWakelockLease _wakelock;
 
   @override
   void initState() {
@@ -57,7 +57,7 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
       DeviceOrientation.landscapeRight,
     ]);
 
-    _wakelock = ref.read(screenWakelockProvider);
+    _wakelock = ref.read(screenWakelockProvider).lease();
     _syncWakelock(ref.read(matchControlProvider));
 
     // A match whose clock expired while the app was closed arrives here already
@@ -75,7 +75,7 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
   @override
   void dispose() {
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-    unawaited(_wakelock.keepAwake(false));
+    unawaited(_wakelock.release());
     super.dispose();
   }
 

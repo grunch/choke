@@ -38,7 +38,7 @@ class ScoreboardMatchScreen extends ConsumerStatefulWidget {
 class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
   /// Held onto from [initState] because [dispose] runs once `ref` is no longer
   /// usable, and releasing the screen is the one thing that must still happen.
-  late final ScreenWakelock _wakelock;
+  late final ScreenWakelockLease _wakelock;
 
   Timer? _ticker;
 
@@ -56,26 +56,31 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
       DeviceOrientation.landscapeRight,
     ]);
 
-    // Held for as long as this screen is up, whatever the match is doing.
+    // Held for as long as a match is on this screen, whatever it is doing.
     //
-    // Unconditional where the control screen's hold is not, because the two
-    // wait differently. A referee's screen releases once the match is decided —
-    // the result sits on the scorer's table. A spectator's board is the
-    // opposite: the quiet stretches are the point. Before the first bell they
-    // are waiting for the start; a minute of stalling is when nobody is
-    // touching the phone; and a finished board is left up to be read across a
-    // room. There is no state in which this screen going dark serves anybody.
-    _wakelock = ref.read(screenWakelockProvider);
-    unawaited(_wakelock.keepAwake(true));
+    // Unconditional on match *state*, where the control screen's hold is not,
+    // because the two wait differently. A referee's screen releases once the
+    // match is decided — the result sits on the scorer's table. A spectator's
+    // board is the opposite: the quiet stretches are the point. Before the
+    // first bell they are waiting for the start; a minute of stalling is when
+    // nobody is touching the phone; and a finished board is left up to be read
+    // across a room.
+    //
+    // Conditional on the match *existing*, though. When it ages out of the
+    // feed this screen is a dead end saying so, and a dead end is the page
+    // most likely to be left face-up on a table overnight — the one place
+    // pinning the display serves nobody.
+    _wakelock = ref.read(screenWakelockProvider).lease();
+    _syncWakelock();
 
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      // Re-asserted on the tick, not trusted to the first call: a request the
+      // Re-voted on the tick, not trusted to the first call: a request the
       // platform dropped — no foreground activity yet, a transient refusal —
       // would otherwise stay dropped for the whole match. Repeats cost
-      // nothing; the service only reaches the platform when the state it has
-      // differs from the state asked for.
-      unawaited(_wakelock.keepAwake(true));
+      // nothing; the service only reaches the platform when what it holds
+      // differs from what is asked.
+      _syncWakelock();
       setState(() => _now = DateTime.now().millisecondsSinceEpoch ~/ 1000);
     });
   }
@@ -84,8 +89,16 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
   void dispose() {
     _ticker?.cancel();
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-    unawaited(_wakelock.keepAwake(false));
+    unawaited(_wakelock.release());
     super.dispose();
+  }
+
+  /// Vote to hold the screen exactly while the watched match is in the feed.
+  void _syncWakelock() {
+    final present = ref
+        .read(scoreboardMatchesProvider)
+        .any((m) => m.id == widget.matchId);
+    unawaited(_wakelock.keepAwake(present));
   }
 
   @override
