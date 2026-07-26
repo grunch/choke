@@ -185,11 +185,25 @@ class NostrService {
       throw Exception('No public key available');
     }
 
+    _userPubkey = publicKey;
+
     _backend.subscribe(
       'user_events',
       Filter(kinds: [31415], authors: [publicKey]),
     );
   }
+
+  String? _userPubkey;
+
+  /// This device's own public key, once [subscribeToUserEvents] has looked it
+  /// up, and null before that.
+  ///
+  /// Exposed because [eventStream] carries the events of every subscription with
+  /// no way to tell which filter matched them, so a consumer that wants only
+  /// this user's matches — the home feed — has to be able to ask who this user
+  /// is. Threading the key in from the key manager separately would instead let
+  /// the two disagree about whose matches they are looking at.
+  String? get userPubkey => _userPubkey;
 
   /// Subscribe to kind 31415 events from a specific author
   void subscribeToAuthor(String authorPubkey, {String? subscriptionId}) {
