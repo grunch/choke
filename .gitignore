@@ -101,3 +101,8 @@ rust/target/
 !rust_builder/android/build.gradle
 !rust_builder/android/settings.gradle
 !rust_builder/cargokit/gradle/*.gradle
+
+# Bytecode from tool/generate_match_sounds.py — created whenever the script is
+# imported rather than run (calibrating levels, say). Never source.
+__pycache__/
+*.pyc

@@ -230,10 +230,15 @@ lib/
 
 ## Match sounds
 
-The clock speaks twice: a bright bell when the referee starts the fight, and a
-low air horn when regulation time reaches zero. They are deliberate opposites —
-short against sustained, two octaves apart — so nobody has to look at the phone
-to know which one just fired.
+The clock speaks twice: a bright bell strike when the referee starts the fight
+(G5, 1.3 s), and a hard low klaxon when regulation time reaches zero (A2, 2 s).
+They are deliberate opposites — ringing against rasping, high against nearly
+three octaves lower, short against long — so nobody has to look at the phone to
+know which one just fired.
+
+The klaxon is harsh on purpose. Its odd-harmonic rasp cuts through gym noise
+where a clean tone gets swallowed by it, and it is roughly what a competitor
+already hears as "time" at a tournament table.
 
 Both are **synthesized from scratch**, not sampled. `tool/generate_match_sounds.py`
 builds them with additive synthesis using nothing but the Python standard
