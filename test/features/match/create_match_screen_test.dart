@@ -10,6 +10,7 @@ import 'package:choke/features/match/models/match.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import 'package:choke/services/key_management/key_manager.dart';
 import 'package:choke/services/nostr/nostr_service.dart';
+import 'package:choke/services/wakelock/screen_wakelock.dart';
 import 'package:choke/shared/theme/app_theme.dart';
 
 import '../../support/nostr_fakes.dart';
@@ -66,6 +67,10 @@ void main() {
     return ProviderScope(
       overrides: [
         nostrServiceProvider.overrideWithValue(nostr),
+        // Creating a match lands on the control screen, which holds the screen
+        // awake. The real one talks to a method channel nothing answers here,
+        // and its timeout would outlive the test as a pending timer.
+        screenWakelockProvider.overrideWithValue(const NoopScreenWakelock()),
       ],
       child: MaterialApp(
         theme: AppTheme.darkTheme,
