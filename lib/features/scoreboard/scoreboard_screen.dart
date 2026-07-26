@@ -93,15 +93,27 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
               child: Row(
                 children: [
+                  // Filled with the accent, with the mark on it in ink — not
+                  // home's light grey plate.
+                  //
+                  // Home's grey is chosen for what sits on it: a red and black
+                  // logo, which reads well against it. A green glyph does not.
+                  // Measured against this theme's accent, that grey gives
+                  // 1.27:1 in the dark theme and 2.15:1 in the light one, where
+                  // iconography wants 3:1. Filled, the same glyph in ink gives
+                  // 9.87:1 and 5.81:1.
                   Container(
                     width: 46,
                     height: 46,
                     padding: const EdgeInsets.all(9),
                     decoration: BoxDecoration(
-                      color: BJJColors.greyLight,
+                      color: tk.accent,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(Icons.scoreboard_outlined, color: tk.accent),
+                    child: const Icon(
+                      Icons.scoreboard_outlined,
+                      color: BJJColors.ink,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
