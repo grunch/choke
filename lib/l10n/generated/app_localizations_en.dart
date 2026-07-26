@@ -618,6 +618,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'The techniques offered when a match ends by submission';
 
   @override
+  String get settingsMatchSound => 'Match Sounds';
+
+  @override
+  String get settingsMatchSoundOn =>
+      'A bell on start, a horn when time runs out';
+
+  @override
+  String get settingsMatchSoundOff => 'The clock runs silently';
+
+  @override
   String get submissionsAdd => 'Add submission';
 
   @override

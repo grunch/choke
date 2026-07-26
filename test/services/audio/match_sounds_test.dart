@@ -1,7 +1,28 @@
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:choke/services/audio/match_sounds.dart';
+import 'package:choke/shared/providers/match_sound_provider.dart';
+
+/// Records which cues actually reached the player behind the switch.
+class _RecordingSounds implements MatchSounds {
+  final List<String> played = [];
+  int warmUps = 0;
+  bool disposed = false;
+
+  @override
+  Future<void> warmUp() async => warmUps++;
+
+  @override
+  Future<void> playStart() async => played.add('start');
+
+  @override
+  Future<void> playEnd() async => played.add('end');
+
+  @override
+  Future<void> dispose() async => disposed = true;
+}
 
 /// Reads the little-endian integer of [length] bytes at [offset].
 int _le(List<int> bytes, int offset, int length) {
@@ -26,6 +47,81 @@ void main() {
         ]),
         completes,
       );
+    });
+  });
+
+  group('SwitchableMatchSounds', () {
+    test('passes both cues through while it is on', () async {
+      final inner = _RecordingSounds();
+      final sounds = SwitchableMatchSounds(inner);
+
+      await sounds.playStart();
+      await sounds.playEnd();
+
+      expect(inner.played, ['start', 'end']);
+    });
+
+    test('swallows both cues while it is off', () async {
+      final inner = _RecordingSounds();
+      final sounds = SwitchableMatchSounds(inner, enabled: false);
+
+      await sounds.playStart();
+      await sounds.playEnd();
+
+      expect(inner.played, isEmpty);
+    });
+
+    test('takes a flick mid-match, in both directions', () async {
+      final inner = _RecordingSounds();
+      final sounds = SwitchableMatchSounds(inner);
+
+      await sounds.playStart();
+      sounds.enabled = false;
+      await sounds.playEnd();
+      sounds.enabled = true;
+      await sounds.playEnd();
+
+      expect(inner.played, ['start', 'end']);
+    });
+
+    test('warms up even while muted', () async {
+      final inner = _RecordingSounds();
+      final sounds = SwitchableMatchSounds(inner, enabled: false);
+
+      await sounds.warmUp();
+
+      // Otherwise the first cue after unmuting pays for an asset decode, and
+      // arrives after the moment it was meant to mark.
+      expect(inner.warmUps, 1);
+    });
+
+    test('disposing reaches the player behind the switch', () async {
+      final inner = _RecordingSounds();
+
+      await SwitchableMatchSounds(inner, enabled: false).dispose();
+
+      expect(inner.disposed, isTrue);
+    });
+  });
+
+  group('matchSoundsProvider', () {
+    test('follows the preference without rebuilding the players', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final sounds =
+          container.read(matchSoundsProvider) as SwitchableMatchSounds;
+      expect(sounds.enabled, isTrue, reason: 'on by default');
+
+      container.read(matchSoundEnabledProvider.notifier).state = false;
+      expect(sounds.enabled, isFalse);
+
+      container.read(matchSoundEnabledProvider.notifier).state = true;
+      expect(sounds.enabled, isTrue);
+
+      // Same instance throughout: watching the preference instead of listening
+      // to it would tear down the prepared players on every toggle.
+      expect(identical(container.read(matchSoundsProvider), sounds), isTrue);
     });
   });
 

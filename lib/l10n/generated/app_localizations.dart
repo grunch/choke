@@ -1254,6 +1254,24 @@ abstract class AppLocalizations {
   /// **'The techniques offered when a match ends by submission'**
   String get settingsSubmissionsDesc;
 
+  /// Settings: match sound toggle title
+  ///
+  /// In en, this message translates to:
+  /// **'Match Sounds'**
+  String get settingsMatchSound;
+
+  /// Settings: match sound toggle subtitle when sound is on
+  ///
+  /// In en, this message translates to:
+  /// **'A bell on start, a horn when time runs out'**
+  String get settingsMatchSoundOn;
+
+  /// Settings: match sound toggle subtitle when sound is off
+  ///
+  /// In en, this message translates to:
+  /// **'The clock runs silently'**
+  String get settingsMatchSoundOff;
+
   /// Submissions editor: add button
   ///
   /// In en, this message translates to:

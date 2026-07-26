@@ -623,6 +623,16 @@ class AppLocalizationsPt extends AppLocalizations {
       'As técnicas oferecidas quando uma luta termina por finalização';
 
   @override
+  String get settingsMatchSound => 'Sons da luta';
+
+  @override
+  String get settingsMatchSoundOn =>
+      'Sino ao começar, buzina quando o tempo acaba';
+
+  @override
+  String get settingsMatchSoundOff => 'O relógio corre em silêncio';
+
+  @override
   String get submissionsAdd => 'Adicionar finalização';
 
   @override

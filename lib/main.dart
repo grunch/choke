@@ -7,6 +7,7 @@ import 'shared/theme/app_theme.dart';
 import 'shared/providers/locale_provider.dart';
 import 'shared/providers/theme_provider.dart';
 import 'shared/providers/match_duration_provider.dart';
+import 'shared/providers/match_sound_provider.dart';
 import 'features/home/home_screen.dart';
 
 import 'features/account/account_screen.dart';
@@ -84,12 +85,15 @@ void main() async {
   final savedLocale = await LocaleNotifier.loadSavedLocale();
   final savedDuration = await MatchDurationNotifier.loadSavedDuration();
   final savedSubmissions = await SubmissionsNotifier.loadSaved();
+  final savedMatchSound = await MatchSoundEnabledNotifier.loadSaved();
 
   // Create notifiers with hydrated values (no flash on startup)
   final themeNotifier = ThemeModeNotifier()..hydrate(savedThemeMode);
   final localeNotifier = LocaleNotifier()..hydrate(savedLocale);
   final durationNotifier = MatchDurationNotifier()..hydrate(savedDuration);
   final submissionsNotifier = SubmissionsNotifier()..hydrate(savedSubmissions);
+  final matchSoundNotifier = MatchSoundEnabledNotifier()
+    ..hydrate(savedMatchSound);
 
   runApp(
     ProviderScope(
@@ -102,6 +106,7 @@ void main() async {
         localeProvider.overrideWith((_) => localeNotifier),
         matchDurationProvider.overrideWith((_) => durationNotifier),
         submissionsProvider.overrideWith((_) => submissionsNotifier),
+        matchSoundEnabledProvider.overrideWith((_) => matchSoundNotifier),
       ],
       child: const ChokeApp(),
     ),

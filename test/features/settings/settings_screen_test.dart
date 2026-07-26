@@ -12,6 +12,7 @@ import 'package:choke/features/settings/providers/relay_config_provider.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import 'package:choke/shared/providers/locale_provider.dart';
 import 'package:choke/shared/providers/match_duration_provider.dart';
+import 'package:choke/shared/providers/match_sound_provider.dart';
 import 'package:choke/shared/providers/theme_provider.dart';
 import 'package:choke/shared/theme/app_theme.dart';
 
@@ -296,6 +297,46 @@ void main() {
 
       // Assert
       expect(find.byType(SubmissionsScreen), findsOneWidget);
+    });
+
+    testWidgets('the sound tile starts on and turns the cues off',
+        (tester) async {
+      // Arrange — audible unless the referee says otherwise
+      await pumpScreen(tester);
+      await scrollTo(tester, find.text(l10n.settingsMatchSound));
+      expect(find.text(l10n.settingsMatchSoundOn), findsOneWidget);
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+
+      // Act — tap the row, not the switch: the whole row is the target
+      await tester.tap(find.text(l10n.settingsMatchSound));
+      await tester.pumpAndSettle();
+
+      // Assert — the tile says so, and so does the stored preference
+      expect(containerOf(tester).read(matchSoundEnabledProvider), isFalse);
+      expect(find.text(l10n.settingsMatchSoundOff), findsOneWidget);
+      expect(find.byIcon(Icons.volume_off), findsOneWidget);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('choke:match-sound-enabled'), isFalse);
+    });
+
+    testWidgets('the sound tile turns the cues back on', (tester) async {
+      // Arrange — muted from a previous session
+      await pumpScreen(tester, overrides: [
+        matchSoundEnabledProvider
+            .overrideWith((_) => MatchSoundEnabledNotifier()..hydrate(false)),
+      ]);
+      await scrollTo(tester, find.text(l10n.settingsMatchSound));
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+
+      // Act — this time via the switch itself
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(containerOf(tester).read(matchSoundEnabledProvider), isTrue);
+      expect(find.text(l10n.settingsMatchSoundOn), findsOneWidget);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('choke:match-sound-enabled'), isTrue);
     });
   });
 

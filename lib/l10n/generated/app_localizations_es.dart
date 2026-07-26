@@ -623,6 +623,16 @@ class AppLocalizationsEs extends AppLocalizations {
       'Las técnicas que se ofrecen cuando una lucha termina por sumisión';
 
   @override
+  String get settingsMatchSound => 'Sonidos de la lucha';
+
+  @override
+  String get settingsMatchSoundOn =>
+      'Campana al iniciar, bocina al acabarse el tiempo';
+
+  @override
+  String get settingsMatchSoundOff => 'El reloj corre en silencio';
+
+  @override
   String get submissionsAdd => 'Agregar sumisión';
 
   @override

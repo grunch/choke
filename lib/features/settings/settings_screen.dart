@@ -6,6 +6,7 @@ import 'package:choke/l10n/generated/app_localizations.dart';
 import '../../shared/providers/locale_provider.dart';
 import '../../shared/providers/theme_provider.dart';
 import '../../shared/providers/match_duration_provider.dart';
+import '../../shared/providers/match_sound_provider.dart';
 import '../../shared/theme/app_theme.dart';
 import 'screens/relay_management_screen.dart';
 import 'screens/submissions_screen.dart';
@@ -150,6 +151,7 @@ class SettingsScreen extends ConsumerWidget {
                 );
               },
             ),
+            const SizedBox(height: 8),
             _buildListRow(
               context: context,
               tk: tk,
@@ -161,6 +163,25 @@ class SettingsScreen extends ConsumerWidget {
                   MaterialPageRoute(
                     builder: (context) => const SubmissionsScreen(),
                   ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            Consumer(
+              builder: (context, ref, _) {
+                final enabled = ref.watch(matchSoundEnabledProvider);
+                return _buildSwitchRow(
+                  context: context,
+                  tk: tk,
+                  icon: enabled ? Icons.volume_up_outlined : Icons.volume_off,
+                  title: l10n.settingsMatchSound,
+                  subtitle: enabled
+                      ? l10n.settingsMatchSoundOn
+                      : l10n.settingsMatchSoundOff,
+                  value: enabled,
+                  onChanged: (value) => ref
+                      .read(matchSoundEnabledProvider.notifier)
+                      .setEnabled(value),
                 );
               },
             ),
@@ -357,6 +378,67 @@ class SettingsScreen extends ConsumerWidget {
             ),
             Icon(trailingIcon, color: tk.faint, size: 19),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// A [_buildListRow] that carries a switch instead of a chevron.
+  ///
+  /// The whole row toggles, not just the switch: these rows are the width of
+  /// the screen and the switch is a thumb-wide target at the far edge of it.
+  Widget _buildSwitchRow({
+    required BuildContext context,
+    required ChokeTokens tk,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return MergeSemantics(
+      child: InkWell(
+        onTap: () => onChanged(!value),
+        borderRadius: BorderRadius.circular(15),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(15, 13, 9, 13),
+          decoration: BoxDecoration(
+            color: tk.card,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: tk.cardBorder),
+          ),
+          child: Row(
+            children: [
+              _buildIconTile(tk, icon),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      subtitle,
+                      style: TextStyle(fontSize: 12.5, color: tk.muted),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: value,
+                onChanged: onChanged,
+                activeThumbColor: Theme.of(context).colorScheme.primary,
+              ),
+            ],
+          ),
         ),
       ),
     );

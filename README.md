@@ -14,7 +14,7 @@ Choke lets you create, score, and publish Brazilian Jiu-Jitsu matches in real ti
 
 - **Real-time scoring** — Takedowns (2pts), Guard Passes (3pts), Mount/Back Takes (4pts), Advantages, Penalties
 - **Countdown timer** — Configurable match duration with second-by-second countdown
-- **Audible cues** — A bell when the fight starts, a horn when regulation time runs out
+- **Audible cues** — A bell when the fight starts, a horn when regulation time runs out (switchable in Settings)
 - **Decentralized** — All data published via Nostr (kind 31415 addressable events)
 - **No accounts needed** — Nostr keypair generated on install
 - **Delegation without nsec sharing** — Ephemeral match keys for team scoring
@@ -243,6 +243,9 @@ owed to anyone. Regenerate or retune them with:
 ```bash
 python3 tool/generate_match_sounds.py
 ```
+
+**Settings → Match → Match Sounds** turns them off, for a referee working
+beside three other mats. They are on by default, and the choice persists.
 
 Playback goes through `audioplayers`, and it is strictly a courtesy: the clock
 and the scoreboard are the truth. A device with no audio, a denied audio focus

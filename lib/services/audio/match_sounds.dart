@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../shared/providers/match_sound_provider.dart';
+
 /// The two cues the match clock makes: a bell when the fight starts, and a horn
 /// when regulation time runs out.
 ///
@@ -47,6 +49,39 @@ class SilentMatchSounds implements MatchSounds {
 
   @override
   Future<void> dispose() async {}
+}
+
+/// Wraps another [MatchSounds] behind an on/off switch.
+///
+/// [enabled] is a plain field rather than something read from a provider,
+/// because the thing being wrapped owns prepared audio players and must survive
+/// the toggle: rebuilding it on every flick would tear those players down, and
+/// doing so mid-match would mean a referee who muted and unmuted the app got
+/// silence for the rest of the fight.
+///
+/// Warming up is deliberately never gated. The assets get loaded even while
+/// muted, so that switching the sound back on is instant instead of costing the
+/// next cue an asset decode.
+class SwitchableMatchSounds implements MatchSounds {
+  SwitchableMatchSounds(this._inner, {this.enabled = true});
+
+  final MatchSounds _inner;
+
+  /// Whether cues are audible. Safe to change at any time, including during a
+  /// match.
+  bool enabled;
+
+  @override
+  Future<void> warmUp() => _inner.warmUp();
+
+  @override
+  Future<void> playStart() => enabled ? _inner.playStart() : Future.value();
+
+  @override
+  Future<void> playEnd() => enabled ? _inner.playEnd() : Future.value();
+
+  @override
+  Future<void> dispose() => _inner.dispose();
 }
 
 /// Plays the bundled cues from `assets/audio/` through `audioplayers`.
@@ -174,13 +209,23 @@ class AudioPlayerMatchSounds implements MatchSounds {
   }
 }
 
-/// The app-wide match cues.
+/// The app-wide match cues, gated by the user's preference.
 ///
 /// Deliberately not scoped to a single match: the players are prepared once and
 /// reused for every match the referee runs, so only the first one of the day
 /// pays to decode the assets.
 final matchSoundsProvider = Provider<MatchSounds>((ref) {
-  final sounds = AudioPlayerMatchSounds();
+  final sounds = SwitchableMatchSounds(AudioPlayerMatchSounds());
   ref.onDispose(sounds.dispose);
+
+  // The preference is pushed in rather than watched: watching would rebuild
+  // this provider on every toggle, and with it the prepared players — silently
+  // undoing the warm-up in the middle of a match.
+  ref.listen<bool>(
+    matchSoundEnabledProvider,
+    (_, enabled) => sounds.enabled = enabled,
+    fireImmediately: true,
+  );
+
   return sounds;
 });

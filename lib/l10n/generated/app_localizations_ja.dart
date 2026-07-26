@@ -599,6 +599,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsSubmissionsDesc => '一本勝ちで試合が終わったときに表示される技';
 
   @override
+  String get settingsMatchSound => '試合音';
+
+  @override
+  String get settingsMatchSoundOn => '開始はゴング、終了はホーン';
+
+  @override
+  String get settingsMatchSoundOff => 'タイマーは無音で進みます';
+
+  @override
   String get submissionsAdd => 'サブミッションを追加';
 
   @override
