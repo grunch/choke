@@ -640,6 +640,72 @@ void main() {
     );
   });
 
+  group('addressable replacement through the service', () {
+    // The bug was never that the rule was wrong; it was two call sites
+    // disagreeing about it, and this was one of them. It also changed
+    // behaviour here in a way nothing observed: an equal-timestamp event used
+    // to be dropped unconditionally, so it never reached eventStream, and a
+    // lower-id one is now forwarded.
+    const lowId = 'aaaa11111111111111111111111111111111111111111111111111111111';
+    const highId = 'ffff11111111111111111111111111111111111111111111111111111111';
+
+    /// Deliver two revisions of one match, stamped the same second, in [ids]
+    /// order, and report which ids reached the stream.
+    Future<List<String>> deliver(List<String> ids) async {
+      final backend = RecordingRelayBackend();
+      final service = NostrService(
+        KeyManager(crypto: FakeNostrCrypto()),
+        crypto: FakeNostrCrypto(),
+        backend: backend,
+      );
+      addTearDown(service.dispose);
+
+      final seen = <NostrEvent>[];
+      service.eventStream.listen(seen.add);
+
+      for (final id in ids) {
+        backend.eventsController.add(_event(
+          id: id,
+          createdAt: 1000,
+          tags: [
+            ['d', 'abcd'],
+          ],
+        ));
+        await pumpEventQueue();
+      }
+      return seen.map((e) => e.id).toList();
+    }
+
+    test('the lowest id ends up held, whichever order they arrive in',
+        () async {
+      // Act
+      final lowFirst = await deliver([lowId, highId]);
+      final highFirst = await deliver([highId, lowId]);
+
+      // Assert — what is HELD is the same either way, which is the property
+      // that stops two devices showing different scores
+      expect(lowFirst.last, lowId);
+      expect(highFirst.last, lowId);
+    });
+
+    test('the loser of a tie is not forwarded', () async {
+      // Act
+      final lowFirst = await deliver([lowId, highId]);
+
+      // Assert — the high id arrived second and lost, so consumers never see it
+      expect(lowFirst, [lowId]);
+    });
+
+    test('the winner of a tie is forwarded when it arrives second', () async {
+      // Act
+      final highFirst = await deliver([highId, lowId]);
+
+      // Assert — both reach the stream, in order, and the last one is the
+      // winner. Consumers downstream follow the last they are given.
+      expect(highFirst, [highId, lowId]);
+    });
+  });
+
   group('addressableSupersedes', () {
     // NIP-01: a replacement needs a strictly newer created_at, and on a tie the
     // event with the LOWEST id wins.
@@ -667,6 +733,25 @@ void main() {
 
     test('the same event does not replace itself', () {
       expect(wins(100, 'aaaa', 100, 'aaaa'), isFalse);
+    });
+
+    test('works on real 64-character ids, not just short fixtures', () {
+      // The short ids elsewhere in this group would pass a rule that broke on
+      // the length or shape of an actual event id.
+      const low = 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90';
+      const high = 'f1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90';
+      expect(wins(100, low, 100, high), isTrue);
+      expect(wins(100, high, 100, low), isFalse);
+    });
+
+    test('case does not decide it', () {
+      // Lexicographic order only matches numeric order when both sides agree on
+      // case: 'A'.compareTo('a') is -1. An id that arrived uppercase would
+      // otherwise order backwards and bring back the divergence this removes.
+      expect(wins(100, 'AAAA', 100, 'ffff'), isTrue);
+      expect(wins(100, 'FFFF', 100, 'aaaa'), isFalse);
+      expect(wins(100, 'AAAA', 100, 'aaaa'), isFalse,
+          reason: 'the same id in another case is still the same id');
     });
 
     test('the outcome does not depend on which arrived first', () {

@@ -69,6 +69,13 @@ class NostrEvent {
 /// One function because there is one rule: the service and every feed that
 /// keeps its own copy have to agree, and two implementations of "which is
 /// newer" is exactly how they would stop agreeing.
+///
+/// Ids are compared case-insensitively. NIP-01 ids are lowercase hex and every
+/// relay sends them that way, but lexicographic order only matches numeric
+/// order when both operands agree on case — `'A'.compareTo('a')` is -1 — and an
+/// id that arrived uppercase from anywhere would order backwards and reproduce
+/// the very divergence this exists to remove. Cheap insurance against a
+/// precondition nothing enforces.
 bool addressableSupersedes({
   required int arrivingCreatedAt,
   required String arrivingId,
@@ -78,7 +85,7 @@ bool addressableSupersedes({
   if (arrivingCreatedAt != heldCreatedAt) {
     return arrivingCreatedAt > heldCreatedAt;
   }
-  return arrivingId.compareTo(heldId) < 0;
+  return arrivingId.toLowerCase().compareTo(heldId.toLowerCase()) < 0;
 }
 
 /// Publishing matches to Nostr, reliably.
