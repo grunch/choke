@@ -14,8 +14,17 @@ jobs:
   # to the release job as an artifact.
   build-windows:
     runs-on: windows-latest
+    outputs:
+      # Consumed by the release job's Flutter setup, so one workflow cannot
+      # build its platforms on two different framework versions.
+      flutter-version: ${{ steps.flutter.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The version bump below derives the build number from the commit
+          # count, and a shallow clone counts 1 — which would stamp this
+          # platform +1 while the others carry the real count.
+          fetch-depth: 0
 
       # Same validation as the release job, and not negotiable here either: the
       # tag flows into file names and shell, and a Windows runner is no more
@@ -30,6 +39,20 @@ jobs:
             exit 1
           fi
           echo "full_tag=$FULL_TAG" >> $GITHUB_OUTPUT
+          echo "tag=${FULL_TAG#v}" >> $GITHUB_OUTPUT
+
+      # The same bump the release job applies before its own builds. Without
+      # it this platform builds from the tag's committed pubspec — which still
+      # holds the *previous* release's version — and choke.exe would report the
+      # release before the one it shipped in, on the Account screen, forever.
+      - name: Update version in pubspec.yaml
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.tag }}
+        run: |
+          BUILD=$(git rev-list --count HEAD)
+          sed -i "s/^version: .*/version: ${VERSION}+${BUILD}/" pubspec.yaml
+          grep "^version:" pubspec.yaml
 
       # Cargokit compiles the Nostr crate during flutter build windows; the
       # channel comes from rust-toolchain.toml and the host target
@@ -51,6 +74,16 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+
+      # Recorded so the release job can install the same version. Two
+      # independent "stable" resolutions can disagree when a Flutter release
+      # lands between them, and one app release must not ship two frameworks.
+      - name: Report Flutter version
+        id: flutter
+        shell: bash
+        run: |
+          echo "version=$(flutter --version --machine | jq -r .frameworkVersion)" \
+            >> $GITHUB_OUTPUT
 
       - name: Install dependencies
         run: flutter pub get
@@ -84,7 +117,9 @@ jobs:
           name: windows-bundle
           path: choke-${{ steps.version.outputs.full_tag }}-windows-x64.zip
           if-no-files-found: error
-          retention-days: 1
+          # Long enough for a failed release to be re-run after a weekend; a
+          # 1-day window turns a Monday retry into a missing-artifact failure.
+          retention-days: 7
 
   build-and-release:
     # The release attaches the Windows archive, so it has to exist first. This
@@ -304,6 +339,9 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # Whatever stable resolved to when the Windows job set up, minutes
+          # ago — not whatever it resolves to now.
+          flutter-version: ${{ needs.build-windows.outputs.flutter-version }}
 
       - name: Install dependencies
         run: flutter pub get
