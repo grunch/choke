@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.6.5] - 2026-07-26
+
+### Added
+- feat: keep the screen awake while a match is being scored (e90fcef)
+
+### Fixed
+- fix: bound the wakelock call and keep tests off the platform channel (b17c879)
+
+### Changed
+- chore: update changelog and version for v1.6.4 (8c66799)
+
+
 ## [v1.6.4] - 2026-07-26
 
 ### Added
