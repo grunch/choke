@@ -19,6 +19,19 @@ class _StreamNostrService extends NostrService {
 
   @override
   Stream<NostrEvent> get eventStream => controller.stream;
+
+  /// The author `_echoOf` stamps by default. The feed drops anything from
+  /// anybody else, so a service with no identity would drop every event these
+  /// tests push through it.
+  @override
+  String? get userPubkey => 'pk';
+}
+
+/// A service whose identity lookup never completed — the path where
+/// `subscribeToUserEvents` threw and `main` caught it.
+class _AnonymousNostrService extends _StreamNostrService {
+  @override
+  String? get userPubkey => null;
 }
 
 /// A service that already knows who it is, as one does after
@@ -115,11 +128,14 @@ void main() {
       expect(feed.state, hasLength(1));
     });
 
-    test('accepts events while the app still does not know who it is', () async {
-      // Arrange — before subscribeToUserEvents there is no other subscription to
-      // confuse this feed with, and dropping here would lose the user's own
-      // opening events: a relay does not send them again.
-      final nostr = _StreamNostrService();
+    test('drops everything while the app does not know who it is', () async {
+      // Arrange — main awaits subscribeToUserEvents before runApp, so a null
+      // pubkey here is not an early frame: it is the path where looking the
+      // identity up failed and was caught. The app still launches, the user can
+      // still watch somebody else's board, and every subscription shares this
+      // stream — so accepting anything would file an organizer's matches as
+      // this user's own.
+      final nostr = _AnonymousNostrService();
       final feed = MatchFeedNotifier(nostr);
       addTearDown(() async {
         feed.dispose();
@@ -133,7 +149,7 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       // Assert
-      expect(feed.state, hasLength(1));
+      expect(feed.state, isEmpty);
     });
   });
 

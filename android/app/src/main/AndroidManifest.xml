@@ -42,7 +42,13 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="https" android:host="bjjscore.live"/>
+                <!-- The root only. Without a path this would claim every URL
+                     on the site, /match/<id> included — and those the app
+                     cannot render: the parser finds no pubkey, nothing happens,
+                     and the page the user asked for is neither shown here nor
+                     handed back to the browser. -->
+                <data android:scheme="https" android:host="bjjscore.live"
+                      android:path="/"/>
             </intent-filter>
         </activity>
 

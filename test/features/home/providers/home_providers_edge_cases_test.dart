@@ -19,6 +19,12 @@ class _StreamNostrService extends NostrService {
 
   @override
   Stream<NostrEvent> get eventStream => controller.stream;
+
+  /// The author `_echoOf` stamps by default. The feed drops anything from
+  /// anybody else, so a service with no identity would drop every event these
+  /// tests push through it.
+  @override
+  String? get userPubkey => 'pk';
 }
 
 Match _match({String id = 'abcd'}) {

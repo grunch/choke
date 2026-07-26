@@ -33,13 +33,13 @@ class MatchFeedNotifier extends StateNotifier<List<Match>> {
     // the scoreboard section — which subscribes to whatever pubkey the user
     // pastes, on purpose — would file other people's matches in here.
     //
-    // A null pubkey means the app has not looked itself up yet, which only
-    // happens before `subscribeToUserEvents`, when this user's is the only
-    // subscription there is. Accepting during that window is safe; dropping
-    // would throw away the user's own opening events, because a relay does not
-    // send them again.
+    // Fail closed. There is no benign startup window here: main awaits
+    // subscribeToUserEvents before runApp, so by the time anything can arrive
+    // the key is either known or its lookup failed and was caught. A null
+    // pubkey is therefore the *error* path — and that is exactly when letting
+    // everything through would file a watched organizer's matches in here.
     final me = _nostrService.userPubkey;
-    if (me != null && event.pubkey != me) return;
+    if (me == null || event.pubkey != me) return;
 
     try {
       final match = Match.fromNostrEvent(event);

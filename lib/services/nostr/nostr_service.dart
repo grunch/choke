@@ -195,6 +195,17 @@ class NostrService {
 
   String? _userPubkey;
 
+  /// Re-read the identity and point the subscription at it.
+  ///
+  /// Call after the key changes. [subscribeToUserEvents] reuses the same
+  /// subscription id, and a REQ that repeats an id replaces it, so the relays
+  /// stop sending the old identity's matches and start sending the new one's.
+  ///
+  /// Without this the service keeps answering [userPubkey] with the key the app
+  /// started with, and the home feed — which believes it — throws away the
+  /// user's own matches under their new identity.
+  Future<void> refreshIdentity() => subscribeToUserEvents();
+
   /// This device's own public key, once [subscribeToUserEvents] has looked it
   /// up, and null before that.
   ///
@@ -500,6 +511,21 @@ class NostrService {
   NostrEvent? getAddressableEvent(String kind, String pubkey, String dTag) {
     final key = '$kind:$pubkey:$dTag';
     return _addressableEvents[key];
+  }
+
+  /// Every cached event of [kind] published by [pubkey].
+  ///
+  /// Exists because this service deduplicates addressable events for the whole
+  /// app: a relay replaying the state it already sent is dropped here, so a
+  /// consumer that starts later never sees it on [eventStream] and would sit
+  /// empty until the author published again. A late consumer asks for what it
+  /// missed instead.
+  List<NostrEvent> cachedEventsOf(int kind, String pubkey) {
+    final prefix = '$kind:$pubkey:';
+    return _addressableEvents.entries
+        .where((e) => e.key.startsWith(prefix))
+        .map((e) => e.value)
+        .toList();
   }
 
   /// Get list of connected relays

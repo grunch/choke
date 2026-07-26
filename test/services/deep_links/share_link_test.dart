@@ -147,4 +147,47 @@ void main() {
       expect(ref.read(selectedTabProvider), AppTab.home);
     });
   });
+
+  group('openShareLink logging', () {
+    setUp(() => SharedPreferences.setMockInitialValues({}));
+
+    testWidgets('never writes the rejected link or its values to the log',
+        (tester) async {
+      // Arrange — somebody pastes a private key into a share link. The parser
+      // rejects it, and the log must not become the place it leaks.
+      const nsec = 'nsec1averysecretvaluethatmustnotbelogged';
+      late WidgetRef ref;
+      await tester.pumpWidget(ProviderScope(
+        child: Consumer(builder: (context, r, _) {
+          ref = r;
+          return const SizedBox();
+        }),
+      ));
+
+      final logged = <String>[];
+      final previous = debugPrint;
+      debugPrint = (String? message, {int? wrapWidth}) {
+        if (message != null) logged.add(message);
+      };
+
+      // Act — restored inside the body, not in a tearDown: the framework
+      // asserts its debug variables are untouched before tearDowns run.
+      final bool handled;
+      try {
+        handled = openShareLink(
+          Uri.parse('https://bjjscore.live/?npub=$nsec'),
+          crypto,
+          ref,
+        );
+      } finally {
+        debugPrint = previous;
+      }
+
+      // Assert
+      expect(handled, isFalse);
+      expect(logged, isNotEmpty, reason: 'it should say something');
+      expect(logged.join('\n'), isNot(contains(nsec)));
+      expect(logged.join('\n'), isNot(contains('nsec1')));
+    });
+  });
 }

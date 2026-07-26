@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:choke/features/account/account_screen.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import 'package:choke/services/key_management/key_manager.dart';
+import 'package:choke/services/nostr/nostr_service.dart';
 
 import '../../support/nostr_fakes.dart';
 
@@ -36,7 +37,23 @@ class _SpyKeyManager extends KeyManager {
   Future<String?> getNsec() async => 'nsec1fake';
 }
 
+/// Records whether the relays were pointed at the new identity.
+class _SpyNostrService extends NostrService {
+  _SpyNostrService()
+      : super(KeyManager(crypto: FakeNostrCrypto()),
+            crypto: FakeNostrCrypto(), backend: FakeRelayBackend());
+
+  int refreshes = 0;
+
+  @override
+  Future<void> refreshIdentity() async => refreshes++;
+}
+
 void main() {
+  late _SpyNostrService nostr;
+
+  setUp(() => nostr = _SpyNostrService());
+
   Future<void> pumpAccountScreen(
     WidgetTester tester,
     _SpyKeyManager keyManager,
@@ -45,6 +62,7 @@ void main() {
       ProviderScope(
         overrides: [
           keyManagerProvider.overrideWithValue(keyManager),
+          nostrServiceProvider.overrideWithValue(nostr),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -144,6 +162,30 @@ void main() {
       expect(find.text('Your Nostr Identity'), findsOneWidget);
       expect(find.text('npub1after'), findsOneWidget);
       expect(find.text('npub1before'), findsNothing);
+    });
+  });
+
+  group('identity change', () {
+    testWidgets('generating a keypair moves the subscription with it',
+        (tester) async {
+      // A new key with the old subscription still running means the relays keep
+      // sending the previous identity's matches, and the home feed — which asks
+      // the service who this user is — throws away every match published under
+      // the new one.
+      //
+      // Arrange
+      final keyManager = _SpyKeyManager();
+      await pumpAccountScreen(tester, keyManager);
+      expect(nostr.refreshes, 0);
+
+      // Act — the same path the existing generate test takes
+      await tester.tap(find.byIcon(Icons.autorenew));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Generate'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(nostr.refreshes, 1);
     });
   });
 }

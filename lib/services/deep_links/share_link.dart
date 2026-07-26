@@ -52,7 +52,16 @@ String? pubkeyFromShareLink(Uri uri, NostrCrypto crypto) {
 bool openShareLink(Uri uri, NostrCrypto crypto, WidgetRef ref) {
   final hex = pubkeyFromShareLink(uri, crypto);
   if (hex == null) {
-    debugPrint('DeepLink: ignoring $uri');
+    // The host and which parameters were present, never their values. A user
+    // who pastes their nsec into one of these is correctly rejected above —
+    // and must not have it written to the device log on the way out.
+    final named = kSharePubkeyParams
+        .where(uri.queryParameters.containsKey)
+        .join(',');
+    debugPrint(
+      'DeepLink: ignoring a link for ${uri.host.isEmpty ? '(no host)' : uri.host}'
+      '${named.isEmpty ? ' with no pubkey parameter' : ' whose $named did not parse'}',
+    );
     return false;
   }
 

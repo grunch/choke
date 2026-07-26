@@ -32,13 +32,21 @@ class WatchedPubkeyNotifier extends StateNotifier<String?> {
     unawaited(_restore());
   }
 
+  /// Whether the user has chosen anything yet — including choosing to stop.
+  ///
+  /// Tracked rather than inferred from [state] being null, because "nobody has
+  /// chosen" and "somebody chose to stop watching" are both null, and a restore
+  /// still in flight would read the second as the first and put the board they
+  /// just closed back on the screen.
+  bool _userHasChosen = false;
+
   Future<void> _restore() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final saved = prefs.getString(_kScoreboardPubkeyKey);
       // Only if nothing has been chosen in the meantime: restoring asynchronously
       // must never overwrite a key the user pasted while it was in flight.
-      if (saved != null && saved.isNotEmpty && state == null) {
+      if (saved != null && saved.isNotEmpty && !_userHasChosen) {
         state = saved;
       }
     } catch (e) {
@@ -50,6 +58,7 @@ class WatchedPubkeyNotifier extends StateNotifier<String?> {
 
   /// Watch [hexPubkey]. Pass null to stop watching and forget it.
   Future<void> watch(String? hexPubkey) async {
+    _userHasChosen = true;
     state = hexPubkey;
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -91,6 +100,17 @@ class ScoreboardFeedNotifier extends StateNotifier<List<Match>> {
 
     _subscription = _nostrService.eventStream.listen(_onEvent);
     _nostrService.subscribeToAuthor(_pubkey, subscriptionId: _subscriptionId);
+
+    // Start from what the app has already seen of this author.
+    //
+    // Watching someone, leaving, and watching them again used to show an empty
+    // board forever: the relay replays their latest state, but the service has
+    // it cached and drops a replay it considers no newer, so nothing reached a
+    // feed that had just started from nothing. It would stay empty until that
+    // author happened to score again.
+    for (final event in _nostrService.cachedEventsOf(31415, _pubkey)) {
+      _onEvent(event);
+    }
   }
 
   final NostrService _nostrService;

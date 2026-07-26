@@ -21,6 +21,14 @@ class _SpyNostrService extends NostrService {
   final subscribed = <String>[];
   final unsubscribed = <String>[];
 
+  /// What the service has already seen and would not replay on the stream.
+  final cached = <NostrEvent>[];
+
+  @override
+  List<NostrEvent> cachedEventsOf(int kind, String pubkey) => cached
+      .where((e) => e.kind == kind && e.pubkey == pubkey)
+      .toList();
+
   @override
   Stream<NostrEvent> get eventStream => controller.stream;
 
@@ -366,6 +374,76 @@ void main() {
       final matches = container.read(scoreboardMatchesProvider);
       expect(matches.map((m) => m.id), ['eee5'],
           reason: 'fff6 is a day and a minute old');
+    });
+  });
+
+  group('ScoreboardFeedNotifier hydration', () {
+    late _SpyNostrService nostr;
+
+    setUp(() => nostr = _SpyNostrService());
+    tearDown(() => nostr.controller.close());
+
+    test('starts from what the app already knows about this author', () {
+      // Arrange — watched once before, so the service holds the latest state
+      // and will drop the relay's replay of it as no newer
+      nostr.cached.add(_eventOf(_match(f1Pt2: 2), pubkey: watched));
+
+      // Act — watch that author again
+      final feed = ScoreboardFeedNotifier(nostr, watched);
+      addTearDown(feed.dispose);
+
+      // Assert — leaving and coming back used to show an empty board until the
+      // author happened to score again
+      expect(feed.state.single.f1Pt2, 2);
+    });
+
+    test('does not take cached matches belonging to another author', () {
+      // Arrange
+      nostr.cached.add(_eventOf(_match(), pubkey: 'c' * 64));
+
+      // Act
+      final feed = ScoreboardFeedNotifier(nostr, watched);
+      addTearDown(feed.dispose);
+
+      // Assert
+      expect(feed.state, isEmpty);
+    });
+
+    test('a live event still supersedes the cached one', () async {
+      // Arrange
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      nostr.cached
+          .add(_eventOf(_match(f1Pt2: 1), pubkey: watched, createdAt: now - 60));
+      final feed = ScoreboardFeedNotifier(nostr, watched);
+      addTearDown(feed.dispose);
+
+      // Act
+      nostr.controller
+          .add(_eventOf(_match(f1Pt2: 3), pubkey: watched, createdAt: now));
+      await Future<void>.delayed(Duration.zero);
+
+      // Assert
+      expect(feed.state.single.f1Pt2, 3);
+    });
+  });
+
+  group('WatchedPubkeyNotifier stop-watching race', () {
+    test('a restore in flight does not undo an explicit stop', () async {
+      // Arrange — a saved pubkey is on its way back from disk
+      SharedPreferences.setMockInitialValues(
+        {'choke:scoreboard-pubkey': watched},
+      );
+      final notifier = WatchedPubkeyNotifier();
+      addTearDown(notifier.dispose);
+
+      // Act — the user stops watching before the restore lands. Both "nobody
+      // has chosen" and "chose to stop" are null, so the restore must not read
+      // the second as the first.
+      await notifier.watch(null);
+      await Future<void>.delayed(Duration.zero);
+
+      // Assert — the board they just closed must not come back
+      expect(notifier.state, isNull);
     });
   });
 }
