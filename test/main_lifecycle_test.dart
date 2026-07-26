@@ -1,11 +1,12 @@
-import 'dart:ui';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:choke/main.dart';
 import 'package:choke/services/key_management/key_manager.dart';
 import 'package:choke/services/nostr/crypto/nostr_crypto.dart';
+import 'package:flutter/material.dart';
 import 'package:choke/services/nostr/nostr_service.dart';
+import 'package:choke/shared/providers/navigation_provider.dart';
 
 import 'support/nostr_fakes.dart';
 
@@ -109,5 +110,23 @@ void main() {
 
     // Restore the default state so later tests see a live app
     await walk(tester, comingBack);
+  });
+
+  testWidgets('the app hands its navigator to the provider that pops it',
+      (tester) async {
+    // The whole shared-link stack clearing rests on one line in main.dart. A
+    // test that builds its own MaterialApp and passes the key it also overrode
+    // proves popUntil works — and stays green if that line is deleted, which is
+    // the same silent failure shape as the bug it fixes.
+    //
+    // Arrange + Act
+    await pumpApp(tester);
+
+    // Assert — the key the app is actually using is the one the provider hands
+    // out, so code outside the tree can reach this navigator
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(MaterialApp)),
+    );
+    expect(container.read(navigatorKeyProvider).currentState, isNotNull);
   });
 }
