@@ -65,6 +65,13 @@ bool openShareLink(Uri uri, NostrCrypto crypto, WidgetRef ref) {
     return false;
   }
 
+  // Clear the stack first, then switch. A detail screen left on top would
+  // otherwise hide the board the link just opened — and, for a different
+  // organizer, would find its match missing and show "no longer available"
+  // instead. Popping after the switch would let it render once against the new
+  // organizer and flash exactly that.
+  ref.read(navigatorKeyProvider).currentState?.popUntil((r) => r.isFirst);
+
   ref.read(watchedPubkeyProvider.notifier).watch(hex);
   ref.read(selectedTabProvider.notifier).state = AppTab.scoreboard;
   return true;

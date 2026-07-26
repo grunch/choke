@@ -190,4 +190,102 @@ void main() {
       expect(logged.join('\n'), isNot(contains('nsec1')));
     });
   });
+
+  group('openShareLink navigation', () {
+    setUp(() => SharedPreferences.setMockInitialValues({}));
+
+    testWidgets('clears a pushed route so the board is what ends up visible',
+        (tester) async {
+      // Arrange — the app is open on a detail screen, as it is whenever
+      // somebody is watching a match and a link arrives.
+      late WidgetRef ref;
+      final key = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(ProviderScope(
+        overrides: [navigatorKeyProvider.overrideWithValue(key)],
+        child: MaterialApp(
+          navigatorKey: key,
+          home: Consumer(builder: (context, r, _) {
+            ref = r;
+            return const Scaffold(body: Text('the board'));
+          }),
+        ),
+      ));
+
+      key.currentState!.push(MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(body: Text('a match detail')),
+      ));
+      await tester.pumpAndSettle();
+      expect(find.text('a match detail'), findsOneWidget);
+
+      // Act
+      final handled =
+          openShareLink(Uri.parse(liveBoardShareUrl('npub1fake')), crypto, ref);
+      await tester.pumpAndSettle();
+
+      // Assert — switching the tab alone would have moved the screen underneath
+      // this route, leaving the user staring at the match they were already on
+      expect(handled, isTrue);
+      expect(find.text('a match detail'), findsNothing);
+      expect(find.text('the board'), findsOneWidget);
+      expect(ref.read(selectedTabProvider), AppTab.scoreboard);
+    });
+
+    testWidgets('a cold start pops nothing, having pushed nothing',
+        (tester) async {
+      // Arrange — no stack yet, which is the launch case
+      late WidgetRef ref;
+      final key = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(ProviderScope(
+        overrides: [navigatorKeyProvider.overrideWithValue(key)],
+        child: MaterialApp(
+          navigatorKey: key,
+          home: Consumer(builder: (context, r, _) {
+            ref = r;
+            return const Scaffold(body: Text('the board'));
+          }),
+        ),
+      ));
+
+      // Act
+      final handled =
+          openShareLink(Uri.parse(liveBoardShareUrl('npub1fake')), crypto, ref);
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(handled, isTrue);
+      expect(find.text('the board'), findsOneWidget);
+      expect(ref.read(watchedPubkeyProvider), _watched);
+    });
+
+    testWidgets('a link that is not ours leaves the stack alone',
+        (tester) async {
+      // Arrange
+      late WidgetRef ref;
+      final key = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(ProviderScope(
+        overrides: [navigatorKeyProvider.overrideWithValue(key)],
+        child: MaterialApp(
+          navigatorKey: key,
+          home: Consumer(builder: (context, r, _) {
+            ref = r;
+            return const Scaffold(body: Text('the board'));
+          }),
+        ),
+      ));
+      key.currentState!.push(MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(body: Text('a match detail')),
+      ));
+      await tester.pumpAndSettle();
+
+      // Act
+      final handled = openShareLink(
+          Uri.parse('https://evil.example/?npub=npub1fake'), crypto, ref);
+      await tester.pumpAndSettle();
+
+      // Assert — an unrelated link must not throw the user out of what they
+      // were doing
+      expect(handled, isFalse);
+      expect(find.text('a match detail'), findsOneWidget);
+    });
+  });
 }

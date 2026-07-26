@@ -188,6 +188,7 @@ class _ChokeAppState extends ConsumerState<ChokeApp>
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp(
+      navigatorKey: ref.watch(navigatorKeyProvider),
       title: 'Choke',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
