@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/match.dart';
 import '../models/match_outcome.dart';
+import '../../../services/audio/match_sounds.dart';
 import '../../../services/nostr/nostr_service.dart';
 import '../../home/providers/home_providers.dart';
 
@@ -81,6 +82,11 @@ class MatchControlNotifier extends StateNotifier<MatchControlState> {
 
   final NostrService _nostrService;
   final MatchFeedNotifier? _feedNotifier;
+
+  /// The bell and the horn. Silent by default so that constructing a notifier
+  /// — which every test does — never reaches for a platform channel.
+  final MatchSounds _sounds;
+
   Timer? _timer;
 
   /// Latest match state no relay has confirmed yet. Rapid actions coalesce
@@ -92,11 +98,20 @@ class MatchControlNotifier extends StateNotifier<MatchControlState> {
   int _retryAttempt = 0;
   StreamSubscription<String>? _relayConnectedSub;
 
-  MatchControlNotifier(Match match, this._nostrService, [this._feedNotifier])
-      : super(MatchControlState(
+  MatchControlNotifier(
+    Match match,
+    this._nostrService, [
+    this._feedNotifier,
+    this._sounds = const SilentMatchSounds(),
+  ]) : super(MatchControlState(
           match: match,
           remainingSeconds: _calculateRemaining(match),
         )) {
+    // Load the cues now, while the referee is still reading the fighters'
+    // names. Doing it when they press start would put the asset decode between
+    // the press and the bell.
+    unawaited(_sounds.warmUp());
+
     // A relay that just (re)connected can take the pending state right now —
     // waiting out a backoff scheduled against its dead predecessor would
     // leave the remote board stale for up to 30 extra seconds.
@@ -114,9 +129,12 @@ class MatchControlNotifier extends StateNotifier<MatchControlState> {
         return;
       }
       // The clock may have run out while the app was closed — a match is
-      // never left in progress past its own duration.
+      // never left in progress past its own duration. It ran out unwatched,
+      // though, so it is settled in silence: sounding the horn here would
+      // announce the end of a match that finished while the phone was in
+      // somebody's bag.
       if (state.remainingSeconds <= 0) {
-        _onTimeUp();
+        _onTimeUp(announce: false);
       } else {
         _startTimer();
       }
@@ -150,6 +168,11 @@ class MatchControlNotifier extends StateNotifier<MatchControlState> {
       match: updated,
       remainingSeconds: updated.duration,
     );
+
+    // The bell only ever marks the opening of a fight, which is why it lives
+    // here and not in resumeMatch: restarting a stopped clock is the same
+    // match carrying on, and a second bell would read as a second match.
+    unawaited(_sounds.playStart());
 
     _startTimer();
     _publishState();
@@ -375,8 +398,19 @@ class MatchControlNotifier extends StateNotifier<MatchControlState> {
 
   /// The clock has reached zero. Whether that ends the match depends on what
   /// the scoreboard says — and sometimes it says nothing.
-  void _onTimeUp() {
+  ///
+  /// [announce] sounds the horn. It is true for a clock that runs out with
+  /// somebody watching, and false for one whose time expired while the app was
+  /// closed — that match was over long before this code ran, and a horn would
+  /// be announcing history.
+  void _onTimeUp({bool announce = true}) {
     _timer?.cancel();
+
+    // Before anything else: the horn marks the end of regulation time, which
+    // has happened whether or not the scoreboard can name a winner. Waiting to
+    // see if an outcome comes out of it would leave a level match ending in
+    // silence — the one case where everyone on the mat most needs telling.
+    if (announce) unawaited(_sounds.playEnd());
 
     final outcome = state.suggestedOutcome;
 
@@ -511,5 +545,6 @@ final matchControlProvider =
   }
   final nostrService = ref.watch(nostrServiceProvider);
   final feedNotifier = ref.read(matchFeedProvider.notifier);
-  return MatchControlNotifier(match, nostrService, feedNotifier);
+  final sounds = ref.watch(matchSoundsProvider);
+  return MatchControlNotifier(match, nostrService, feedNotifier, sounds);
 });

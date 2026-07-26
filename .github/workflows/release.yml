@@ -285,13 +285,15 @@ jobs:
 
       # Linux desktop build. Choke ships the linux/ runner, so Flutter can
       # produce a native x64 bundle. Needs the GTK + build toolchain, plus
-      # libsecret for flutter_secure_storage's Linux backend. The Rust crate is
+      # libsecret for flutter_secure_storage's Linux backend and GStreamer for
+      # audioplayers' (the match start bell and end horn). The Rust crate is
       # cross-compiled for the host target by Cargokit during the build.
       - name: Install Linux build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev libsecret-1-dev
+            libgtk-3-dev liblzma-dev libsecret-1-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
           # The Rust crate rides Flutter's native-assets path, which needs a
           # COMPLETE Clang toolchain (README "Building for Linux desktop"):
           # a linker sitting beside clang, and the libstdc++ headers matching

@@ -769,6 +769,18 @@
   "@settingsSubmissionsDesc": {
     "description": "Settings: submissions section description"
   },
+  "settingsMatchSound": "Match Sounds",
+  "@settingsMatchSound": {
+    "description": "Settings: match sound toggle title"
+  },
+  "settingsMatchSoundOn": "A bell on start, a horn when time runs out",
+  "@settingsMatchSoundOn": {
+    "description": "Settings: match sound toggle subtitle when sound is on"
+  },
+  "settingsMatchSoundOff": "The clock runs silently",
+  "@settingsMatchSoundOff": {
+    "description": "Settings: match sound toggle subtitle when sound is off"
+  },
   "submissionsAdd": "Add submission",
   "@submissionsAdd": {
     "description": "Submissions editor: add button"
