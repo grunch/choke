@@ -5,9 +5,10 @@ publish_to: 'none'
 version: 1.6.3+336
 
 environment:
-  # Floor is 3.5 because flutter_rust_bridge's generated web bindings use
-  # extension types (Dart 3.3+). See docs/specs/nostr-sdk-migration.md §0.4.3.
-  sdk: '>=3.5.0 <4.0.0'
+  # flutter_rust_bridge's generated web bindings use extension types (Dart
+  # 3.3+) — see docs/specs/nostr-sdk-migration.md §0.4.3 — and audioplayers
+  # raises that to 3.6 from 6.5.0 on, which is the floor that binds now.
+  sdk: '>=3.6.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -19,6 +20,9 @@ dependencies:
 
   # UI
   cupertino_icons: ^1.0.8
+
+  # Match clock cues (start bell, end horn)
+  audioplayers: ^6.5.0
 
   # State Management
   flutter_riverpod: ^2.6.1
@@ -74,6 +78,8 @@ flutter:
     - assets/branding/bjj_black_belt.webp
     - assets/branding/home-mascot.png
     - assets/branding/choke-c-logo.png
+    - assets/audio/match_start.wav
+    - assets/audio/match_end.wav
   fonts:
     - family: Space Grotesk
       fonts:
