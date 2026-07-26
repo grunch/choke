@@ -265,37 +265,18 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
   /// board belonging to somebody else, is the same silent substitution this
   /// screen exists to avoid. The user dismisses it, so the app knows they know.
   Widget _buildBrokenLink(AppLocalizations l10n, ChokeTokens tk) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.link_off, size: 44, color: tk.dangerFg),
-            const SizedBox(height: 14),
-            Text(
-              l10n.scoreboardBrokenLinkTitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: tk.dangerFg,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              l10n.scoreboardBrokenLinkBody,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: tk.faint),
-            ),
-            const SizedBox(height: 18),
-            FilledButton(
-              onPressed: () =>
-                  ref.read(brokenShareLinkProvider.notifier).state = false,
-              child: Text(l10n.scoreboardBrokenLinkDismiss),
-            ),
-          ],
-        ),
+    return _buildPlaceholder(
+      tk,
+      icon: Icons.link_off,
+      title: l10n.scoreboardBrokenLinkTitle,
+      body: l10n.scoreboardBrokenLinkBody,
+      // The one state here that is a failure rather than an absence, and the
+      // only one the user has to act on.
+      accent: tk.dangerFg,
+      action: FilledButton(
+        onPressed: () =>
+            ref.read(brokenShareLinkProvider.notifier).state = false,
+        child: Text(l10n.scoreboardBrokenLinkDismiss),
       ),
     );
   }
@@ -318,11 +299,19 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
     );
   }
 
+  /// The shape every "there is no list here" state takes: an icon, a line, and
+  /// an explanation.
+  ///
+  /// [accent] tints the icon and the title for a state that is a failure rather
+  /// than an absence; without it they stay quiet, which is right for waiting and
+  /// for having nothing to show yet. [action] appends something to do about it.
   Widget _buildPlaceholder(
     ChokeTokens tk, {
     required IconData icon,
     required String title,
     required String body,
+    Color? accent,
+    Widget? action,
   }) {
     return Center(
       child: Padding(
@@ -330,7 +319,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 44, color: tk.faint),
+            Icon(icon, size: 44, color: accent ?? tk.faint),
             const SizedBox(height: 14),
             Text(
               title,
@@ -338,7 +327,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                color: tk.muted,
+                color: accent ?? tk.muted,
               ),
             ),
             const SizedBox(height: 6),
@@ -347,6 +336,10 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: tk.faint),
             ),
+            if (action != null) ...[
+              const SizedBox(height: 18),
+              action,
+            ],
           ],
         ),
       ),
