@@ -1,5 +1,33 @@
 # Changelog
 
+## [v1.6.6] - 2026-07-26
+
+### Added
+- feat: filter the scoreboard by status, as home does (9ceac00)
+- feat: open shared board links in the app (ff574e0)
+- feat: add a read-only scoreboard for watching another pubkey's matches (abdca7a)
+- feat: add NIP-19 npub decoding (8a9bcb5)
+- feat: keep the screen awake while a match is being scored (e90fcef)
+
+### Fixed
+- fix: address the review findings on this PR (f72daeb)
+- fix: address the review findings on this PR (edd5777)
+- fix: address the review findings on this PR (5d1d5be)
+- fix: clear the stack when a shared link arrives (5399959)
+- fix: resolve equal-timestamp revisions by NIP-01's id tie-break (a0880b5)
+- fix: say so when a shared link's pubkey cannot be read (2c3e461)
+- fix: address the review findings on this PR (2d318a3)
+- fix: make the scoreboard header icon legible (1e3484b)
+- fix: keep scoreboard subscription ids inside NIP-01's limit (e9edf44)
+- fix: keep the home feed to this user's own matches (470c78b)
+- fix: bound the wakelock call and keep tests off the platform channel (b17c879)
+
+### Changed
+- refactor: fold the broken-link state into the shared placeholder (be0e94c)
+- chore: update changelog and version for v1.6.5 (34fef4a)
+- chore: update changelog and version for v1.6.4 (8c66799)
+
+
 ## [v1.6.5] - 2026-07-26
 
 ### Added
