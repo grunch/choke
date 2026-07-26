@@ -290,6 +290,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
           palette.advValue,
           palette.advSurface,
           unit,
+          palette,
         ),
         SizedBox(width: unit * 1.6),
         _buildCountChip(
@@ -299,6 +300,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
           palette.penValue,
           palette.penSurface,
           unit,
+          palette,
         ),
       ],
     );
@@ -311,13 +313,16 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     Color countColor,
     Color surface,
     double unit,
+    BoardPalette palette,
   ) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: unit * 2, vertical: unit * 1.1),
       decoration: BoxDecoration(
-        color: surface.withValues(alpha: .14),
+        color: surface.withValues(alpha: palette.chipFillAlpha),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: surface.withValues(alpha: .5)),
+        border: Border.all(
+          color: surface.withValues(alpha: palette.chipBorderAlpha),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -446,28 +451,40 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
         ),
     };
 
-    // The surface is drawn from the colour the fighter chose; the word on it is
-    // darkened where it has to survive a light background. A running match uses
-    // two different greens for the same reason.
+    // Only a finished match wears a colour that came off the wire, so it is the
+    // only one that needs darkening to survive a light background. Every other
+    // pill is a colour this palette chose for this theme, and putting one of
+    // those through `readable` darkens it a second time.
+    final isFinished = match.status == MatchStatus.finished;
+    final word = isFinished ? palette.readable(color) : color;
+
+    // A running match draws its surface from a different green than its word:
+    // the word carries the contrast, the surface stays quiet.
     final surface = switch (match.status) {
       MatchStatus.inProgress when !match.isPaused => palette.liveSurface,
       _ => color,
     };
-    final word = palette.readable(color);
 
     final isRunning = match.status == MatchStatus.inProgress && !match.isPaused;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: unit * 2.4, vertical: unit),
       decoration: BoxDecoration(
-        color: surface.withValues(alpha: .12),
+        color: surface.withValues(alpha: palette.pillFillAlpha),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: surface.withValues(alpha: .5)),
+        border: Border.all(
+          color: surface.withValues(alpha: palette.pillBorderAlpha),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _StatusDot(color: surface, blinking: isRunning, size: unit * 1.6),
+          _StatusDot(
+            color: surface,
+            blinking: isRunning,
+            size: unit * 1.6,
+            glowAlpha: palette.pillDotGlowAlpha,
+          ),
           SizedBox(width: unit * 1.2),
           Flexible(
             child: Text(
@@ -572,16 +589,23 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
         padding:
             EdgeInsets.symmetric(horizontal: unit * 5, vertical: unit * 3.5),
         decoration: BoxDecoration(
-          color: palette.cardSurface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: color.withValues(alpha: .45)),
-          boxShadow: [
-            BoxShadow(
-              color: palette.cardShadow,
-              blurRadius: palette.cardShadowBlur,
-              offset: palette.cardShadowOffset,
-            ),
-          ],
+          // Its own surface, not the clock card's. The card is a faint panel the
+          // board shows through; this has to be opaque enough that the fighter
+          // washes do not come through the announcement of who won.
+          color: palette.bannerSurface,
+          borderRadius: BorderRadius.circular(22),
+          border: palette.bannerOutlined
+              ? Border.all(color: color.withValues(alpha: palette.pillBorderAlpha))
+              : null,
+          boxShadow: palette.bannerOutlined
+              ? [
+                  BoxShadow(
+                    color: palette.cardShadow,
+                    blurRadius: palette.cardShadowBlur,
+                    offset: palette.cardShadowOffset,
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -625,9 +649,11 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
                 vertical: unit * 1.6,
               ),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: .14),
+                color: color.withValues(alpha: palette.chipFillAlpha),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color.withValues(alpha: .5)),
+                border: Border.all(
+                  color: color.withValues(alpha: palette.pillBorderAlpha),
+                ),
               ),
               child: Text(
                 methodLabel(l10n, method).toUpperCase(),
@@ -736,11 +762,16 @@ class _StatusDot extends StatefulWidget {
     required this.color,
     required this.blinking,
     required this.size,
+    required this.glowAlpha,
   });
 
   final Color color;
   final bool blinking;
   final double size;
+
+  /// Zero on a light board: a blur under a saturated colour on near-white is a
+  /// smudge, and this is the one thing here that moves.
+  final double glowAlpha;
 
   @override
   State<_StatusDot> createState() => _StatusDotState();
@@ -791,7 +822,14 @@ class _StatusDotState extends State<_StatusDot>
       decoration: BoxDecoration(
         color: widget.color,
         shape: BoxShape.circle,
-        boxShadow: [BoxShadow(color: widget.color, blurRadius: 14)],
+        boxShadow: widget.glowAlpha == 0
+            ? null
+            : [
+                BoxShadow(
+                  color: widget.color.withValues(alpha: widget.glowAlpha),
+                  blurRadius: 14,
+                ),
+              ],
       ),
     );
 

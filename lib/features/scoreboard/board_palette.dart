@@ -17,6 +17,8 @@ class BoardPalette {
     required this.label,
     required this.loserVeil,
     required this.cardSurface,
+    required this.bannerSurface,
+    required this.bannerOutlined,
     required this.cardBorder,
     required this.cardShadow,
     required this.cardShadowBlur,
@@ -43,6 +45,11 @@ class BoardPalette {
     required this.halfWashEndStop,
     required this.darkenWinner,
     required this.backLabel,
+    required this.pillFillAlpha,
+    required this.pillBorderAlpha,
+    required this.chipFillAlpha,
+    required this.chipBorderAlpha,
+    required this.pillDotGlowAlpha,
   });
 
   /// Behind everything.
@@ -58,8 +65,21 @@ class BoardPalette {
   /// background veiling what is under it: light on light, dark on dark.
   final Color loserVeil;
 
-  /// The clock card and the winner banner.
+  /// The clock card: a faint panel the board shows through.
   final Color cardSurface;
+
+  /// The winner banner, which is not the clock card.
+  ///
+  /// They look alike in 3A and are nothing alike in the dark theme: the card has
+  /// always been translucent, and the banner has always been a solid backdrop.
+  /// Announcing who won is the one thing on this board a whole room reads at
+  /// once, and the fighter washes must not show through it.
+  final Color bannerSurface;
+
+  /// Whether the banner carries a border and a cast shadow. 3A asks for both;
+  /// the dark theme never had either.
+  final bool bannerOutlined;
+
   final Color cardBorder;
   final Color cardShadow;
   final double cardShadowBlur;
@@ -114,12 +134,32 @@ class BoardPalette {
   /// The back control, which sits over the wash rather than on a surface.
   final Color backLabel;
 
+  /// How strongly the status pill and the counter chips are filled and outlined.
+  ///
+  /// Tokenised alongside the colours because they are half of what makes a
+  /// palette: the same hue at a dark theme's opacity is a different thing on a
+  /// light surface. A single pair covers both counter chips — 3A puts advantages
+  /// at .12 and penalties at .10, a difference no eye resolves on `#F4F6FB`.
+  final double pillFillAlpha;
+  final double pillBorderAlpha;
+  final double chipFillAlpha;
+  final double chipBorderAlpha;
+
+  /// The blinking dot's halo.
+  ///
+  /// 3A's light pill has none: a full-strength blur under a saturated green on a
+  /// near-white surface reads as a smudge, and this is the one thing on the board
+  /// that moves, so it draws the eye straight to it.
+  final double pillDotGlowAlpha;
+
   static const dark = BoardPalette(
     background: Color(0xFF05070E),
     text: Colors.white,
     label: Color(0xFF5F6D8A),
     loserVeil: Color(0x9E05070E),
     cardSurface: Color(0x08FFFFFF),
+    bannerSurface: Color(0xB805070E),
+    bannerOutlined: false,
     cardBorder: Color(0x17FFFFFF),
     cardShadow: Color(0x73000000),
     cardShadowBlur: 60,
@@ -146,6 +186,11 @@ class BoardPalette {
     halfWashEndStop: .78,
     darkenWinner: false,
     backLabel: Color(0x99FFFFFF),
+    pillFillAlpha: .12,
+    pillBorderAlpha: .5,
+    chipFillAlpha: .14,
+    chipBorderAlpha: .5,
+    pillDotGlowAlpha: 1,
   );
 
   /// Design 3A.
@@ -157,6 +202,8 @@ class BoardPalette {
     // rather than shaded.
     loserVeil: Color(0xB8F4F6FB),
     cardSurface: Colors.white,
+    bannerSurface: Colors.white,
+    bannerOutlined: true,
     cardBorder: Color(0x1A0D1526),
     cardShadow: Color(0x240D1526),
     cardShadowBlur: 46,
@@ -188,17 +235,27 @@ class BoardPalette {
     halfWashEndStop: .80,
     darkenWinner: true,
     backLabel: Color(0x990D1526),
+    pillFillAlpha: .14,
+    pillBorderAlpha: .45,
+    chipFillAlpha: .12,
+    chipBorderAlpha: .42,
+    pillDotGlowAlpha: 0,
   );
 
   /// The palette for whichever theme the app is in.
   static BoardPalette of(BuildContext context) =>
       Theme.of(context).brightness == Brightness.light ? light : dark;
 
-  /// A fighter's colour, ready to carry text.
+  /// A **fighter's** colour, ready to carry text.
   ///
   /// 3A takes each channel to 72%, which is what makes a gi colour chosen to
   /// glow on black legible as a word on white. The dark theme returns it
   /// untouched: there, the colour the fighter picked is the point.
+  ///
+  /// Only for colours that arrive over the wire and cannot be trusted to be
+  /// legible. Anything this palette chose is already right for its theme, and
+  /// passing one through here darkens it a second time — which is how every
+  /// status pill but the final one came out darker than 3A specifies.
   Color readable(Color color) {
     if (!darkenWinner) return color;
     return Color.from(

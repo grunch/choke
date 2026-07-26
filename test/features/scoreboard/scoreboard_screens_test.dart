@@ -448,6 +448,50 @@ void main() {
       expect(BoardPalette.dark.loserVeil.r, BoardPalette.dark.background.r);
     });
 
+    test('the banner is not the clock card', () {
+      // Collapsing the two because 3A gives them the same white is what left the
+      // dark theme announcing its winner on a 3%-opaque panel, with the fighter
+      // washes showing straight through.
+      expect(
+        BoardPalette.dark.bannerSurface,
+        isNot(BoardPalette.dark.cardSurface),
+      );
+      expect(BoardPalette.dark.bannerSurface.a, greaterThan(0.6),
+          reason: 'opaque enough that the washes do not come through');
+      expect(BoardPalette.dark.cardSurface.a, lessThan(0.1),
+          reason: 'the card, by contrast, is meant to be seen through');
+      expect(BoardPalette.dark.bannerOutlined, isFalse,
+          reason: 'the dark banner never had a border or a shadow');
+      expect(BoardPalette.light.bannerOutlined, isTrue, reason: '3A asks for both');
+    });
+
+    test('preserves the dark surfaces it started from', () {
+      // The light-theme tests cannot see a dark-theme regression by
+      // construction, and that is exactly how the banner one got through.
+      expect(BoardPalette.dark.background, const Color(0xFF05070E));
+      expect(BoardPalette.dark.cardSurface, const Color(0x08FFFFFF));
+      expect(BoardPalette.dark.bannerSurface, const Color(0xB805070E));
+      expect(BoardPalette.dark.loserVeil, const Color(0x9E05070E));
+      expect(BoardPalette.dark.label, const Color(0xFF5F6D8A));
+      expect(BoardPalette.dark.vs, const Color(0x29FFFFFF));
+    });
+
+    test('carries the alphas, not just the colours', () {
+      // Porting the hues and leaving the dark theme's opacities is the
+      // difference between moving a palette and implementing a design.
+      expect(BoardPalette.light.pillFillAlpha, .14);
+      expect(BoardPalette.light.pillBorderAlpha, .45);
+      expect(BoardPalette.light.chipFillAlpha, .12);
+      expect(BoardPalette.light.chipBorderAlpha, .42);
+      expect(BoardPalette.dark.pillFillAlpha, .12);
+      expect(BoardPalette.dark.chipBorderAlpha, .5);
+    });
+
+    test('the blinking dot does not smudge a light board', () {
+      expect(BoardPalette.light.pillDotGlowAlpha, 0);
+      expect(BoardPalette.dark.pillDotGlowAlpha, greaterThan(0));
+    });
+
     test('glows less in daylight', () {
       // A glow is light in the dark and a shadow in daylight; the same alpha
       // cannot do both.
