@@ -287,5 +287,77 @@ void main() {
       expect(handled, isFalse);
       expect(find.text('a match detail'), findsOneWidget);
     });
+
+    testWidgets('does not tear a guarded screen away from the user',
+        (tester) async {
+      // A referee scoring a live match guards the control screen with a
+      // PopScope. popUntil ignores that — it calls pop, which is unconditional
+      // — so an incoming link used to remove the screen mid-fight with none of
+      // the confirmation the guard exists to require.
+      //
+      // Arrange
+      late WidgetRef ref;
+      final key = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(ProviderScope(
+        overrides: [navigatorKeyProvider.overrideWithValue(key)],
+        child: MaterialApp(
+          navigatorKey: key,
+          home: Consumer(builder: (context, r, _) {
+            ref = r;
+            return const Scaffold(body: Text('the board'));
+          }),
+        ),
+      ));
+
+      key.currentState!.push(MaterialPageRoute<void>(
+        builder: (_) => const PopScope(
+          canPop: false,
+          child: Scaffold(body: Text('a match in progress')),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Act
+      openShareLink(Uri.parse(liveBoardShareUrl('npub1fake')), crypto, ref);
+      await tester.pumpAndSettle();
+
+      // Assert — the board is selected, but the referee keeps their screen
+      expect(find.text('a match in progress'), findsOneWidget);
+      expect(ref.read(selectedTabProvider), AppTab.scoreboard);
+      expect(ref.read(watchedPubkeyProvider), _watched);
+    });
+
+    testWidgets('a link for the board already open leaves the stack alone',
+        (tester) async {
+      // Re-shares in a group chat are how this happens, and closing the match
+      // they had open to hand them back the same list reads as losing their
+      // place.
+      //
+      // Arrange
+      late WidgetRef ref;
+      final key = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(ProviderScope(
+        overrides: [navigatorKeyProvider.overrideWithValue(key)],
+        child: MaterialApp(
+          navigatorKey: key,
+          home: Consumer(builder: (context, r, _) {
+            ref = r;
+            return const Scaffold(body: Text('the board'));
+          }),
+        ),
+      ));
+      await ref.read(watchedPubkeyProvider.notifier).watch(_watched);
+      key.currentState!.push(MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(body: Text('a match detail')),
+      ));
+      await tester.pumpAndSettle();
+
+      // Act — the same board, again
+      openShareLink(Uri.parse(liveBoardShareUrl('npub1fake')), crypto, ref);
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('a match detail'), findsOneWidget);
+    });
   });
 }

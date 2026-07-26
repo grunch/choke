@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/scoreboard/providers/scoreboard_providers.dart';
@@ -70,9 +70,43 @@ bool openShareLink(Uri uri, NostrCrypto crypto, WidgetRef ref) {
   // organizer, would find its match missing and show "no longer available"
   // instead. Popping after the switch would let it render once against the new
   // organizer and flash exactly that.
-  ref.read(navigatorKeyProvider).currentState?.popUntil((r) => r.isFirst);
+  //
+  // Only when there is something to gain: a link for the board already being
+  // watched would otherwise close the match the user had open and hand them
+  // back the list, for no change at all. Re-shares in a group chat are how that
+  // happens, and it reads as the app losing their place.
+  if (ref.read(watchedPubkeyProvider) != hex) {
+    _clearStack(ref);
+  }
 
   ref.read(watchedPubkeyProvider.notifier).watch(hex);
   ref.read(selectedTabProvider.notifier).state = AppTab.scoreboard;
   return true;
+}
+
+/// Pop back to the board, stopping at any route that refuses to go.
+///
+/// A bare `popUntil` will not do: it calls `pop`, which is unconditional, and
+/// `MatchControlScreen` guards itself with a `PopScope` that only intercepts
+/// system back and `maybePop`. A referee scoring a live match would have the
+/// screen torn away by an incoming link, with none of the confirmation that
+/// guard exists to require — a worse outcome than the stale screen this change
+/// is about.
+///
+/// `maybePop` in a loop will not do either, and less obviously: it answers
+/// "was this request handled", and a guard saying *no* counts as handling it.
+/// The loop reads that as progress and spins forever.
+///
+/// So each route is asked what it would do, and the first refusal ends it. The
+/// link has still selected the board; it is simply behind a screen the user was
+/// told they must leave deliberately.
+void _clearStack(WidgetRef ref) {
+  final navigator = ref.read(navigatorKeyProvider).currentState;
+  if (navigator == null) return;
+
+  navigator.popUntil((route) {
+    if (route.isFirst) return true;
+    return route is ModalRoute &&
+        route.popDisposition != RoutePopDisposition.pop;
+  });
 }
