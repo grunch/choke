@@ -394,6 +394,15 @@ void main() {
       // Assert — the message, and none of the board behind it
       expect(find.text(l10n.scoreboardBrokenLinkTitle), findsOneWidget);
       expect(find.text('Buchecha'), findsNothing);
+
+      // …including the header, which would otherwise name the organizer the
+      // user was already watching one line above "that link is broken", and
+      // invite them to read that hex as the link's board
+      expect(
+        find.textContaining(_watched.substring(0, 8)),
+        findsNothing,
+        reason: 'the previous organizer must not be named here',
+      );
       expect(find.byType(TextField), findsNothing,
           reason: 'nothing to type into until they have read this');
       expect(find.byType(StatusFilterBar), findsNothing);

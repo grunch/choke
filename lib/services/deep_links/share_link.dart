@@ -63,8 +63,12 @@ class BrokenShareLink extends ShareLink {
 /// Never throws. What arrives here is whatever was tapped, which is not a
 /// trusted caller.
 ShareLink readShareLink(Uri uri, NostrCrypto crypto) {
-  // A relative route has no authority to check; an absolute one must be ours.
-  if (uri.hasAuthority && uri.host.toLowerCase() != kShareLinkHost) {
+  // The host has to be ours, and a URI with no authority does not have one to
+  // check — `/?npub=…` and `bjjscore.live/?npub=…` (no scheme) both parse with
+  // an empty host. Letting those through used to be harmless, because an
+  // unreadable pubkey simply did nothing; now it puts an accusing full-screen
+  // message in front of somebody over a link they never followed.
+  if (uri.host.toLowerCase() != kShareLinkHost) {
     return const NotAShareLink();
   }
 
@@ -101,7 +105,7 @@ bool openShareLink(Uri uri, NostrCrypto crypto, WidgetRef ref) {
     case NotAShareLink():
       // Nothing to say. This is also the ordinary launch route, and an app that
       // complained about that would complain every time it opened.
-      _logIgnored(uri);
+      _log(uri, 'ignoring');
       return false;
 
     case SharedBoard(:final pubkeyHex):
@@ -115,7 +119,7 @@ bool openShareLink(Uri uri, NostrCrypto crypto, WidgetRef ref) {
       // throwing it away would punish them for somebody else's bad link — but
       // the board stays behind the message until they choose to go back to it.
       // What must not happen is that board appearing as though the link worked.
-      _logIgnored(uri);
+      _log(uri, 'reporting as broken');
       ref.read(brokenShareLinkProvider.notifier).state = true;
       ref.read(selectedTabProvider.notifier).state = AppTab.scoreboard;
       return true;
@@ -126,11 +130,14 @@ bool openShareLink(Uri uri, NostrCrypto crypto, WidgetRef ref) {
 ///
 /// A user who pastes their nsec into one of these is correctly rejected by the
 /// parser — and must not have it written to the device log on the way out.
-void _logIgnored(Uri uri) {
+///
+/// [what] names the decision, because "ignoring" and "showing the user an
+/// error" read identically in a support report otherwise.
+void _log(Uri uri, String what) {
   final named =
       kSharePubkeyParams.where(uri.queryParameters.containsKey).join(',');
   debugPrint(
-    'DeepLink: ignoring a link for ${uri.host.isEmpty ? '(no host)' : uri.host}'
+    'DeepLink: $what a link for ${uri.host.isEmpty ? '(no host)' : uri.host}'
     '${named.isEmpty ? ' with no pubkey parameter' : ' whose $named did not parse'}',
   );
 }

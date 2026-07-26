@@ -132,7 +132,12 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
                           ),
                         ),
                         Text(
-                          watched == null
+                          // Not the watched pubkey while a broken link is
+                          // showing: naming an organizer one line above "that
+                          // link is broken" invites the reader to take this hex
+                          // for the link's board, which is the substitution the
+                          // whole state exists to prevent.
+                          brokenLink || watched == null
                               ? l10n.scoreboardWelcomeTitle
                               : _shortPubkey(watched),
                           style: TextStyle(fontSize: 12.5, color: tk.muted),

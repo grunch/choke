@@ -81,6 +81,24 @@ void main() {
       );
     });
 
+    test('a URI with no host is never ours, pubkey or not', () {
+      // `/?npub=x` and a scheme-less `bjjscore.live/?npub=x` both parse with an
+      // empty host. Treating them as ours put a full-screen "that link is
+      // broken" in front of somebody over a route they never followed.
+      for (final raw in [
+        '/?npub=nonsense',
+        'bjjscore.live/?npub=nonsense',
+        '/?npub=npub1fake',
+        '/',
+      ]) {
+        expect(
+          readShareLink(Uri.parse(raw), crypto),
+          isA<NotAShareLink>(),
+          reason: raw,
+        );
+      }
+    });
+
     test('tells a broken key apart from no key at all', () {
       // The whole point of the three cases: one of these named a board and
       // failed, the others never named one.
