@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:choke/services/audio/match_sounds.dart';
@@ -34,6 +33,8 @@ int _le(List<int> bytes, int offset, int length) {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('SilentMatchSounds', () {
     test('answers every cue without complaint', () {
       const silent = SilentMatchSounds();
@@ -105,19 +106,23 @@ void main() {
   });
 
   group('matchSoundsProvider', () {
-    test('follows the preference without rebuilding the players', () {
-      final container = ProviderContainer();
+    test('follows the preference without rebuilding the players', () async {
+      final player = _RecordingSounds();
+      final container = ProviderContainer(
+        overrides: [matchSoundsPlayerProvider.overrideWithValue(player)],
+      );
       addTearDown(container.dispose);
 
-      final sounds =
-          container.read(matchSoundsProvider) as SwitchableMatchSounds;
-      expect(sounds.enabled, isTrue, reason: 'on by default');
+      final sounds = container.read(matchSoundsProvider);
 
+      await sounds.playStart();
       container.read(matchSoundEnabledProvider.notifier).state = false;
-      expect(sounds.enabled, isFalse);
-
+      await sounds.playEnd();
       container.read(matchSoundEnabledProvider.notifier).state = true;
-      expect(sounds.enabled, isTrue);
+      await sounds.playEnd();
+
+      // On by default, muted in between, audible again after.
+      expect(player.played, ['start', 'end']);
 
       // Same instance throughout: watching the preference instead of listening
       // to it would tear down the prepared players on every toggle.
@@ -135,26 +140,24 @@ void main() {
       'end horn': AudioPlayerMatchSounds.endAsset,
     }.entries) {
       test('the ${entry.key} is a playable WAV that Flutter bundles', () async {
-        final file = File('assets/${entry.value}');
-        expect(file.existsSync(), isTrue, reason: '${file.path} is missing');
+        // Loaded through rootBundle rather than dart:io, because that is the
+        // path the app itself takes: it resolves against the asset manifest
+        // Flutter actually builds, so a file sitting on disk undeclared — or
+        // declared inside a comment — fails here exactly as it would on a
+        // device. Reading the file directly would call that a pass.
+        final bytes = (await rootBundle.load('assets/${entry.value}'))
+            .buffer
+            .asUint8List();
 
-        final header = await file.openRead(0, 44).first;
-        expect(String.fromCharCodes(header.sublist(0, 4)), 'RIFF');
-        expect(String.fromCharCodes(header.sublist(8, 12)), 'WAVE');
-        expect(_le(header, 20, 2), 1, reason: 'uncompressed PCM');
-        expect(_le(header, 24, 4), 44100, reason: 'sample rate');
-        expect(_le(header, 34, 2), 16, reason: 'bit depth');
+        expect(String.fromCharCodes(bytes.sublist(0, 4)), 'RIFF');
+        expect(String.fromCharCodes(bytes.sublist(8, 12)), 'WAVE');
+        expect(_le(bytes, 20, 2), 1, reason: 'uncompressed PCM');
+        expect(_le(bytes, 24, 4), 44100, reason: 'sample rate');
+        expect(_le(bytes, 34, 2), 16, reason: 'bit depth');
 
         // A cue nobody hears the whole of is no cue at all, and one that
         // outlasts the moment it marks is in the way. Both sit near 1.5 s.
-        final seconds = file.lengthSync() / (44100 * 2);
-        expect(seconds, inInclusiveRange(0.5, 3.0));
-
-        expect(
-          File('pubspec.yaml').readAsStringSync(),
-          contains('assets/${entry.value}'),
-          reason: 'an asset Flutter does not bundle cannot be played',
-        );
+        expect(bytes.lengthInBytes / (44100 * 2), inInclusiveRange(0.5, 3.0));
       });
     }
   });

@@ -125,7 +125,8 @@ sudo apt install lld libstdc++-14-dev
 sudo apt install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 ```
 
-Those last two are the ones people hit, because a stock install has neither:
+`lld` and `libstdc++-14-dev` are the ones people hit, because a stock install
+has neither:
 
 | Symptom | Cause | Fix |
 |---|---|---|
@@ -236,9 +237,9 @@ to know which one just fired.
 
 Both are **synthesized from scratch**, not sampled. `tool/generate_match_sounds.py`
 builds them with additive synthesis using nothing but the Python standard
-library, which means the audio Choke ships is an original work under the
-project's own licence, with no third-party rights attached and no attribution
-owed to anyone. Regenerate or retune them with:
+library — no recordings, no sample packs, nothing downloaded — so the audio
+ships under the project's own licence like the rest of the source, and there was
+no sound library to go shopping in. Regenerate or retune them with:
 
 ```bash
 python3 tool/generate_match_sounds.py

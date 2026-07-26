@@ -209,14 +209,21 @@ class AudioPlayerMatchSounds implements MatchSounds {
   }
 }
 
-/// The app-wide match cues, gated by the user's preference.
+/// The players themselves, behind their own provider so that a test can swap
+/// them out without losing the switch wiring in [matchSoundsProvider].
 ///
-/// Deliberately not scoped to a single match: the players are prepared once and
-/// reused for every match the referee runs, so only the first one of the day
-/// pays to decode the assets.
+/// Deliberately not scoped to a single match: they are prepared once and reused
+/// for every match the referee runs, so only the first one of the day pays to
+/// decode the assets.
+final matchSoundsPlayerProvider = Provider<MatchSounds>((ref) {
+  final player = AudioPlayerMatchSounds();
+  ref.onDispose(player.dispose);
+  return player;
+});
+
+/// The app-wide match cues, gated by the user's preference.
 final matchSoundsProvider = Provider<MatchSounds>((ref) {
-  final sounds = SwitchableMatchSounds(AudioPlayerMatchSounds());
-  ref.onDispose(sounds.dispose);
+  final sounds = SwitchableMatchSounds(ref.watch(matchSoundsPlayerProvider));
 
   // The preference is pushed in rather than watched: watching would rebuild
   // this provider on every toggle, and with it the prepared players — silently
