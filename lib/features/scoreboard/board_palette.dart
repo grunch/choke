@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../shared/theme/app_theme.dart';
+
 /// The colours the full-screen board is painted in.
 ///
 /// Two of them. The board is not a normal screen that can take the app's theme
@@ -10,6 +12,19 @@ import 'package:flutter/material.dart';
 /// [dark] is the original, which follows choke-scoreboard. [light] is design 3A
 /// — the same structure and the same animations on a light surface, with the
 /// athlete's colour carrying the accent instead of glowing in the dark.
+///
+/// ## Why these values are here and not in `BJJColors`
+///
+/// This is the board's token file, and a token file is where colour literals
+/// live — what the project's rule forbids is literals at the call sites, and
+/// after this there are none: the screen names tokens only.
+///
+/// Nineteen of the twenty-one values below exist nowhere else in the app. They
+/// are choke-scoreboard's and 3A's — `#F4F6FB`, `#0D1526`, `#68758F`, two extra
+/// greens for one pill — and moving them into `BJJColors` would turn the brand
+/// palette into a list of every colour anywhere, which is the opposite of what
+/// naming them is for. The two that *did* already exist are referenced from
+/// there instead of repeated.
 class BoardPalette {
   const BoardPalette({
     required this.background,
@@ -174,7 +189,9 @@ class BoardPalette {
     liveText: Color(0xFF2EE08A),
     liveSurface: Color(0xFF2EE08A),
     waiting: Color(0xFF8A97B2),
-    paused: Color(0xFFF5B800),
+    // The app's own gold, referenced rather than repeated: two names for one
+    // colour is two places to change it and one of them will be missed.
+    paused: BJJColors.gold,
     canceled: Color(0xFFF87171),
     neutralWinner: Colors.white,
     edgeGlowAlpha: .6,
