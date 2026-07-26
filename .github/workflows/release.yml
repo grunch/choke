@@ -9,7 +9,88 @@ permissions:
   contents: write
 
 jobs:
+  # Windows cannot be cross-compiled from the Linux runner — flutter build
+  # windows needs MSVC — so it builds on its own runner and hands the archive
+  # to the release job as an artifact.
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same validation as the release job, and not negotiable here either: the
+      # tag flows into file names and shell, and a Windows runner is no more
+      # entitled to trust a ref than a Linux one.
+      - name: Extract version from tag
+        id: version
+        shell: bash
+        run: |
+          FULL_TAG=${GITHUB_REF#refs/tags/}
+          if ! printf '%s' "$FULL_TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Refusing to build: tag '$FULL_TAG' is not a plain vX.Y.Z tag."
+            exit 1
+          fi
+          echo "full_tag=$FULL_TAG" >> $GITHUB_OUTPUT
+
+      # Cargokit compiles the Nostr crate during flutter build windows; the
+      # channel comes from rust-toolchain.toml and the host target
+      # (x86_64-pc-windows-msvc) is implicit. MSVC itself ships on the runner.
+      - name: Setup Rust
+        run: rustup show
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            rust/target
+          key: cargo-release-${{ runner.os }}-${{ hashFiles('rust/Cargo.lock') }}
+          restore-keys: cargo-release-${{ runner.os }}-
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      - name: Build Windows bundle
+        shell: bash
+        env:
+          FULL_TAG: ${{ steps.version.outputs.full_tag }}
+        run: |
+          flutter config --enable-windows-desktop
+          flutter build windows --release
+
+      # Wrapped in a versioned top-level directory for the same reason the
+      # Linux tarball is: extraction yields one folder, not a spray of DLLs
+      # into whatever directory the user happened to be in.
+      - name: Package Windows bundle
+        shell: pwsh
+        env:
+          FULL_TAG: ${{ steps.version.outputs.full_tag }}
+        run: |
+          $dir = "choke-$env:FULL_TAG-windows-x64"
+          Move-Item build/windows/x64/runner/Release $dir
+          Compress-Archive -Path $dir -DestinationPath "$dir.zip"
+
+      - name: Upload Windows bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-bundle
+          path: choke-${{ steps.version.outputs.full_tag }}-windows-x64.zip
+          if-no-files-found: error
+          retention-days: 1
+
   build-and-release:
+    # The release attaches the Windows archive, so it has to exist first. This
+    # also makes the release all-or-nothing: a broken Windows build fails the
+    # whole release rather than quietly shipping one without it.
+    needs: build-windows
     runs-on: ubuntu-latest
     # Exposes "is the Play service-account secret configured?" to step-level
     # `if:`, since the secrets context can't be read directly there. Lets the
@@ -369,11 +450,18 @@ jobs:
             echo '```'
             echo "Requires \`libgtk-3\` and \`libsecret-1\` at runtime (preinstalled on most desktops)."
             echo ""
+            echo "**Windows (x64):** download \`choke-${TAG}-windows-x64.zip\`, extract, and run \`choke.exe\` inside the folder."
+            echo ""
             echo "### 📋 Full Changelog"
             echo "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for the complete history."
           } > RELEASE_BODY.md
 
           cat RELEASE_BODY.md
+
+      - name: Download Windows bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-bundle
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -383,6 +471,7 @@ jobs:
             choke-${{ steps.version.outputs.full_tag }}.apk
             choke-${{ steps.version.outputs.full_tag }}.aab
             choke-${{ steps.version.outputs.full_tag }}-linux-x64.tar.gz
+            choke-${{ steps.version.outputs.full_tag }}-windows-x64.zip
           generate_release_notes: false
           draft: false
           prerelease: false
