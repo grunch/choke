@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
+import '../../services/wakelock/screen_wakelock.dart';
 import '../../shared/theme/app_theme.dart';
 import 'models/match.dart';
 import 'providers/match_control_provider.dart';
@@ -42,6 +45,10 @@ class MatchControlScreen extends ConsumerStatefulWidget {
 }
 
 class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
+  /// Held onto from [initState] because [dispose] runs once `ref` is no longer
+  /// usable, and releasing the screen is the one thing that must still happen.
+  late final ScreenWakelock _wakelock;
+
   @override
   void initState() {
     super.initState();
@@ -49,6 +56,9 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
+
+    _wakelock = ref.read(screenWakelockProvider);
+    _syncWakelock(ref.read(matchControlProvider));
 
     // A match whose clock expired while the app was closed arrives here already
     // waiting: the notifier settles that in its constructor, before this widget
@@ -65,7 +75,19 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
   @override
   void dispose() {
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    unawaited(_wakelock.keepAwake(false));
     super.dispose();
+  }
+
+  /// Keep the screen on for as long as this match could still be scored.
+  ///
+  /// A fight can go a minute with nothing to award, which is longer than most
+  /// phones wait before locking — and a referee should never have to unlock a
+  /// phone to score the takedown that ends it. A decided match releases the
+  /// screen again, so the result can sit on the scorer's table without holding
+  /// the display on.
+  void _syncWakelock(MatchControlState state) {
+    unawaited(_wakelock.keepAwake(!state.isFinished));
   }
 
   /// Guards against re-opening the sheet on every rebuild while it is already
@@ -114,6 +136,13 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
     ref.listen(matchControlProvider, (previous, next) {
       if (next.awaitsOutcome && !(previous?.awaitsOutcome ?? false)) {
         WidgetsBinding.instance.addPostFrameCallback((_) => _askOutcome(next));
+      }
+
+      // Only when the match crosses into (or back out of) being decided. The
+      // clock ticks this listener every second, and the hold does not change
+      // with the clock.
+      if (next.isFinished != (previous?.isFinished ?? false)) {
+        _syncWakelock(next);
       }
     });
     final match = state.match;

@@ -24,6 +24,11 @@ dependencies:
   # Match clock cues (start bell, end horn)
   audioplayers: ^6.5.0
 
+  # Keeps the screen on while a match is being scored. Held below 1.4.0 on
+  # purpose: from there it wants win32 ^6, which share_plus 10 pins to ^5 — so
+  # 1.4.0+ cannot resolve until share_plus is upgraded.
+  wakelock_plus: ^1.3.3
+
   # State Management
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.6.1
