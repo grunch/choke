@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 
+import '../../services/deep_links/share_link.dart';
 import '../../services/nostr/crypto/nostr_crypto.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/match_card.dart';
@@ -77,6 +78,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final tk = ChokeTokens.of(context);
+    final brokenLink = ref.watch(brokenShareLinkProvider);
     final watched = ref.watch(watchedPubkeyProvider);
     // Two lists: everything in scope, which the chips count from, and what
     // survives the filter, which is what the list shows.
@@ -130,7 +132,12 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
                           ),
                         ),
                         Text(
-                          watched == null
+                          // Not the watched pubkey while a broken link is
+                          // showing: naming an organizer one line above "that
+                          // link is broken" invites the reader to take this hex
+                          // for the link's board, which is the substitution the
+                          // whole state exists to prevent.
+                          brokenLink || watched == null
                               ? l10n.scoreboardWelcomeTitle
                               : _shortPubkey(watched),
                           style: TextStyle(fontSize: 12.5, color: tk.muted),
@@ -142,11 +149,12 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-              child: _buildPubkeyField(l10n, tk, watched),
-            ),
-            if (watched != null)
+            if (!brokenLink)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                child: _buildPubkeyField(l10n, tk, watched),
+              ),
+            if (watched != null && !brokenLink)
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
                 child: StatusFilterBar(
@@ -156,9 +164,12 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
                 ),
               ),
             Expanded(
-              child: switch ((watched, matches.isEmpty)) {
-                (null, _) => _buildWelcome(l10n, tk),
-                (_, true) => _buildEmpty(l10n, tk),
+              child: switch ((brokenLink, watched, matches.isEmpty)) {
+                // A link that named a board and could not be read outranks
+                // everything: whatever is behind this is not what was tapped.
+                (true, _, _) => _buildBrokenLink(l10n, tk),
+                (_, null, _) => _buildWelcome(l10n, tk),
+                (_, _, true) => _buildEmpty(l10n, tk),
                 _ => _buildList(matches),
               },
             ),
@@ -248,6 +259,28 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
     );
   }
 
+  /// The link named a board and its pubkey could not be read.
+  ///
+  /// Deliberately not a snackbar: a message that disappears on its own, over a
+  /// board belonging to somebody else, is the same silent substitution this
+  /// screen exists to avoid. The user dismisses it, so the app knows they know.
+  Widget _buildBrokenLink(AppLocalizations l10n, ChokeTokens tk) {
+    return _buildPlaceholder(
+      tk,
+      icon: Icons.link_off,
+      title: l10n.scoreboardBrokenLinkTitle,
+      body: l10n.scoreboardBrokenLinkBody,
+      // The one state here that is a failure rather than an absence, and the
+      // only one the user has to act on.
+      accent: tk.dangerFg,
+      action: FilledButton(
+        onPressed: () =>
+            ref.read(brokenShareLinkProvider.notifier).state = false,
+        child: Text(l10n.scoreboardBrokenLinkDismiss),
+      ),
+    );
+  }
+
   Widget _buildWelcome(AppLocalizations l10n, ChokeTokens tk) {
     return _buildPlaceholder(
       tk,
@@ -266,11 +299,19 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
     );
   }
 
+  /// The shape every "there is no list here" state takes: an icon, a line, and
+  /// an explanation.
+  ///
+  /// [accent] tints the icon and the title for a state that is a failure rather
+  /// than an absence; without it they stay quiet, which is right for waiting and
+  /// for having nothing to show yet. [action] appends something to do about it.
   Widget _buildPlaceholder(
     ChokeTokens tk, {
     required IconData icon,
     required String title,
     required String body,
+    Color? accent,
+    Widget? action,
   }) {
     return Center(
       child: Padding(
@@ -278,7 +319,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 44, color: tk.faint),
+            Icon(icon, size: 44, color: accent ?? tk.faint),
             const SizedBox(height: 14),
             Text(
               title,
@@ -286,7 +327,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                color: tk.muted,
+                color: accent ?? tk.muted,
               ),
             ),
             const SizedBox(height: 6),
@@ -295,6 +336,10 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: tk.faint),
             ),
+            if (action != null) ...[
+              const SizedBox(height: 18),
+              action,
+            ],
           ],
         ),
       ),

@@ -695,4 +695,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String scoreboardPointsShort(int points) {
     return '$points PTS';
   }
+
+  @override
+  String get scoreboardBrokenLinkTitle => 'That link is broken';
+
+  @override
+  String get scoreboardBrokenLinkBody =>
+      'It was meant for a specific board, but the pubkey in it could not be read. Ask whoever shared it to send it again.';
+
+  @override
+  String get scoreboardBrokenLinkDismiss => 'Show my board';
 }

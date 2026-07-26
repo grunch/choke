@@ -142,9 +142,13 @@ class ScoreboardFeedNotifier extends StateNotifier<List<Match>> {
     return '$_idPrefix$short';
   }
 
-  /// Newest event seen per match, so a relay replaying an older revision of an
-  /// addressable event cannot undo a newer one.
-  final Map<String, int> _createdAt = {};
+  /// The event held per match: when it was created, and its id.
+  ///
+  /// The id is here for the tie — two revisions of one match can share a second,
+  /// and NIP-01 settles that by id, not by which relay was quicker. Without it
+  /// this feed accepted whichever arrived last while the service kept whichever
+  /// arrived first, so the two could disagree about the same match.
+  final Map<String, ({int createdAt, String id})> _held = {};
 
   void _onEvent(NostrEvent event) {
     if (event.kind != 31415) return;
@@ -156,16 +160,24 @@ class ScoreboardFeedNotifier extends StateNotifier<List<Match>> {
     if (event.pubkey != _pubkey) return;
 
     try {
-      _upsert(Match.fromNostrEvent(event), event.createdAt);
+      _upsert(Match.fromNostrEvent(event), event.createdAt, event.id);
     } catch (e) {
       debugPrint('Scoreboard: failed to parse event: $e');
     }
   }
 
-  void _upsert(Match match, int createdAt) {
-    final seen = _createdAt[match.id];
-    if (seen != null && createdAt < seen) return;
-    _createdAt[match.id] = createdAt;
+  void _upsert(Match match, int createdAt, String eventId) {
+    final held = _held[match.id];
+    if (held != null &&
+        !addressableSupersedes(
+          arrivingCreatedAt: createdAt,
+          arrivingId: eventId,
+          heldCreatedAt: held.createdAt,
+          heldId: held.id,
+        )) {
+      return;
+    }
+    _held[match.id] = (createdAt: createdAt, id: eventId);
 
     final index = state.indexWhere((m) => m.id == match.id);
     if (index >= 0) {
@@ -178,7 +190,7 @@ class ScoreboardFeedNotifier extends StateNotifier<List<Match>> {
   }
 
   /// When the event carrying [matchId] was published, or null if unseen.
-  int? createdAtOf(String matchId) => _createdAt[matchId];
+  int? createdAtOf(String matchId) => _held[matchId]?.createdAt;
 
   @override
   void dispose() {

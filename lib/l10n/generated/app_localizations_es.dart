@@ -700,4 +700,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String scoreboardPointsShort(int points) {
     return '$points PTS';
   }
+
+  @override
+  String get scoreboardBrokenLinkTitle => 'Ese link está roto';
+
+  @override
+  String get scoreboardBrokenLinkBody =>
+      'Apuntaba a un tablero en particular, pero no se pudo leer la clave pública que traía. Pedile a quien te lo compartió que te lo mande de nuevo.';
+
+  @override
+  String get scoreboardBrokenLinkDismiss => 'Ver mi tablero';
 }
