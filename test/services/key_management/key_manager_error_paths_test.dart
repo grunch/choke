@@ -28,6 +28,9 @@ class _ThrowingCrypto implements NostrCrypto {
   String? nsecDecode(String nsec) => 'a' * 64;
 
   @override
+  String? npubDecode(String npub) => 'a' * 64;
+
+  @override
   NostrEvent finishEvent(UnsignedNostrEvent event, String privateKeyHex) =>
       throw UnimplementedError();
 

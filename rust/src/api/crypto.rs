@@ -75,6 +75,22 @@ pub fn nsec_decode(nsec: String) -> Option<String> {
         .map(|secret_key| secret_key.to_secret_hex())
 }
 
+/// The hex public key inside `npub`, or `None` if it is not a valid npub.
+///
+/// `None` rather than an error, for the same reason as `nsec_decode`: an npub is
+/// something a user pastes, and getting it wrong is not a bug.
+///
+/// Strictly bech32 — a bare hex key is *not* accepted here. Callers that take
+/// either form decide which one they were handed before calling, because the two
+/// cannot be told apart afterwards: any 64 hex characters parse as a public key,
+/// including a private one.
+#[flutter_rust_bridge::frb(sync)]
+pub fn npub_decode(npub: String) -> Option<String> {
+    PublicKey::from_bech32(&npub)
+        .ok()
+        .map(|public_key| public_key.to_hex())
+}
+
 /// Compute `event`'s id and sign it with `secret_hex`.
 #[flutter_rust_bridge::frb(sync)]
 pub fn finish_event(

@@ -33,6 +33,9 @@ class RustNostrCrypto implements NostrCrypto {
   String? nsecDecode(String nsec) => rust.nsecDecode(nsec: nsec);
 
   @override
+  String? npubDecode(String npub) => rust.npubDecode(npub: npub);
+
+  @override
   NostrEvent finishEvent(UnsignedNostrEvent event, String privateKeyHex) {
     final signed = rust.finishEvent(
       event: rust.UnsignedEventData(
