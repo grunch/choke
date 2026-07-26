@@ -24,7 +24,35 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <!-- Shared board links open the app instead of the browser.
+                 A link someone shares from Account is a plain
+                 https://bjjscore.live/?npub=... URL, so it stays useful to
+                 people who do not have the app: they get the web board, which
+                 is the behaviour this replaces only for those who do.
+
+                 android:autoVerify makes Android check
+                 https://bjjscore.live/.well-known/assetlinks.json for this
+                 package and signing certificate at install time. WITHOUT that
+                 file being served, Android 12+ will NOT open the app for these
+                 links — it falls back to the browser and the user has to enable
+                 the link manually in system settings. See
+                 docs/deep-links.md. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="bjjscore.live"/>
+            </intent-filter>
         </activity>
+
+        <!-- Hand the incoming link to the framework rather than only launching
+             the activity, which is what makes it reach the Dart side as route
+             information (WidgetsBindingObserver.didPushRouteInformation, and
+             platformDispatcher.defaultRouteName on a cold start). -->
+        <meta-data
+            android:name="flutter_deeplinking_enabled"
+            android:value="true" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
