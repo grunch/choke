@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:choke/services/wakelock/screen_wakelock.dart';
 
@@ -5,12 +7,27 @@ import 'package:choke/services/wakelock/screen_wakelock.dart';
 class _RecordingToggle {
   final List<bool> calls = [];
 
-  /// Set to make the platform refuse, the way an unregistered plugin does.
+  /// Set to make the platform refuse, the way a plugin that has no foreground
+  /// activity does.
   Object? error;
 
-  Future<void> call({required bool enable}) async {
+  /// Set to make the platform never answer, which is what a method channel with
+  /// nothing on the far end does — it does not fail, it simply never replies.
+  bool hang = false;
+
+  /// Completes when [calls] has reached [count], so a test can wait for a
+  /// request to arrive without waiting on one that never comes back.
+  Future<void> untilCalled(int count) async {
+    while (calls.length < count) {
+      await Future<void>.delayed(Duration.zero);
+    }
+  }
+
+  Future<void> call({required bool enable}) {
     calls.add(enable);
-    if (error != null) throw error!;
+    if (hang) return Completer<void>().future;
+    if (error != null) return Future.error(error!);
+    return Future.value();
   }
 }
 
@@ -101,6 +118,58 @@ void main() {
 
       // Assert
       expect(toggle.calls, [true, true]);
+    });
+
+    test('gives up on a platform that never answers', () async {
+      // Arrange: a method channel with nothing on the far end never replies.
+      final toggle = _RecordingToggle()..hang = true;
+      final wakelock = PlatformScreenWakelock(
+        toggle: toggle.call,
+        timeout: const Duration(milliseconds: 20),
+      );
+
+      // Act + Assert: the request comes back rather than hanging forever
+      await expectLater(wakelock.keepAwake(true), completes);
+    });
+
+    test('a request that never answered does not wedge the next one', () async {
+      // Arrange: the first attempt hangs and times out
+      final toggle = _RecordingToggle()..hang = true;
+      final wakelock = PlatformScreenWakelock(
+        toggle: toggle.call,
+        timeout: const Duration(milliseconds: 20),
+      );
+      await wakelock.keepAwake(true);
+      expect(toggle.calls, [true], reason: 'the first attempt was made');
+      toggle.hang = false;
+
+      // Act: ask again, the way the running clock does every second
+      await wakelock.keepAwake(true);
+
+      // Assert: the screen is held after all. Serialising requests behind the
+      // dead one would have left the wakelock useless for the whole session.
+      expect(toggle.calls, [true, true]);
+    });
+
+    test('does not stack up work while the platform is answering slowly',
+        () async {
+      // Arrange: one call in flight, going nowhere for now
+      final toggle = _RecordingToggle()..hang = true;
+      final wakelock = PlatformScreenWakelock(
+        toggle: toggle.call,
+        timeout: const Duration(milliseconds: 20),
+      );
+      wakelock.keepAwake(true);
+      await toggle.untilCalled(1);
+
+      // Act: a running clock asks 30 more times while that one is still out
+      for (var i = 0; i < 30; i++) {
+        wakelock.keepAwake(true);
+      }
+
+      // Assert: 30 more requests did not become 30 more platform calls queued
+      // behind a call that has not come back.
+      expect(toggle.calls, hasLength(1));
     });
 
     test('applies rapid opposite requests in the order they were made',

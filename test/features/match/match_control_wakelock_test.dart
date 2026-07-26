@@ -29,6 +29,11 @@ class _FakeNostrService extends NostrService {
 }
 
 /// Records what the screen asked of the platform, in order.
+///
+/// Every request is kept, including repeats. Deduplicating here — which is what
+/// the real implementation does internally — would hide the screen's actual
+/// behaviour behind the fake and make "it was never asked twice" impossible to
+/// observe, so that guarantee is tested against the service instead.
 class _RecordingWakelock implements ScreenWakelock {
   final List<bool> requests = [];
 
@@ -37,10 +42,7 @@ class _RecordingWakelock implements ScreenWakelock {
   bool? get held => requests.isEmpty ? null : requests.last;
 
   @override
-  Future<void> keepAwake(bool on) async {
-    if (requests.isNotEmpty && requests.last == on) return;
-    requests.add(on);
-  }
+  Future<void> keepAwake(bool on) async => requests.add(on);
 }
 
 Match _runningMatch() => Match(
@@ -105,9 +107,24 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
     }
 
-    // Assert: still held, and never asked for twice
+    // Assert: never once asked to let the screen go, which is the whole point
     expect(wakelock.held, isTrue);
-    expect(wakelock.requests, [true]);
+    expect(wakelock.requests, everyElement(isTrue));
+  });
+
+  testWidgets('re-asserts the hold as the clock ticks, so a dropped request '
+      'gets made again', (tester) async {
+    // Arrange
+    await pumpScreen(tester, _runningMatch());
+    final atStart = wakelock.requests.length;
+
+    // Act
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+
+    // Assert: the screen keeps asking rather than assuming the first one landed
+    // — a platform that refused the hold gets another chance every second.
+    expect(wakelock.requests.length, greaterThan(atStart));
   });
 
   testWidgets('holds it while the clock is paused', (tester) async {
@@ -135,7 +152,6 @@ void main() {
 
     // Assert: the result can sit on the table without draining the battery
     expect(wakelock.held, isFalse);
-    expect(wakelock.requests, [true, false]);
   });
 
   testWidgets('lets it sleep when the referee leaves the screen',
@@ -164,7 +180,8 @@ void main() {
       ),
     );
 
-    // Assert
+    // Assert: never asked for a hold at all, not even once
+    expect(wakelock.requests, everyElement(isFalse));
     expect(wakelock.held, isNot(isTrue));
   });
 }

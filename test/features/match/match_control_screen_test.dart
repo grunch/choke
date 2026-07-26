@@ -9,6 +9,7 @@ import 'package:choke/features/match/providers/match_control_provider.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import 'package:choke/services/key_management/key_manager.dart';
 import 'package:choke/services/nostr/nostr_service.dart';
+import 'package:choke/services/wakelock/screen_wakelock.dart';
 import 'package:choke/shared/theme/app_theme.dart';
 
 import '../../support/nostr_fakes.dart';
@@ -71,6 +72,9 @@ void main() {
       ProviderScope(
         overrides: [
           matchControlProvider.overrideWith((ref) => notifier),
+          // The real one talks to a method channel that nothing answers in a
+          // test, leaving a call pending for as long as the process lives.
+          screenWakelockProvider.overrideWithValue(const NoopScreenWakelock()),
         ],
         child: MaterialApp(
           theme: AppTheme.darkTheme,

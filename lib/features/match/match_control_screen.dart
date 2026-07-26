@@ -138,12 +138,14 @@ class _MatchControlScreenState extends ConsumerState<MatchControlScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) => _askOutcome(next));
       }
 
-      // Only when the match crosses into (or back out of) being decided. The
-      // clock ticks this listener every second, and the hold does not change
-      // with the clock.
-      if (next.isFinished != (previous?.isFinished ?? false)) {
-        _syncWakelock(next);
-      }
+      // Re-asserted on every change, not just when the match is decided. The
+      // clock ticks this listener once a second, and that is what turns a
+      // request the platform dropped into one that gets made again — asking
+      // only at the two moments the answer changes would mean a hold that
+      // failed on the way in stayed failed for the whole match. Repeats cost
+      // nothing: the service only reaches for the platform when the state it
+      // has differs from the state asked for.
+      _syncWakelock(next);
     });
     final match = state.match;
     final colors = Theme.of(context).colorScheme;

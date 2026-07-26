@@ -11,6 +11,7 @@ import 'package:choke/features/match/providers/match_control_provider.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import 'package:choke/services/key_management/key_manager.dart';
 import 'package:choke/services/nostr/nostr_service.dart';
+import 'package:choke/services/wakelock/screen_wakelock.dart';
 import 'package:choke/shared/theme/app_theme.dart';
 
 import '../../support/nostr_fakes.dart';
@@ -90,6 +91,9 @@ void main() {
             service,
           ),
         ),
+        // Tapping through to the control screen would otherwise reach a real
+        // method channel that nothing answers in a test.
+        screenWakelockProvider.overrideWithValue(const NoopScreenWakelock()),
       ],
     );
   });
@@ -313,6 +317,7 @@ void main() {
           matchControlProvider.overrideWith(
             (ref) => MatchControlNotifier(match, service),
           ),
+          screenWakelockProvider.overrideWithValue(const NoopScreenWakelock()),
         ],
         child: MaterialApp(
           theme: AppTheme.darkTheme,
