@@ -81,10 +81,19 @@ jobs:
       # Recorded so the release job can install the same version. Two
       # independent "stable" resolutions can disagree when a Flutter release
       # lands between them, and one app release must not ship two frameworks.
+      #
+      # The bare `flutter --version` first is load-bearing. The first flutter
+      # invocation on a fresh runner bootstraps the tool (Dart SDK download,
+      # pub upgrade), spraying non-JSON progress output. Piped into jq, that
+      # noise makes jq bail and close the pipe — and on Windows the tool then
+      # dies writing to the closed pipe (errno 232), and its retry loop hangs
+      # the job forever. Bootstrap with nobody reading the pipe, so the
+      # --machine call below emits clean JSON.
       - name: Report Flutter version
         id: flutter
         shell: bash
         run: |
+          flutter --version
           echo "version=$(flutter --version --machine | jq -r .frameworkVersion)" \
             >> $GITHUB_OUTPUT
 
