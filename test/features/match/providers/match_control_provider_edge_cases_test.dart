@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:choke/features/home/providers/home_providers.dart';
 import 'package:choke/features/match/models/match.dart';
 import 'package:choke/features/match/providers/match_control_provider.dart';
 import 'package:choke/services/key_management/key_manager.dart';
@@ -173,6 +174,35 @@ void main() {
       expect(
         () => container.read(matchControlProvider),
         throwsA(isA<StateError>()),
+      );
+    });
+
+    test('reopening an expired match through the provider does not throw',
+        () async {
+      // Arrange — the control screen reads this provider from initState, so
+      // the notifier is created mid-build. An in-progress match whose clock
+      // already ran out settles itself in the constructor, and settling
+      // publishes: Riverpod forbids touching the feed provider while this one
+      // is still being created.
+      final container = ProviderContainer(
+        overrides: [
+          nostrServiceProvider.overrideWithValue(nostr),
+        ],
+      );
+      addTearDown(container.dispose);
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      container.read(activeMatchProvider.notifier).state =
+          _match(startAt: now - 600, duration: 300, f1Pt2: 1);
+
+      // Act
+      final state = container.read(matchControlProvider);
+
+      // Assert — the clock is settled, and the feed still learns about it
+      expect(state.match.status, MatchStatus.finished);
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        container.read(matchFeedProvider).map((m) => m.id),
+        contains('abcd'),
       );
     });
 

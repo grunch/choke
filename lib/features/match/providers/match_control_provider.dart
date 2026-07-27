@@ -99,6 +99,11 @@ class MatchControlNotifier extends StateNotifier<MatchControlState> {
   int _retryAttempt = 0;
   StreamSubscription<String>? _relayConnectedSub;
 
+  /// True only while the constructor body runs. See [_publishState]: settling
+  /// an already-expired clock publishes from in there, and a provider may not
+  /// write to another provider while it is still being created.
+  bool _initializing = true;
+
   MatchControlNotifier(
     Match match,
     this._nostrService, [
@@ -124,11 +129,8 @@ class MatchControlNotifier extends StateNotifier<MatchControlState> {
       _drainOutbox();
     });
 
-    if (match.status == MatchStatus.inProgress) {
-      if (match.pausedAt != null) {
-        // A paused clock stays paused, however long the app was away.
-        return;
-      }
+    // A paused clock stays paused, however long the app was away.
+    if (match.status == MatchStatus.inProgress && match.pausedAt == null) {
       // The clock may have run out while the app was closed — a match is
       // never left in progress past its own duration. It ran out unwatched,
       // though, so it is settled in silence: sounding the horn here would
@@ -140,6 +142,8 @@ class MatchControlNotifier extends StateNotifier<MatchControlState> {
         _startTimer();
       }
     }
+
+    _initializing = false;
   }
 
   /// The clock lives on [Match], so that this screen and the read-only
@@ -476,8 +480,21 @@ class MatchControlNotifier extends StateNotifier<MatchControlState> {
   void _publishState() {
     _outbox = state.match;
 
-    // Update home feed immediately (don't wait for relay round-trip)
-    _feedNotifier?.addLocal(state.match);
+    // Update home feed immediately (don't wait for relay round-trip) — except
+    // while this notifier is still being constructed. It is created from the
+    // control screen's initState, so writing to the feed provider there would
+    // be a provider mutating another provider mid-build, which Riverpod
+    // rejects outright. A microtask lands the write just after the frame, and
+    // reading the state there rather than capturing it now keeps the feed
+    // converging on the newest match either way.
+    if (_initializing) {
+      scheduleMicrotask(() {
+        if (!mounted) return;
+        _feedNotifier?.addLocal(state.match);
+      });
+    } else {
+      _feedNotifier?.addLocal(state.match);
+    }
 
     // A fresh action beats waiting out a backoff — try again right away.
     _retryTimer?.cancel();
