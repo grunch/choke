@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,8 +28,19 @@ class _OfflineNostrService extends NostrService {
       : super(KeyManager(crypto: FakeNostrCrypto()),
             crypto: FakeNostrCrypto(), backend: FakeRelayBackend());
 
+  final controller = StreamController<NostrEvent>.broadcast();
+
+  @override
+  Stream<NostrEvent> get eventStream => controller.stream;
+
   @override
   void subscribeToAuthor(String authorPubkey, {String? subscriptionId}) {}
+
+  @override
+  void unsubscribe(String subscriptionId) {}
+
+  @override
+  List<NostrEvent> cachedEventsOf(int kind, String pubkey) => const [];
 }
 
 const _watched =
@@ -734,6 +747,76 @@ void main() {
         expect(d.inMilliseconds, lessThanOrEqualTo(1000 + guard),
             reason: 'ms=$ms');
       }
+    });
+  });
+
+  group('ScoreboardMatchScreen live revisions', () {
+    testWidgets('follows status transitions that leave the score unchanged',
+        (tester) async {
+      // The regression: Match's equality is partial — no status, startAt or
+      // pausedAt — so a select() over the provider compared a started match
+      // equal to its waiting past and served the stale one. Every transition
+      // below keeps the score constant, which is exactly the case that broke.
+      //
+      // Arrange — a real feed, driven through the real event path
+      tester.view.physicalSize = const Size(1600, 740);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.reset);
+
+      final nostr = _OfflineNostrService();
+      // Not addTearDown-disposed: the override hands ownership to the
+      // provider, which disposes it with the tree.
+      final feed = ScoreboardFeedNotifier(nostr, _watched);
+
+      final base = _match();
+      var revision = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      Future<void> publish(Match match) async {
+        revision += 1;
+        nostr.controller.add(NostrEvent(
+          id: 'e$revision',
+          pubkey: _watched,
+          createdAt: revision,
+          kind: 31415,
+          tags: [
+            ['d', match.id],
+          ],
+          content: match.toJsonString(),
+          sig: '',
+        ));
+        await tester.pump();
+        await tester.pump();
+      }
+
+      await tester.pumpWidget(_wrap(
+        ScoreboardMatchScreen(matchId: base.id),
+        overrides: [
+          scoreboardFeedProvider.overrideWith((ref) => feed),
+        ],
+      ));
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      Finder pill(String label) => find.text(label.toUpperCase());
+
+      // Act + Assert, one revision at a time
+      await publish(base.copyWith(status: MatchStatus.waiting));
+      expect(pill(l10n.statusWaiting), findsOneWidget);
+
+      await publish(base.copyWith(status: MatchStatus.inProgress));
+      expect(pill(l10n.statusInProgress), findsOneWidget,
+          reason: 'the fight started; the board must not sit on WAITING');
+
+      await publish(base.copyWith(
+        status: MatchStatus.inProgress,
+        pausedAt: revision,
+      ));
+      expect(pill(l10n.statusPaused), findsOneWidget);
+
+      await publish(base.copyWith(status: MatchStatus.inProgress));
+      expect(pill(l10n.statusInProgress), findsOneWidget,
+          reason: 'resumed: pausedAt cleared, score still unchanged');
+
+      await publish(base.copyWith(status: MatchStatus.canceled));
+      expect(pill(l10n.statusCanceled), findsOneWidget);
     });
   });
 }

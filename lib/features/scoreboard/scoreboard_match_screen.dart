@@ -128,13 +128,15 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    // Selected, not watched whole: a busy organizer runs several mats, and
-    // every other mat's event rebuilds whoever watches the full list. This
-    // screen repaints for its own match's revisions only, so a score update
-    // never queues behind rebuilds it did not need.
-    final match = ref.watch(scoreboardMatchesProvider.select(
-      (matches) => matches.where((m) => m.id == widget.matchId).firstOrNull,
-    ));
+    // Watched whole, deliberately not select()ed. A select here compares the
+    // chosen Match with ==, and Match's equality is intentionally partial — it
+    // omits status, startAt and pausedAt among others — so a waiting match
+    // that started with the score unchanged compared equal to its past self
+    // and Riverpod kept serving the stale one: the board sat on WAITING while
+    // the fight ran. The rebuild this "wastes" is noise the once-a-second
+    // ticker already pays for.
+    final matches = ref.watch(scoreboardMatchesProvider);
+    final match = matches.where((m) => m.id == widget.matchId).firstOrNull;
 
     final palette = BoardPalette.of(context);
 
