@@ -22,6 +22,25 @@ import 'providers/scoreboard_providers.dart';
 ///
 /// Strictly read-only. It renders what the relays say and has no way to change
 /// it; the match belongs to whoever is refereeing it somewhere else.
+/// How long until the next repaint, aligned to the wall-clock second.
+///
+/// The clock is derived from [Match.startAt], which is whole unix seconds, so
+/// its true value flips exactly on second boundaries — and the organizer's
+/// own display flips within a fraction of them. A periodic timer started at
+/// an arbitrary moment samples that flip up to a full second late, and the
+/// truncation of "now" stacks a second more on top: the board could read two
+/// seconds behind the referee's screen while both were computing the same
+/// number. Waking just past the boundary instead repaints within
+/// milliseconds of the value actually changing.
+///
+/// The small guard keeps a timer that fires marginally early — timers promise
+/// "not before", not "exactly at" — from landing in the old second and
+/// painting a stale value for a full extra one.
+Duration untilNextClockFlip(int nowMs, {int guardMs = 40}) {
+  final intoSecond = nowMs % 1000;
+  return Duration(milliseconds: (1000 - intoSecond) + guardMs);
+}
+
 class ScoreboardMatchScreen extends ConsumerStatefulWidget {
   const ScoreboardMatchScreen({super.key, required this.matchId});
 
@@ -73,16 +92,30 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     _wakelock = ref.read(screenWakelockProvider).lease();
     _syncWakelock();
 
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      // Re-voted on the tick, not trusted to the first call: a request the
-      // platform dropped — no foreground activity yet, a transient refusal —
-      // would otherwise stay dropped for the whole match. Repeats cost
-      // nothing; the service only reaches the platform when what it holds
-      // differs from what is asked.
-      _syncWakelock();
-      setState(() => _now = DateTime.now().millisecondsSinceEpoch ~/ 1000);
-    });
+    _scheduleTick();
+  }
+
+  /// One tick per wall-clock second, scheduled against the *next* boundary
+  /// each time rather than periodically from an arbitrary phase.
+  ///
+  /// Re-deriving the delay every tick also self-corrects: a tick the platform
+  /// delivered late — background throttling, a busy frame — schedules the next
+  /// one against reality instead of compounding the drift.
+  void _scheduleTick() {
+    _ticker = Timer(
+      untilNextClockFlip(DateTime.now().millisecondsSinceEpoch),
+      () {
+        if (!mounted) return;
+        // Re-voted on the tick, not trusted to the first call: a request the
+        // platform dropped — no foreground activity yet, a transient refusal —
+        // would otherwise stay dropped for the whole match. Repeats cost
+        // nothing; the service only reaches the platform when what it holds
+        // differs from what is asked.
+        _syncWakelock();
+        setState(() => _now = DateTime.now().millisecondsSinceEpoch ~/ 1000);
+        _scheduleTick();
+      },
+    );
   }
 
   @override
@@ -104,8 +137,13 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final matches = ref.watch(scoreboardMatchesProvider);
-    final match = matches.where((m) => m.id == widget.matchId).firstOrNull;
+    // Selected, not watched whole: a busy organizer runs several mats, and
+    // every other mat's event rebuilds whoever watches the full list. This
+    // screen repaints for its own match's revisions only, so a score update
+    // never queues behind rebuilds it did not need.
+    final match = ref.watch(scoreboardMatchesProvider.select(
+      (matches) => matches.where((m) => m.id == widget.matchId).firstOrNull,
+    ));
 
     final palette = BoardPalette.of(context);
 

@@ -707,4 +707,32 @@ void main() {
       expect(wakelock.requests.last, isFalse);
     });
   });
+
+  group('untilNextClockFlip', () {
+    test('wakes just past the next wall-clock second', () {
+      // The derived clock flips exactly on second boundaries, because startAt
+      // is whole seconds. Sampling it from an arbitrary phase is what let the
+      // board read up to two seconds behind the referee's screen.
+      expect(
+        untilNextClockFlip(1_000_000_000_300),
+        const Duration(milliseconds: 740),
+      );
+      expect(
+        untilNextClockFlip(1_000_000_000_999),
+        const Duration(milliseconds: 41),
+      );
+    });
+
+    test('never schedules into the current second', () {
+      // A timer that fires marginally early lands in the old second and paints
+      // a stale value for a full extra one — the guard exists for that.
+      for (final ms in [0, 1, 500, 999]) {
+        final d = untilNextClockFlip(
+          1_000_000_000_000 + ms,
+        );
+        expect(d.inMilliseconds + ms, greaterThan(1000), reason: 'ms=$ms');
+        expect(d.inMilliseconds, lessThanOrEqualTo(1040), reason: 'ms=$ms');
+      }
+    });
+  });
 }
