@@ -1,0 +1,43 @@
+<en-US>
+The screen no longer dims while you follow a live board — it stays awake for as long as the match does.
+
+The board carries its own light theme, so it reads just as clearly in daylight.
+
+Scores published by an organiser now land the moment they change, instead of a couple of seconds later.
+
+Fixed: opening a match whose time had already run out crashed the app.
+Fixed: a board could freeze on a match that was no longer live.
+</en-US>
+
+<es-ES>
+La pantalla ya no se atenúa mientras sigues un marcador en directo: permanece encendida mientras dure la lucha.
+
+El marcador tiene su propio tema claro, así que se lee igual de bien a plena luz.
+
+Los puntos que publica un organizador llegan en el momento en que cambian, y no un par de segundos después.
+
+Corregido: abrir una lucha cuyo tiempo ya había terminado cerraba la app.
+Corregido: el marcador podía congelarse en una lucha que ya no estaba en directo.
+</es-ES>
+
+<es-419>
+La pantalla ya no se atenúa mientras sigues un marcador en vivo: se mantiene encendida mientras dure la lucha.
+
+El marcador tiene su propio tema claro, así que se lee igual de bien a plena luz.
+
+Los puntos que publica un organizador llegan en el momento en que cambian, y no un par de segundos después.
+
+Corregido: abrir una lucha cuyo tiempo ya había terminado cerraba la app.
+Corregido: el marcador podía congelarse en una lucha que ya no estaba en vivo.
+</es-419>
+
+<pt-BR>
+A tela não escurece mais enquanto você acompanha um placar ao vivo: ela fica acesa enquanto durar a luta.
+
+O placar tem o próprio tema claro e continua legível sob luz forte.
+
+Os pontos publicados por um organizador chegam no instante em que mudam, e não alguns segundos depois.
+
+Corrigido: abrir uma luta cujo tempo já havia acabado fechava o app.
+Corrigido: o placar podia travar em uma luta que não estava mais ao vivo.
+</pt-BR>
