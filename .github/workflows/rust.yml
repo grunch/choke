@@ -19,12 +19,23 @@ on:
       - 'flutter_rust_bridge.yaml'
       - '.github/workflows/rust.yml'
 
+# Nothing here pushes, comments or reads a secret — every job builds and
+# tests, and stops there. These jobs compile cargo build scripts, Gradle
+# plugins and the NDK toolchain, none of which have any business holding a
+# token that can write to the repository.
+permissions:
+  contents: read
+
 jobs:
   crate:
     name: Crate (fmt, clippy, test)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Read-only jobs, so the token has no reason to outlive the fetch
+          # in .git/config, where every later build step could read it.
+          persist-credentials: false
 
       # rust-toolchain.toml pins the version and the Android targets.
       - name: Setup Rust
@@ -54,6 +65,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Read-only jobs, so the token has no reason to outlive the fetch
+          # in .git/config, where every later build step could read it.
+          persist-credentials: false
 
       - name: Setup Rust
         run: rustup show
@@ -97,6 +112,10 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Read-only jobs, so the token has no reason to outlive the fetch
+          # in .git/config, where every later build step could read it.
+          persist-credentials: false
 
       # Cargokit cross-compiles the crate for three Android ABIs and, together
       # with the Android SDK/NDK and Gradle caches, exhausts the ~14 GB free on

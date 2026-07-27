@@ -5,8 +5,12 @@ on:
     tags:
       - 'v*'
 
+# Read-only by default. Only the job that commits the changelog and creates
+# the release needs to write, and it asks for that itself — so the Windows
+# runner spends its 15-20 minutes of compiling third-party build scripts
+# holding a token that cannot touch the repository.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   # Windows cannot be cross-compiled from the Linux runner — flutter build
@@ -25,6 +29,10 @@ jobs:
           # count, and a shallow clone counts 1 — which would stamp this
           # platform +1 while the others carry the real count.
           fetch-depth: 0
+          # This job never runs an authenticated git command — the count above
+          # is local. Leaving the token in .git/config would hand it to every
+          # cargo build script and CMake rule the build pulls in.
+          persist-credentials: false
 
       # Same validation as the release job, and not negotiable here either: the
       # tag flows into file names and shell, and a Windows runner is no more
@@ -149,6 +157,10 @@ jobs:
     # whole release rather than quietly shipping one without it.
     needs: build-windows
     runs-on: ubuntu-latest
+    # The one job that earns write: it commits the changelog and version bump
+    # back to main, and publishes the release itself.
+    permissions:
+      contents: write
     # Exposes "is the Play service-account secret configured?" to step-level
     # `if:`, since the secrets context can't be read directly there. Lets the
     # Play upload skip cleanly (e.g. on forks) instead of failing the release.
