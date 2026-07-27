@@ -14,6 +14,7 @@ import 'package:choke/services/nostr/crypto/nostr_crypto.dart';
 import 'package:choke/services/nostr/nostr_service.dart';
 import 'package:choke/services/wakelock/screen_wakelock.dart';
 import 'package:choke/shared/theme/app_theme.dart';
+import 'package:choke/shared/wall_clock.dart';
 import 'package:choke/shared/widgets/status_filter_bar.dart';
 
 import '../../support/nostr_fakes.dart';
@@ -726,12 +727,12 @@ void main() {
     test('never schedules into the current second', () {
       // A timer that fires marginally early lands in the old second and paints
       // a stale value for a full extra one — the guard exists for that.
+      const guard = 40;
       for (final ms in [0, 1, 500, 999]) {
-        final d = untilNextClockFlip(
-          1_000_000_000_000 + ms,
-        );
+        final d = untilNextClockFlip(1_000_000_000_000 + ms, guardMs: guard);
         expect(d.inMilliseconds + ms, greaterThan(1000), reason: 'ms=$ms');
-        expect(d.inMilliseconds, lessThanOrEqualTo(1040), reason: 'ms=$ms');
+        expect(d.inMilliseconds, lessThanOrEqualTo(1000 + guard),
+            reason: 'ms=$ms');
       }
     });
   });

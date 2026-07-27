@@ -7,6 +7,7 @@ import 'package:choke/l10n/generated/app_localizations.dart';
 
 import 'board_palette.dart';
 import '../../services/wakelock/screen_wakelock.dart';
+import '../../shared/wall_clock.dart';
 import '../../shared/widgets/match_card.dart';
 import '../match/models/match.dart';
 import '../match/models/submission_catalog.dart';
@@ -22,25 +23,6 @@ import 'providers/scoreboard_providers.dart';
 ///
 /// Strictly read-only. It renders what the relays say and has no way to change
 /// it; the match belongs to whoever is refereeing it somewhere else.
-/// How long until the next repaint, aligned to the wall-clock second.
-///
-/// The clock is derived from [Match.startAt], which is whole unix seconds, so
-/// its true value flips exactly on second boundaries — and the organizer's
-/// own display flips within a fraction of them. A periodic timer started at
-/// an arbitrary moment samples that flip up to a full second late, and the
-/// truncation of "now" stacks a second more on top: the board could read two
-/// seconds behind the referee's screen while both were computing the same
-/// number. Waking just past the boundary instead repaints within
-/// milliseconds of the value actually changing.
-///
-/// The small guard keeps a timer that fires marginally early — timers promise
-/// "not before", not "exactly at" — from landing in the old second and
-/// painting a stale value for a full extra one.
-Duration untilNextClockFlip(int nowMs, {int guardMs = 40}) {
-  final intoSecond = nowMs % 1000;
-  return Duration(milliseconds: (1000 - intoSecond) + guardMs);
-}
-
 class ScoreboardMatchScreen extends ConsumerStatefulWidget {
   const ScoreboardMatchScreen({super.key, required this.matchId});
 
@@ -98,9 +80,18 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
   /// One tick per wall-clock second, scheduled against the *next* boundary
   /// each time rather than periodically from an arbitrary phase.
   ///
+  /// This screen's display lags the derived truth by its tick phase — the
+  /// truncation of "now" IS the flip, and the phase measures from it — so
+  /// boundary alignment takes that phase from up-to-a-second down to the
+  /// guard. What separates two screens after this is each device's clock
+  /// skew, plus whatever phase the *other* screen still carries.
+  ///
   /// Re-deriving the delay every tick also self-corrects: a tick the platform
-  /// delivered late — background throttling, a busy frame — schedules the next
-  /// one against reality instead of compounding the drift.
+  /// delivered late — background throttling, a busy frame — schedules the
+  /// next one against reality instead of compounding the drift. A late tick
+  /// therefore paints the *current* second and the display can visibly skip
+  /// one; that is chosen, not a bug — the alternative was a burst of stale
+  /// repaints saying nothing true.
   void _scheduleTick() {
     _ticker = Timer(
       untilNextClockFlip(DateTime.now().millisecondsSinceEpoch),
