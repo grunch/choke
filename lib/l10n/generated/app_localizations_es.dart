@@ -452,7 +452,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get licenseText =>
-      'Choke\nCopyright (C) 2026 ProtoLayer OÜ\n\nEste programa es software libre: puedes redistribuirlo y/o modificarlo bajo los términos de la Licencia Pública General GNU publicada por la Free Software Foundation, ya sea la versión 3 de la Licencia o (a tu elección) cualquier versión posterior.\n\nEste programa se distribuye con la esperanza de que sea útil, pero SIN NINGUNA GARANTÍA; ni siquiera la garantía implícita de COMERCIABILIDAD o IDONEIDAD PARA UN FIN PARTICULAR. Consulta la Licencia Pública General GNU para más detalles.\n\nDeberías haber recibido una copia de la Licencia Pública General GNU junto con este programa. Si no, visita <https://www.gnu.org/licenses/>.';
+      'Choke\nCopyright (C) 2026 ProtoLayer OÜ\n\nEste programa es software libre: puedes redistribuirlo y/o modificarlo bajo los términos de la Licencia Pública General GNU publicada por la Free Software Foundation, ya sea la versión 3 de la Licencia o (a tu elección) cualquier versión posterior.\n\nEste programa se distribuye con la esperanza de que sea útil, pero SIN NINGUNA GARANTÍA; ni siquiera la garantía implícita de COMERCIABILIDAD o IDONEIDAD PARA UN FIN PARTICULAR. Consulta la Licencia Pública General GNU para más detalles.';
+
+  @override
+  String get licenseReadFull =>
+      '¿Quieres leerla entera? El texto completo de la licencia está aquí:';
 
   @override
   String get licenseLabel => 'Licencia';

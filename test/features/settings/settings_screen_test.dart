@@ -402,6 +402,48 @@ void main() {
       // Assert
       expect(find.byType(AlertDialog), findsNothing);
     });
+
+    testWidgets('the license dialog links out to the full GPL text',
+        (tester) async {
+      // Arrange — the notice in the dialog only summarises the licence, so
+      // the reader needs somewhere to go for the licence itself
+      await pumpScreen(tester);
+      await scrollTo(tester, find.text(l10n.licenseLabel));
+      await tester.tap(find.text(l10n.licenseLabel));
+      await tester.pumpAndSettle();
+
+      // Act — the notice is long enough to push the link below the fold
+      final link = find.text('gnu.org/licenses/gpl-3.0');
+      await tester.ensureVisible(link);
+      await tester.pumpAndSettle();
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      // Assert — the licence itself, not the FSF's index of every licence
+      expect(launched, ['https://www.gnu.org/licenses/gpl-3.0.html']);
+    });
+
+    testWidgets('the license notice no longer claims a copy was delivered',
+        (tester) async {
+      // Arrange — "you should have received a copy" is the GPL's own wording
+      // for source distributions; nobody receives a copy of a store install
+      await pumpScreen(tester);
+      await scrollTo(tester, find.text(l10n.licenseLabel));
+
+      // Act
+      await tester.tap(find.text(l10n.licenseLabel));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(l10n.licenseText, isNot(contains('gnu.org')));
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text(l10n.licenseReadFull),
+        ),
+        findsOneWidget,
+      );
+    });
   });
 
   group('footer', () {
