@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/match.dart';
 import '../models/match_outcome.dart';
 import '../../../services/audio/match_sounds.dart';
+import '../../../shared/wall_clock.dart';
 import '../../../services/nostr/nostr_service.dart';
 import '../../home/providers/home_providers.dart';
 
@@ -441,17 +442,29 @@ class MatchControlNotifier extends StateNotifier<MatchControlState> {
     _publishState();
   }
 
+  /// Tick on the wall-clock second, not on a phase set by when the referee
+  /// happened to press start. The clock is derived from whole-second startAt,
+  /// so its truth flips on the boundary — and a display that repaints there
+  /// agrees with every other boundary-aligned display of the same match (the
+  /// spectator board), instead of each lagging truth by its own arbitrary
+  /// phase. Self-scheduling also self-corrects after a throttled tick.
   void _startTimer() {
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      final remaining = _calculateRemaining(state.match);
-      state = state.copyWith(remainingSeconds: remaining);
+    _timer = Timer(
+      untilNextClockFlip(DateTime.now().millisecondsSinceEpoch),
+      () {
+        if (!mounted) return;
+        final remaining = _calculateRemaining(state.match);
+        state = state.copyWith(remainingSeconds: remaining);
 
-      // Regulation time is over.
-      if (remaining <= 0) {
-        _onTimeUp();
-      }
-    });
+        // Regulation time is over.
+        if (remaining <= 0) {
+          _onTimeUp();
+          return;
+        }
+        _startTimer();
+      },
+    );
   }
 
   /// Queue the current match state for publishing to Nostr.

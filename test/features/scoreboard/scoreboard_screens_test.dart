@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +16,7 @@ import 'package:choke/services/nostr/crypto/nostr_crypto.dart';
 import 'package:choke/services/nostr/nostr_service.dart';
 import 'package:choke/services/wakelock/screen_wakelock.dart';
 import 'package:choke/shared/theme/app_theme.dart';
+import 'package:choke/shared/wall_clock.dart';
 import 'package:choke/shared/widgets/status_filter_bar.dart';
 
 import '../../support/nostr_fakes.dart';
@@ -25,8 +28,19 @@ class _OfflineNostrService extends NostrService {
       : super(KeyManager(crypto: FakeNostrCrypto()),
             crypto: FakeNostrCrypto(), backend: FakeRelayBackend());
 
+  final controller = StreamController<NostrEvent>.broadcast();
+
+  @override
+  Stream<NostrEvent> get eventStream => controller.stream;
+
   @override
   void subscribeToAuthor(String authorPubkey, {String? subscriptionId}) {}
+
+  @override
+  void unsubscribe(String subscriptionId) {}
+
+  @override
+  List<NostrEvent> cachedEventsOf(int kind, String pubkey) => const [];
 }
 
 const _watched =
@@ -705,6 +719,104 @@ void main() {
 
       // Assert
       expect(wakelock.requests.last, isFalse);
+    });
+  });
+
+  group('untilNextClockFlip', () {
+    test('wakes just past the next wall-clock second', () {
+      // The derived clock flips exactly on second boundaries, because startAt
+      // is whole seconds. Sampling it from an arbitrary phase is what let the
+      // board read up to two seconds behind the referee's screen.
+      expect(
+        untilNextClockFlip(1_000_000_000_300),
+        const Duration(milliseconds: 740),
+      );
+      expect(
+        untilNextClockFlip(1_000_000_000_999),
+        const Duration(milliseconds: 41),
+      );
+    });
+
+    test('never schedules into the current second', () {
+      // A timer that fires marginally early lands in the old second and paints
+      // a stale value for a full extra one — the guard exists for that.
+      const guard = 40;
+      for (final ms in [0, 1, 500, 999]) {
+        final d = untilNextClockFlip(1_000_000_000_000 + ms, guardMs: guard);
+        expect(d.inMilliseconds + ms, greaterThan(1000), reason: 'ms=$ms');
+        expect(d.inMilliseconds, lessThanOrEqualTo(1000 + guard),
+            reason: 'ms=$ms');
+      }
+    });
+  });
+
+  group('ScoreboardMatchScreen live revisions', () {
+    testWidgets('follows status transitions that leave the score unchanged',
+        (tester) async {
+      // The regression: Match's equality is partial — no status, startAt or
+      // pausedAt — so a select() over the provider compared a started match
+      // equal to its waiting past and served the stale one. Every transition
+      // below keeps the score constant, which is exactly the case that broke.
+      //
+      // Arrange — a real feed, driven through the real event path
+      tester.view.physicalSize = const Size(1600, 740);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.reset);
+
+      final nostr = _OfflineNostrService();
+      // Not addTearDown-disposed: the override hands ownership to the
+      // provider, which disposes it with the tree.
+      final feed = ScoreboardFeedNotifier(nostr, _watched);
+
+      final base = _match();
+      var revision = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      Future<void> publish(Match match) async {
+        revision += 1;
+        nostr.controller.add(NostrEvent(
+          id: 'e$revision',
+          pubkey: _watched,
+          createdAt: revision,
+          kind: 31415,
+          tags: [
+            ['d', match.id],
+          ],
+          content: match.toJsonString(),
+          sig: '',
+        ));
+        await tester.pump();
+        await tester.pump();
+      }
+
+      await tester.pumpWidget(_wrap(
+        ScoreboardMatchScreen(matchId: base.id),
+        overrides: [
+          scoreboardFeedProvider.overrideWith((ref) => feed),
+        ],
+      ));
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      Finder pill(String label) => find.text(label.toUpperCase());
+
+      // Act + Assert, one revision at a time
+      await publish(base.copyWith(status: MatchStatus.waiting));
+      expect(pill(l10n.statusWaiting), findsOneWidget);
+
+      await publish(base.copyWith(status: MatchStatus.inProgress));
+      expect(pill(l10n.statusInProgress), findsOneWidget,
+          reason: 'the fight started; the board must not sit on WAITING');
+
+      await publish(base.copyWith(
+        status: MatchStatus.inProgress,
+        pausedAt: revision,
+      ));
+      expect(pill(l10n.statusPaused), findsOneWidget);
+
+      await publish(base.copyWith(status: MatchStatus.inProgress));
+      expect(pill(l10n.statusInProgress), findsOneWidget,
+          reason: 'resumed: pausedAt cleared, score still unchanged');
+
+      await publish(base.copyWith(status: MatchStatus.canceled));
+      expect(pill(l10n.statusCanceled), findsOneWidget);
     });
   });
 }

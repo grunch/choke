@@ -7,6 +7,7 @@ import 'package:choke/l10n/generated/app_localizations.dart';
 
 import 'board_palette.dart';
 import '../../services/wakelock/screen_wakelock.dart';
+import '../../shared/wall_clock.dart';
 import '../../shared/widgets/match_card.dart';
 import '../match/models/match.dart';
 import '../match/models/submission_catalog.dart';
@@ -73,16 +74,39 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     _wakelock = ref.read(screenWakelockProvider).lease();
     _syncWakelock();
 
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      // Re-voted on the tick, not trusted to the first call: a request the
-      // platform dropped — no foreground activity yet, a transient refusal —
-      // would otherwise stay dropped for the whole match. Repeats cost
-      // nothing; the service only reaches the platform when what it holds
-      // differs from what is asked.
-      _syncWakelock();
-      setState(() => _now = DateTime.now().millisecondsSinceEpoch ~/ 1000);
-    });
+    _scheduleTick();
+  }
+
+  /// One tick per wall-clock second, scheduled against the *next* boundary
+  /// each time rather than periodically from an arbitrary phase.
+  ///
+  /// This screen's display lags the derived truth by its tick phase — the
+  /// truncation of "now" IS the flip, and the phase measures from it — so
+  /// boundary alignment takes that phase from up-to-a-second down to the
+  /// guard. What separates two screens after this is each device's clock
+  /// skew, plus whatever phase the *other* screen still carries.
+  ///
+  /// Re-deriving the delay every tick also self-corrects: a tick the platform
+  /// delivered late — background throttling, a busy frame — schedules the
+  /// next one against reality instead of compounding the drift. A late tick
+  /// therefore paints the *current* second and the display can visibly skip
+  /// one; that is chosen, not a bug — the alternative was a burst of stale
+  /// repaints saying nothing true.
+  void _scheduleTick() {
+    _ticker = Timer(
+      untilNextClockFlip(DateTime.now().millisecondsSinceEpoch),
+      () {
+        if (!mounted) return;
+        // Re-voted on the tick, not trusted to the first call: a request the
+        // platform dropped — no foreground activity yet, a transient refusal —
+        // would otherwise stay dropped for the whole match. Repeats cost
+        // nothing; the service only reaches the platform when what it holds
+        // differs from what is asked.
+        _syncWakelock();
+        setState(() => _now = DateTime.now().millisecondsSinceEpoch ~/ 1000);
+        _scheduleTick();
+      },
+    );
   }
 
   @override
@@ -104,6 +128,13 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    // Watched whole, deliberately not select()ed. A select here compares the
+    // chosen Match with ==, and Match's equality is intentionally partial — it
+    // omits status, startAt and pausedAt among others — so a waiting match
+    // that started with the score unchanged compared equal to its past self
+    // and Riverpod kept serving the stale one: the board sat on WAITING while
+    // the fight ran. The rebuild this "wastes" is noise the once-a-second
+    // ticker already pays for.
     final matches = ref.watch(scoreboardMatchesProvider);
     final match = matches.where((m) => m.id == widget.matchId).firstOrNull;
 
