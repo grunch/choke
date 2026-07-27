@@ -63,12 +63,15 @@ jobs:
       - name: Cache cargo
         uses: actions/cache@v4
         with:
+          # Downloads only — never rust/target, and no restore-keys fallback.
+          # This job publishes signed binaries, and a prefix fallback accepts a
+          # cache written by any less-privileged workflow: a poisoned target/
+          # would compile straight into the release. Registry and git are
+          # content-addressed downloads keyed to the exact lockfile.
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            rust/target
           key: cargo-release-${{ runner.os }}-${{ hashFiles('rust/Cargo.lock') }}
-          restore-keys: cargo-release-${{ runner.os }}-
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -109,6 +112,16 @@ jobs:
         run: |
           $dir = "choke-$env:FULL_TAG-windows-x64"
           Move-Item build/windows/x64/runner/Release $dir
+          # The build links the MSVC runtime dynamically and CMake installs
+          # nothing of it, so on a clean machine choke.exe dies on a missing
+          # msvcp140.dll — while the release notes promise extract-and-run.
+          # Flutter's own zip guidance is to ship these three app-locally.
+          $dlls = 'msvcp140.dll','vcruntime140.dll','vcruntime140_1.dll' |
+            ForEach-Object { Join-Path $env:SystemRoot 'System32' $_ }
+          foreach ($dll in $dlls) {
+            if (-not (Test-Path $dll)) { throw "missing runtime DLL: $dll" }
+          }
+          Copy-Item $dlls -Destination $dir
           Compress-Archive -Path $dir -DestinationPath "$dir.zip"
 
       - name: Upload Windows bundle
@@ -285,6 +298,20 @@ jobs:
           git commit -m "chore: update changelog and version for $FULL_TAG"
           git push origin main
 
+      # The step above leaves HEAD on a branch that can move — anyone merging
+      # while Windows spent its 15-20 minutes building would split the release
+      # across source commits: a zip from the tag, an APK from whatever main
+      # had become. Every platform builds from the immutable tagged commit,
+      # re-stamped with the same version the bump computed there.
+      - name: Build from the immutable tag
+        env:
+          VERSION: ${{ steps.version.outputs.tag }}
+        run: |
+          git checkout --detach "$GITHUB_SHA"
+          BUILD=$(git rev-list --count HEAD)
+          sed -i "s/^version: .*/version: ${VERSION}+${BUILD}/" pubspec.yaml
+          grep "^version:" pubspec.yaml
+
       # The App Bundle packs native code for every ABI, so Cargokit
       # cross-compiles the Rust crate three times (arm, arm64, x86_64). Together
       # with the APK build, the NDK, and the Gradle/cargo caches this exhausts
@@ -328,12 +355,15 @@ jobs:
       - name: Cache cargo
         uses: actions/cache@v4
         with:
+          # Downloads only — never rust/target, and no restore-keys fallback.
+          # This job publishes signed binaries, and a prefix fallback accepts a
+          # cache written by any less-privileged workflow: a poisoned target/
+          # would compile straight into the release. Registry and git are
+          # content-addressed downloads keyed to the exact lockfile.
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            rust/target
           key: cargo-release-${{ runner.os }}-${{ hashFiles('rust/Cargo.lock') }}
-          restore-keys: cargo-release-${{ runner.os }}-
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
