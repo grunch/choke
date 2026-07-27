@@ -9,7 +9,136 @@ permissions:
   contents: write
 
 jobs:
+  # Windows cannot be cross-compiled from the Linux runner — flutter build
+  # windows needs MSVC — so it builds on its own runner and hands the archive
+  # to the release job as an artifact.
+  build-windows:
+    runs-on: windows-latest
+    outputs:
+      # Consumed by the release job's Flutter setup, so one workflow cannot
+      # build its platforms on two different framework versions.
+      flutter-version: ${{ steps.flutter.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The version bump below derives the build number from the commit
+          # count, and a shallow clone counts 1 — which would stamp this
+          # platform +1 while the others carry the real count.
+          fetch-depth: 0
+
+      # Same validation as the release job, and not negotiable here either: the
+      # tag flows into file names and shell, and a Windows runner is no more
+      # entitled to trust a ref than a Linux one.
+      - name: Extract version from tag
+        id: version
+        shell: bash
+        run: |
+          FULL_TAG=${GITHUB_REF#refs/tags/}
+          if ! printf '%s' "$FULL_TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Refusing to build: tag '$FULL_TAG' is not a plain vX.Y.Z tag."
+            exit 1
+          fi
+          echo "full_tag=$FULL_TAG" >> $GITHUB_OUTPUT
+          echo "tag=${FULL_TAG#v}" >> $GITHUB_OUTPUT
+
+      # The same bump the release job applies before its own builds. Without
+      # it this platform builds from the tag's committed pubspec — which still
+      # holds the *previous* release's version — and choke.exe would report the
+      # release before the one it shipped in, on the Account screen, forever.
+      - name: Update version in pubspec.yaml
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.tag }}
+        run: |
+          BUILD=$(git rev-list --count HEAD)
+          sed -i "s/^version: .*/version: ${VERSION}+${BUILD}/" pubspec.yaml
+          grep "^version:" pubspec.yaml
+
+      # Cargokit compiles the Nostr crate during flutter build windows; the
+      # channel comes from rust-toolchain.toml and the host target
+      # (x86_64-pc-windows-msvc) is implicit. MSVC itself ships on the runner.
+      - name: Setup Rust
+        run: rustup show
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          # Downloads only — never rust/target, and no restore-keys fallback.
+          # This job publishes signed binaries, and a prefix fallback accepts a
+          # cache written by any less-privileged workflow: a poisoned target/
+          # would compile straight into the release. Registry and git are
+          # content-addressed downloads keyed to the exact lockfile.
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-release-${{ runner.os }}-${{ hashFiles('rust/Cargo.lock') }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      # Recorded so the release job can install the same version. Two
+      # independent "stable" resolutions can disagree when a Flutter release
+      # lands between them, and one app release must not ship two frameworks.
+      - name: Report Flutter version
+        id: flutter
+        shell: bash
+        run: |
+          echo "version=$(flutter --version --machine | jq -r .frameworkVersion)" \
+            >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      - name: Build Windows bundle
+        shell: bash
+        env:
+          FULL_TAG: ${{ steps.version.outputs.full_tag }}
+        run: |
+          flutter config --enable-windows-desktop
+          flutter build windows --release
+
+      # Wrapped in a versioned top-level directory for the same reason the
+      # Linux tarball is: extraction yields one folder, not a spray of DLLs
+      # into whatever directory the user happened to be in.
+      - name: Package Windows bundle
+        shell: pwsh
+        env:
+          FULL_TAG: ${{ steps.version.outputs.full_tag }}
+        run: |
+          $dir = "choke-$env:FULL_TAG-windows-x64"
+          Move-Item build/windows/x64/runner/Release $dir
+          # The build links the MSVC runtime dynamically and CMake installs
+          # nothing of it, so on a clean machine choke.exe dies on a missing
+          # msvcp140.dll — while the release notes promise extract-and-run.
+          # Flutter's own zip guidance is to ship these three app-locally.
+          $dlls = 'msvcp140.dll','vcruntime140.dll','vcruntime140_1.dll' |
+            ForEach-Object { Join-Path $env:SystemRoot 'System32' $_ }
+          foreach ($dll in $dlls) {
+            if (-not (Test-Path $dll)) { throw "missing runtime DLL: $dll" }
+          }
+          Copy-Item $dlls -Destination $dir
+          Compress-Archive -Path $dir -DestinationPath "$dir.zip"
+
+      - name: Upload Windows bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-bundle
+          path: choke-${{ steps.version.outputs.full_tag }}-windows-x64.zip
+          if-no-files-found: error
+          # Long enough for a failed release to be re-run after a weekend; a
+          # 1-day window turns a Monday retry into a missing-artifact failure.
+          retention-days: 7
+
   build-and-release:
+    # The release attaches the Windows archive, so it has to exist first. This
+    # also makes the release all-or-nothing: a broken Windows build fails the
+    # whole release rather than quietly shipping one without it.
+    needs: build-windows
     runs-on: ubuntu-latest
     # Exposes "is the Play service-account secret configured?" to step-level
     # `if:`, since the secrets context can't be read directly there. Lets the
@@ -169,6 +298,20 @@ jobs:
           git commit -m "chore: update changelog and version for $FULL_TAG"
           git push origin main
 
+      # The step above leaves HEAD on a branch that can move — anyone merging
+      # while Windows spent its 15-20 minutes building would split the release
+      # across source commits: a zip from the tag, an APK from whatever main
+      # had become. Every platform builds from the immutable tagged commit,
+      # re-stamped with the same version the bump computed there.
+      - name: Build from the immutable tag
+        env:
+          VERSION: ${{ steps.version.outputs.tag }}
+        run: |
+          git checkout --detach "$GITHUB_SHA"
+          BUILD=$(git rev-list --count HEAD)
+          sed -i "s/^version: .*/version: ${VERSION}+${BUILD}/" pubspec.yaml
+          grep "^version:" pubspec.yaml
+
       # The App Bundle packs native code for every ABI, so Cargokit
       # cross-compiles the Rust crate three times (arm, arm64, x86_64). Together
       # with the APK build, the NDK, and the Gradle/cargo caches this exhausts
@@ -212,17 +355,23 @@ jobs:
       - name: Cache cargo
         uses: actions/cache@v4
         with:
+          # Downloads only — never rust/target, and no restore-keys fallback.
+          # This job publishes signed binaries, and a prefix fallback accepts a
+          # cache written by any less-privileged workflow: a poisoned target/
+          # would compile straight into the release. Registry and git are
+          # content-addressed downloads keyed to the exact lockfile.
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            rust/target
           key: cargo-release-${{ runner.os }}-${{ hashFiles('rust/Cargo.lock') }}
-          restore-keys: cargo-release-${{ runner.os }}-
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # Whatever stable resolved to when the Windows job set up, minutes
+          # ago — not whatever it resolves to now.
+          flutter-version: ${{ needs.build-windows.outputs.flutter-version }}
 
       - name: Install dependencies
         run: flutter pub get
@@ -369,11 +518,18 @@ jobs:
             echo '```'
             echo "Requires \`libgtk-3\` and \`libsecret-1\` at runtime (preinstalled on most desktops)."
             echo ""
+            echo "**Windows (x64):** download \`choke-${TAG}-windows-x64.zip\`, extract, and run \`choke.exe\` inside the folder."
+            echo ""
             echo "### 📋 Full Changelog"
             echo "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for the complete history."
           } > RELEASE_BODY.md
 
           cat RELEASE_BODY.md
+
+      - name: Download Windows bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-bundle
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -383,6 +539,7 @@ jobs:
             choke-${{ steps.version.outputs.full_tag }}.apk
             choke-${{ steps.version.outputs.full_tag }}.aab
             choke-${{ steps.version.outputs.full_tag }}-linux-x64.tar.gz
+            choke-${{ steps.version.outputs.full_tag }}-windows-x64.zip
           generate_release_notes: false
           draft: false
           prerelease: false
