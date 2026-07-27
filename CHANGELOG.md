@@ -1,5 +1,28 @@
 # Changelog
 
+## [v2.0.0] - 2026-07-27
+
+### Added
+- feat: build a Windows binary on release (9e8f193)
+- feat: keep the screen awake while watching a board (e492088)
+- feat: paint the board in design 3A when the app is in a light theme (be6badf)
+
+### Fixed
+- fix: bootstrap flutter before piping its version into jq (ace6b89)
+- fix: stop an expired match from crashing the app when it is reopened (013a711)
+- fix: drop the select that could freeze the board on a stale match (ee1f3b5)
+- fix: address the review findings on this PR (2c6e1fc)
+- fix: address the reviewer findings on this PR (e79dc22)
+- fix: address the review findings on this PR (c1c4d6e)
+- fix: address the review findings on this PR (071a59a)
+- fix: address the review findings on this PR (9add175)
+
+### Changed
+- perf: repaint the board the moment its clock actually changes (98ae04b)
+- refactor: reference the app's gold instead of repeating it (7fbf7c8)
+- chore: update changelog and version for v1.6.6 (54640f9)
+
+
 ## [v1.6.6] - 2026-07-26
 
 ### Added
