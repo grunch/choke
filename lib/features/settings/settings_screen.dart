@@ -27,6 +27,11 @@ const localeDisplayNames = {
   'ja': '日本語',
 };
 
+/// Canonical home of the licence Choke ships under. Deep-linked to the plain
+/// GPL-3.0 page rather than /licenses/, which is an index of every licence
+/// the FSF publishes and leaves the reader to find the right one.
+const _gplUrl = 'https://www.gnu.org/licenses/gpl-3.0.html';
+
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -644,17 +649,48 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showLicenseScreen(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final colors = Theme.of(context).colorScheme;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.licenseTitle),
+        title: Text(l10n.licenseTitle),
         content: SingleChildScrollView(
-          child: Text(AppLocalizations.of(context)!.licenseText),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l10n.licenseText),
+              const SizedBox(height: 16),
+              Text(l10n.licenseReadFull),
+              // An address someone can actually tap, rather than the GPL's own
+              // "you should have received a copy" — nobody receives a copy of
+              // an app they installed from a store.
+              InkWell(
+                onTap: () => launchUrl(
+                  Uri.parse(_gplUrl),
+                  mode: LaunchMode.externalApplication,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Text(
+                    'gnu.org/licenses/gpl-3.0',
+                    style: TextStyle(
+                      color: colors.primary,
+                      decoration: TextDecoration.underline,
+                      decorationColor: colors.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(AppLocalizations.of(context)!.close),
+            child: Text(l10n.close),
           ),
         ],
       ),

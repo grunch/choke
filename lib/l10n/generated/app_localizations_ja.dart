@@ -434,7 +434,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get licenseText =>
-      'Choke\nCopyright (C) 2026 ProtoLayer OÜ\n\nこのプログラムはフリーソフトウェアです。フリーソフトウェア財団が公表するGNU一般公衆利用許諾書（バージョン3、または任意でそれ以降のバージョン）の条件の下で、再配布および改変することができます。\n\nこのプログラムは有用であることを願って配布されますが、商品性や特定目的への適合性の暗黙的な保証を含め、いかなる保証もありません。詳細はGNU一般公衆利用許諾書をご覧ください。\n\nこのプログラムとともにGNU一般公衆利用許諾書のコピーを受け取っているはずです。受け取っていない場合は <https://www.gnu.org/licenses/> をご覧ください。';
+      'Choke\nCopyright (C) 2026 ProtoLayer OÜ\n\nこのプログラムはフリーソフトウェアです。フリーソフトウェア財団が公表するGNU一般公衆利用許諾書（バージョン3、または任意でそれ以降のバージョン）の条件の下で、再配布および改変することができます。\n\nこのプログラムは有用であることを願って配布されますが、商品性や特定目的への適合性の暗黙的な保証を含め、いかなる保証もありません。詳細はGNU一般公衆利用許諾書をご覧ください。';
+
+  @override
+  String get licenseReadFull => '全文をお読みになりますか？ライセンスの全文はこちらです：';
 
   @override
   String get licenseLabel => 'ライセンス';
