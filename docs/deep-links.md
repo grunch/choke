@@ -42,14 +42,22 @@ on an empty one.
 
 ## What still has to be served — Android
 
-**Until this file exists, the feature does not work on Android 12 or newer.**
+**This is served, and verified in production.** `assetlinks.json` lives in
+choke-scoreboard at `static/.well-known/assetlinks.json` and carries the Play
+App Signing certificate's fingerprint alongside the local release key's, so
+links open the app for builds installed from Google Play and for locally signed
+ones alike.
+
+What follows is why it has to stay that way, and how to check it after a change.
+
 The intent filter is marked `android:autoVerify="true"`, and Android checks it
 at install time. If the check fails, https links are *not* handed to the app —
 they open the browser, and the only way to change that is for the user to go
 into system settings and enable the link by hand. There is no error and nothing
-in the app to see; it simply never opens.
+in the app to see; it simply never opens. That is the failure this file prevents,
+not a state the project is currently in.
 
-Serve this at **`https://bjjscore.live/.well-known/assetlinks.json`**, as
+The file must be at **`https://bjjscore.live/.well-known/assetlinks.json`**, as
 `application/json`, over https, with no redirect:
 
 ```json
@@ -60,7 +68,8 @@ Serve this at **`https://bjjscore.live/.well-known/assetlinks.json`**, as
       "namespace": "android_app",
       "package_name": "io.protolayer.choke",
       "sha256_cert_fingerprints": [
-        "PUT:THE:RELEASE:FINGERPRINT:HERE"
+        "THE:PLAY:APP:SIGNING:FINGERPRINT",
+        "THE:UPLOAD:KEY:FINGERPRINT"
       ]
     }
   }
@@ -76,10 +85,12 @@ keytool -list -v -keystore <release.keystore> -alias <alias> | grep 'SHA256:'
 
 Two things that catch people out:
 
-- **Play App Signing re-signs the app.** If it is distributed through Google
-  Play, the fingerprint that matters is the one Play shows under *Release →
-  Setup → App signing*, not the upload key's. Both can be listed; the array
-  takes several.
+- **Play App Signing re-signs the app.** The fingerprint that matters for a
+  Play install is Google's, not the upload key's — this is what made the feature
+  fail against the production build until it was added. Play Console moved the
+  page: it is now under *Play Protected → Play Store protection → Manage Play
+  app signing*, not the old *Setup → App signing*. Both fingerprints can be
+  listed; the array takes several, and both are.
 - **The debug build is a different package.** `applicationIdSuffix = ".debug"`
   makes debug builds `io.protolayer.choke.debug`, which the entry above does not
   cover. Add a second object for it, with the debug keystore's fingerprint, if

@@ -18,7 +18,7 @@ board it belongs to.
 
 Today a shared link names an organizer:
 
-```
+```text
 https://bjjscore.live/?npub=npub1…
 ```
 
@@ -34,7 +34,7 @@ The unit people share is a match. The product only knows how to share a board.
 
 Carry the match id alongside the pubkey in the same query string:
 
-```
+```text
 https://bjjscore.live/?npub=npub1…&match=abcd
 ```
 
@@ -51,14 +51,45 @@ neither may extend it alone.
 |---|---|
 | Origin | `https://bjjscore.live` |
 | Path | `/` — the root, always |
-| Organizer | `npub=<npub1…\|64-hex>`, or the existing alias `pubkey=` |
+| Organizer | `npub=<npub1…\|64-hex>` |
 | Match | `match=<match id>` |
 
 A link carrying `npub` but no `match` is a **board link** and keeps its current
 behaviour exactly. A link carrying `match` without a readable `npub` is broken —
 an id alone names nothing, because it is only unique within one author's events.
 
-### 2.1 Why the root path, and not `/match/<id>`
+The `pubkey` alias that used to sit beside `npub` is being removed separately;
+this spec assumes it is gone and names one parameter only.
+
+### 2.1 Grammar of `match`
+
+Normative, and identical in the builder and in both readers:
+
+```text
+match = 4 * HEXDIG-lowercase          ; /^[0-9a-f]{4}$/
+```
+
+That is exactly what `Match._generateMatchId()` produces — four characters drawn
+from `0123456789abcdef`. It follows that:
+
+- **No percent-encoding is involved.** Every legal character is URL-safe, so the
+  value is written and read verbatim. A builder must not encode it; a reader
+  must not decode it.
+- **Comparison is exact, after lowercasing.** Readers lowercase the incoming
+  value first, so a link mangled by an auto-capitalising keyboard still
+  resolves. Builders always emit lowercase. There is no other normalisation.
+- **Anything else is rejected rather than coerced**: wrong length, non-hex
+  characters, anything left after trimming. A rejected value is a *broken* link,
+  not an absent one — the sender named something, and §3.1 governs saying so.
+
+> **Known limitation.** Four hex characters is 16 bits, and ids are generated
+> randomly with no collision check. Two matches by one organizer inside the
+> 24-hour window can collide, and `npub` + `match` would then name both. The
+> odds need hundreds of matches in a day, which a large tournament can reach.
+> Widening the id is out of scope and would be a change to `Match`; this spec
+> only records that the link contract inherits whatever uniqueness the id has.
+
+### 2.2 Why the root path, and not `/match/<id>`
 
 A path-shaped URL reads better and was the first instinct. It does not work.
 
@@ -79,19 +110,26 @@ Keeping the match id in the query string of the root URL means:
 - no re-verification of `assetlinks.json`,
 - no risk to deep linking that has only just been verified in production.
 
-### 2.2 Why this is safe to ship against installed versions
+### 2.3 Why this is safe to ship against installed versions
 
 v2.0.0 is in production and not every user updates. An older app receiving
 `?npub=X&match=Y` reads the pubkey it understands and ignores the parameter it
 does not: it opens the board. Degraded, but correct — the recipient still
 reaches the right organizer, one tap from the right match.
 
-The web board behaves the same way for a viewer on a cached bundle.
+The web board behaves the same way for a viewer on a cached bundle — with one
+caveat that is a **known limitation, not a clean fallback**. An older bundle
+opens the organizer's board and leaves `?match=…` sitting in the address bar,
+because `stripSharedPubkeyFromUrl` removes only the pubkey (§2.5). Refreshing or
+forwarding from that address bar yields a link carrying `match` and no `npub` —
+the broken form. Landing on the board is right; the URL left behind is not, and
+stays wrong until the strip fix of §2.5 ships.
 
-There is no version of this link that produces an error on an old client, which
-is the property that makes it shippable at all.
+No version of this link produces an *error* on an old client, which is the
+property that makes it shippable. That is a weaker claim than "degrades
+correctly", and deliberately so.
 
-### 2.3 Why `match=` and not `id=`
+### 2.4 Why `match=` and not `id=`
 
 **Decision, and a change from the original sketch.** The first proposal was
 `&id=abcd`.
@@ -110,7 +148,7 @@ accepted (`kSharePubkeyParams`), but that pair exists to absorb historical drift
 between two readers, not because two names were ever wanted. A second alias for
 `match` should not be added.
 
-### 2.4 Both parameters are stripped together, or neither
+### 2.5 Both parameters are stripped together, or neither
 
 The web board wipes the pubkey from the address bar once it has been applied
 (`stripSharedPubkeyFromUrl` in choke-scoreboard's `share-link.ts`), so a later
@@ -125,7 +163,7 @@ Whatever strips must strip **both or neither**. This is a contract obligation,
 not a web implementation detail, because the string a viewer copies out of their
 address bar is a link that will be sent to somebody else.
 
-### 2.5 Nostr addressing
+### 2.6 Nostr addressing
 
 Matches are addressable events (kind `31415`, keyed by a `d` tag). `npub` +
 `match` are therefore exactly the coordinates the protocol already uses to name
@@ -161,11 +199,30 @@ So a match link has three outcomes, and the middle one must exist:
 | **Resolved** | The event arrived. The read-only match view, as reached from the board today. |
 | **Unresolved** | The feed settled and this id is not in it. Say that plainly, and leave the board reachable. |
 
-Pending must time out into Unresolved rather than waiting forever, and
 Unresolved must never be silently replaced by the board — that is the same
 substitution `BrokenShareLink` already exists to prevent, and the reasoning in
 `share_link.dart` applies here unchanged: the user followed a link meant for one
 particular thing, and showing them a different thing is a lie they cannot catch.
+
+#### When Pending ends — normative
+
+"Times out eventually" cannot be implemented twice the same way, so the rules
+are fixed here rather than left to each reader:
+
+1. **Settled signal.** A lookup is settled once the subscription reports it has
+   sent everything it holds — NIP-01's `EOSE`. **This does not exist today:**
+   `NostrRelayBackend` exposes only `Stream<NostrEvent> get events`, with no
+   end-of-stored-events signal. Implementing this spec means adding one, or
+   relying on rule 2 alone and saying so in the code.
+2. **Backstop.** Without a settled signal, Pending ends **8 seconds** after the
+   link opens. Long enough for a slow relay on venue wifi, short enough that
+   nobody concludes the app has hung. Both readers use this same number.
+3. **A late arrival still wins.** If the event turns up *after* the move to
+   Unresolved, the reader resolves to it. The link was right and the network was
+   slow; refusing to show what did arrive would be gratuitous. Unresolved states
+   what is known so far — it is not terminal.
+4. **Unresolved never becomes the board on its own**, per §4. The board stays
+   one deliberate tap away.
 
 ### 3.2 Suggested shape
 
@@ -194,12 +251,22 @@ link named.
 `scoreboardMaxAgeSeconds` is `86400`. The board drops matches older than 24
 hours, so a shared match link resolves for a day and is Unresolved after that.
 
-> The web board enforces the same window under a different name —
-> `MATCH_MAX_AGE_SECONDS` in choke-scoreboard's `src/lib/constants.ts` — and
-> enforces it twice: once as `since` on the subscription filter, and again on a
-> ticking freshness check in the match route, so a match open on screen expires
-> where it stands. Same number, two names; worth reconciling if either ever
-> moves.
+**The window is normative: 86400 seconds, in both repositories.** It lives today
+as `scoreboardMaxAgeSeconds` (choke) and `MATCH_MAX_AGE_SECONDS`
+(choke-scoreboard, `src/lib/constants.ts`). Two languages and two build systems
+make a single shared source impractical, so the obligation is a conformance one:
+**neither value moves without the other**, and each repository asserts its own
+constant equals 86400 in its test suite, so a silent drift fails a build instead
+of quietly splitting the contract in half.
+
+Both must also measure it the same way — from the event's `created_at`, against
+the same boundary — so any given link is Resolved in both readers or Unresolved
+in both, never one of each.
+
+> The web enforces the window twice: as `since` on the subscription filter, and
+> again on a ticking freshness check in the match route, so a match open on
+> screen expires where it stands. A stricter reading is allowed provided the
+> boundary is identical; a different boundary is not.
 
 This is being written down rather than discovered later, because it is a product
 choice and not an accident:
@@ -278,7 +345,7 @@ Not in this change, and noted so it is not re-derived later.
 The peak-intent moment is the organizer's: a fight has just been created, the
 people who care are in the room or waiting on their phones, and ten minutes
 later the link is worth nothing. The business plan asks for exactly this in
-§2.1 — *"share button (link + QR) in the app when creating a match, so the
+its own §2.1 — *"share button (link + QR) in the app when creating a match, so the
 organizer can project the QR at the venue"* — and that bullet has sat unbuilt
 because **it was waiting for this spec**: "share when creating a match" only
 means something once a match is a shareable thing.
@@ -398,11 +465,21 @@ This work starts on top of, and reuses:
 choke-scoreboard — must understand `match=` *before* anything starts producing
 links that carry it.
 
-A link lives in a chat forever. If a share button ships first, the links people
-send during that window degrade to board links for good: opened tomorrow, next
-month, by anyone, they still land on a list. §2.2 makes that degradation safe;
-it does not make it desirable, and it is entirely avoidable by ordering the
-work.
+Ship a share button first and, for as long as the window lasts, **every**
+recipient lands on a list instead of the fight they were sent — because during
+that window every reader is an old reader. The sender has no way to know, and
+keeps sending.
+
+That degradation is not permanent in the *link*: the URL still carries
+`match=…`, so once the readers ship, the same message opened again resolves
+correctly. It is permanent only for clients that never update, which §2.3 makes
+safe rather than desirable. In practice the point is close to moot for old
+*links*, since a match expires after 24 hours (§4) — which is exactly why the
+cost lands on the window itself rather than on the archive.
+
+So the reason to order the work is not that links rot. It is that a share button
+whose links nobody can open yet is a broken feature for the whole time it is
+alone, and that is avoidable for free.
 
 So: parse first, resolve second, offer third.
 
@@ -423,7 +500,7 @@ step 4 in either repo. See its companion doc.
 
 ## 10. Out of scope
 
-- `naddr1…` parameter support (§2.4).
+- `naddr1…` parameter support (§2.6).
 - Permanent match permalinks (§4) — tied to the paid event archive.
 - Deep links to a *tournament* or *event* grouping; no such object exists yet.
 - Any change to the App Links intent filter or `assetlinks.json`.
