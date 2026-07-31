@@ -232,64 +232,97 @@ Revisiting this is a deliberate follow-up, not a bug report.
 
 ## 5. Where the share action lives
 
-A match link is only worth building if something offers it. Two moments matter,
-and they are not the same moment.
+A match link is only worth building if something offers it. The spectator
+surfaces come first, because that is where a match link is *reached* — the board
+is how somebody who is not refereeing finds a fight at all.
 
-### 5.1 The organizer, when the match starts
+### 5.1 From the board list, per match
 
-This is the peak-intent moment and the reason the feature exists. Somebody has
-just created a fight; the people who care about it are either in the room or
-waiting on their phones, and both groups are reachable *right now*. Ten minutes
-later the match is over and the link is worth nothing.
+Every match listed on the scoreboard is shareable without opening it. Somebody
+scanning a list of five mats should be able to send one of them onward in a
+single tap, without first entering it and coming back.
 
-The business plan already asks for this — §2.1: *"share button (link + QR) in
-the app when creating a match, so the organizer can project the QR at the venue
-and the audience opens the live"*. That bullet has been sitting unbuilt because
-**it was waiting for this spec**: "share when creating a match" only means
-anything once a match is a shareable thing. Sharing the *board* at the moment a
-match is created is a weaker answer to the same need, and is why the existing
-board-share landed on the scoreboard header instead.
+`MatchCard` gains an optional `onShare`. It is shared with the home feed, so
+this must be additive: a card given no callback renders exactly what it renders
+today, and home is untouched by this change.
 
-So the sequencing is: match links first, and §2.1's second bullet becomes
-natural rather than forced.
+The affordance is a **secondary** one — a small, muted icon in the card's
+trailing area. A list of ten cards each shouting "share" is a list nobody reads;
+the icon should recede until looked for. The card's tap target stays what it is:
+opening the match.
 
-Placement: the match control screen and/or the moment creation succeeds. The
-creation hand-off is where the QR belongs — that is the one instant the
-organizer is standing in front of a room with a phone in their hand.
+### 5.2 While watching one match
 
-### 5.2 The spectator, while watching
+The read-only match view gets a **single share icon, top-right**, mirroring
+`_buildBack` at `Positioned(top: 8, left: 8)` — same offsets, same `SafeArea`,
+same `palette.backLabel`, so the two chrome items read as a pair.
 
-Secondary, and cheaper: a share action on the read-only match view, so somebody
-already watching can pull others in. This is how a link travels a second hop,
-which is the whole compounding part of a viral loop.
+Icon only, no label. Back carries a word because leaving is a decision; sharing
+is one glyph everybody already knows, and the wall board has no room to spend.
 
-Constrained by what that screen is: it is a wall board that gets projected. Any
-control must sit in the existing chrome layer beside Back and Fullscreen, and
-must not appear in the middle of a projected image.
+One tap, straight to the platform share sheet. No intermediate menu: this is the
+"look at this" reflex, and a chooser in front of it costs more than it offers.
 
-### 5.3 Two share actions, two different links
+**No QR on this screen.** The QR's job is a room, and a room is the organizer's
+moment (§5.3), not a spectator's. More to the point, when this screen *is* the
+projection, the audience is already looking at it — what they need is the
+bjjscore.live credit line along the bottom, which now exists. A QR here would
+do the credit's job again, with more clutter, on the one surface that can least
+afford it. A venue-facing code belongs to the "venue mode" idea in the business
+plan (§9.1), not here.
 
-The app will now be able to share two things, and a user who cannot tell them
-apart will send the wrong one:
+### 5.3 The organizer, when the match starts — later, same plumbing
+
+Not in this change, and noted so it is not re-derived later.
+
+The peak-intent moment is the organizer's: a fight has just been created, the
+people who care are in the room or waiting on their phones, and ten minutes
+later the link is worth nothing. The business plan asks for exactly this in
+§2.1 — *"share button (link + QR) in the app when creating a match, so the
+organizer can project the QR at the venue"* — and that bullet has sat unbuilt
+because **it was waiting for this spec**: "share when creating a match" only
+means something once a match is a shareable thing.
+
+Once `MatchCard.onShare` and the match URL builder exist, wiring the home feed
+and the creation hand-off is small. That is where the QR belongs.
+
+### 5.4 Two share actions, two different links
+
+The app will now share two things, and a user who cannot tell them apart will
+send the wrong one:
 
 | Action | Link | Means |
 |---|---|---|
-| Share **board** (exists, on the scoreboard header) | `?npub=…` | "follow this academy" |
+| Share **board** (exists, scoreboard header) | `?npub=…` | "follow this academy" |
 | Share **match** (new) | `?npub=…&match=…` | "watch this fight" |
 
 They must be labelled for what they produce — *Share this board* versus *Share
-this match* — never both as a bare "Share". Sharing a whole board when somebody
-meant to send one fight is the exact friction §1.2 is about, reintroduced from
-the other end.
+this match* — never both as a bare "Share". Sending a whole board when somebody
+meant to send one fight is the friction of §1.2, reintroduced from the other
+end.
 
-### 5.4 Nothing new has to be built to send it
+### 5.5 Nothing new has to be built to send it
 
-The plumbing already exists and is shared: `showQrDialog` in
+The plumbing exists and is shared: `showQrDialog` in
 `lib/shared/widgets/qr_dialog.dart`, the share-sheet call with its
-`PlatformException` handling, and `liveBoardShareUrl` in `share_link.dart`. This
-work adds a URL builder beside that last one and reuses the rest.
+`PlatformException` handling and `shareFailed` snackbar, and `liveBoardShareUrl`
+in `share_link.dart`. This adds a match URL builder beside that last one and
+reuses the rest.
 
----
+### 5.6 Open question: chrome on a board that gets projected
+
+The wall board is projected onto a screen at a venue. It already carries a Back
+button permanently; §5.2 adds a second glyph beside it. Both are controls for
+whoever holds the phone, and neither means anything to a room.
+
+The class already describes itself as asking for landscape "the way a video
+player does". The rest of that pattern fits: fade the chrome layer out after a
+few seconds of no touch, bring it back on tap. Sharing stays one tap away for
+the holder and disappears from the wall for everyone else — and the Back button,
+which has the same problem today, is fixed by the same change.
+
+Worth doing, and separable: it improves what already ships, so it can be its own
+change rather than a rider on this one.
 
 ## 6. Behaviour that has to change
 
