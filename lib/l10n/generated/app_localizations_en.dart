@@ -701,8 +701,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get boardLiveCredit =>
-      'Live scoreboard by bjjscore.live — create yours free';
+  String get boardLiveCredit => 'Live scoreboard';
 
   @override
   String get scoreboardBrokenLinkTitle => 'That link is broken';

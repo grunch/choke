@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 
 import 'board_palette.dart';
+import '../../services/deep_links/share_link.dart';
 import '../../services/wakelock/screen_wakelock.dart';
 import '../../shared/wall_clock.dart';
 import '../../shared/widgets/match_card.dart';
@@ -154,9 +155,6 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
               _buildHalf(context, l10n, match, unit, isF1: false),
               _buildLoserDim(match, palette),
               _buildCenter(context, l10n, match, unit),
-              // Under the banner in the stack, deliberately: a room reads the
-              // announcement of who won, and nothing may sit over it.
-              _buildCredit(l10n, unit, palette),
               _buildWinnerBanner(context, l10n, match, unit),
               _buildBack(l10n, palette),
             ],
@@ -482,6 +480,11 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
                       )
                     : const SizedBox.shrink(),
               ),
+              // Last, so it settles at the foot of the centre column. That
+              // column is 28% of the width and centred, which puts it between
+              // the two fighters' chip rows rather than across them — the one
+              // strip along the bottom that belongs to neither half.
+              _buildCredit(l10n, unit, palette),
             ],
           ),
         ),
@@ -785,30 +788,40 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
   /// after the score rather than with it. That is exactly this line's rank.
   Widget _buildCredit(
       AppLocalizations l10n, double unit, BoardPalette palette) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(unit * 4, 0, unit * 4, unit * 1.5),
-          child: Text(
-            l10n.boardLiveCredit,
-            textAlign: TextAlign.center,
-            // Two lines, not one: the half that would be cut is "create yours
-            // free", which is the whole reason this line is on the wall.
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: palette.label,
-              // Scaled off the board's unit like everything else, so it reads
-              // the same on a phone held sideways and on a projector, and
-              // clamped so it never grows into the score or vanishes under it.
-              fontSize: (unit * 1.9).clamp(9.0, 20.0),
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.6,
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          l10n.boardLiveCredit.toUpperCase(),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: palette.label,
+            // Scaled off the board's unit like everything else, so it reads
+            // the same on a phone held sideways and on a projector, and
+            // clamped so it never grows into the score or vanishes under it.
+            fontSize: (unit * 1.5).clamp(8.0, 15.0),
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.2,
           ),
         ),
-      ),
+        SizedBox(height: unit * 0.6),
+        Text(
+          // The host the app itself answers for, not a second copy of it — the
+          // address a room is told to visit and the address the app opens are
+          // the same string or the invitation is a dead end.
+          kShareLinkHost,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          style: TextStyle(
+            color: palette.text,
+            fontSize: (unit * 2.6).clamp(12.0, 26.0),
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.4,
+          ),
+        ),
+      ],
     );
   }
 

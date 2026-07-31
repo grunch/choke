@@ -706,8 +706,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get boardLiveCredit =>
-      'Placar ao vivo por bjjscore.live — crie o seu grátis';
+  String get boardLiveCredit => 'Placar ao vivo';
 
   @override
   String get scoreboardBrokenLinkTitle => 'Esse link está quebrado';

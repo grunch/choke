@@ -874,9 +874,9 @@
       }
     }
   },
-  "boardLiveCredit": "Live scoreboard by bjjscore.live — create yours free",
+  "boardLiveCredit": "Live scoreboard",
   "@boardLiveCredit": {
-    "description": "Credit line along the bottom of the full-screen wall board, so the venue audience can see where the live scoreboard comes from. The brand bjjscore.live is a domain and stays untranslated."
+    "description": "Label above the domain at the foot of the full-screen wall board, so the venue audience can see where the live scoreboard comes from. Rendered uppercase, with the domain underneath it taken from kShareLinkHost — do not put the domain in this string."
   },
   "scoreboardBrokenLinkTitle": "That link is broken",
   "@scoreboardBrokenLinkTitle": {

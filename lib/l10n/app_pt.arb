@@ -224,7 +224,7 @@
       }
     }
   },
-  "boardLiveCredit": "Placar ao vivo por bjjscore.live — crie o seu grátis",
+  "boardLiveCredit": "Placar ao vivo",
   "scoreboardBrokenLinkTitle": "Esse link está quebrado",
   "scoreboardBrokenLinkBody": "Ele apontava para um placar específico, mas não foi possível ler a chave pública que trazia. Peça para quem compartilhou enviar de novo.",
   "scoreboardBrokenLinkDismiss": "Ver meu placar",

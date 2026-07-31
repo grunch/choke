@@ -8,6 +8,7 @@ import 'package:choke/features/scoreboard/providers/scoreboard_providers.dart';
 import 'package:choke/features/scoreboard/board_palette.dart';
 import 'package:choke/features/scoreboard/scoreboard_match_screen.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
+import 'package:choke/services/deep_links/share_link.dart';
 import 'package:choke/services/key_management/key_manager.dart';
 import 'package:choke/services/nostr/crypto/nostr_crypto.dart';
 import 'package:choke/services/nostr/nostr_service.dart';
@@ -99,29 +100,55 @@ void main() {
     await tester.pump();
   }
 
-  Future<String> credit() async {
+  /// The label above the domain, as the board renders it.
+  Future<String> label() async {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-    return l10n.boardLiveCredit;
+    return l10n.boardLiveCredit.toUpperCase();
   }
 
   group('ScoreboardMatchScreen live credit', () {
-    testWidgets('credits bjjscore.live on the wall board', (tester) async {
+    testWidgets('sends the room to the domain, under a label', (tester) async {
       // Arrange + Act — the audience watches this screen for a whole match
       await pumpBoard(tester, _match());
 
-      // Assert
-      expect(find.text(await credit()), findsOneWidget);
+      // Assert — the address is the message; the label only says what it is
+      expect(find.text(kShareLinkHost), findsOneWidget);
+      expect(find.text(await label()), findsOneWidget);
     });
 
-    testWidgets('names the brand in every language', (tester) async {
-      // Arrange + Act — the domain is the product; it is never translated
+    testWidgets('never lets a translation carry the domain', (tester) async {
+      // Arrange + Act — the domain is rendered from kShareLinkHost, so the one
+      // the room is told to visit is the one the app answers for. A translator
+      // who typed it into a string could put a dead address on a wall.
       await pumpBoard(tester, _match());
 
       // Assert
       for (final locale in AppLocalizations.supportedLocales) {
         final l10n = await AppLocalizations.delegate.load(locale);
-        expect(l10n.boardLiveCredit, contains('bjjscore.live'));
+        expect(l10n.boardLiveCredit, isNot(contains(kShareLinkHost)));
       }
+    });
+
+    testWidgets('reads the domain louder than its label', (tester) async {
+      // Arrange + Act — the domain is what somebody has to remember
+      await pumpBoard(tester, _match());
+
+      // Assert
+      final domain = tester.widget<Text>(find.text(kShareLinkHost));
+      final caption = tester.widget<Text>(find.text(await label()));
+      expect(domain.style!.fontSize, greaterThan(caption.style!.fontSize!));
+      expect(domain.style!.color, BoardPalette.dark.text);
+      expect(caption.style!.color, BoardPalette.dark.label);
+    });
+
+    testWidgets('stays quieter than the score', (tester) async {
+      // Arrange + Act — promotion must never compete with what is being scored
+      await pumpBoard(tester, _match());
+
+      // Assert — the fighters' points dwarf it, which is the whole hierarchy
+      final domain = tester.widget<Text>(find.text(kShareLinkHost));
+      final score = tester.widget<Text>(find.text('0').first);
+      expect(domain.style!.fontSize, lessThan(score.style!.fontSize!));
     });
 
     testWidgets('keeps the credit legible on the light board', (tester) async {
@@ -129,24 +156,14 @@ void main() {
       await pumpBoard(tester, _match(), theme: AppTheme.lightTheme);
 
       // Assert
-      final text = tester.widget<Text>(find.text(await credit()));
-      expect(text.style!.color, BoardPalette.light.label);
-      expect(text.style!.color, isNot(BoardPalette.dark.label));
+      final domain = tester.widget<Text>(find.text(kShareLinkHost));
+      expect(domain.style!.color, BoardPalette.light.text);
+      expect(domain.style!.color, isNot(BoardPalette.dark.text));
     });
 
-    testWidgets('stays quieter than the fighters names', (tester) async {
-      // Arrange + Act — promotion must never compete with the score
-      await pumpBoard(tester, _match());
-
-      // Assert
-      final text = tester.widget<Text>(find.text(await credit()));
-      expect(text.style!.color, BoardPalette.dark.label);
-      expect(text.style!.color, isNot(BoardPalette.dark.text));
-    });
-
-    testWidgets('does not cover the winner banner once a match is over',
-        (tester) async {
-      // Arrange — the banner is the one thing a whole room reads at once
+    testWidgets('still credits the board once a match is over', (tester) async {
+      // Arrange — a finished board is left up to be read across a room, which
+      // is the longest anybody looks at it.
       final done = _match(
         status: MatchStatus.finished,
         winner: MatchWinner.f2,
@@ -156,36 +173,10 @@ void main() {
       // Act
       await pumpBoard(tester, done);
 
-      // Assert
+      // Assert — and the banner announcing the winner is still there
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       expect(find.text(l10n.scoreboardWinner.toUpperCase()), findsOneWidget);
-      expect(find.text(await credit()), findsOneWidget);
-      // The banner is painted after the credit, so it wins any overlap.
-      final stack = tester.widget<Stack>(
-        find
-            .descendant(
-              of: find.byType(LayoutBuilder),
-              matching: find.byType(Stack),
-            )
-            .first,
-      );
-      final creditIndex = stack.children.indexWhere(
-        (w) => find
-            .descendant(
-                of: find.byWidget(w), matching: find.text(l10n.boardLiveCredit))
-            .evaluate()
-            .isNotEmpty,
-      );
-      final bannerIndex = stack.children.indexWhere(
-        (w) => find
-            .descendant(
-                of: find.byWidget(w),
-                matching: find.text(l10n.scoreboardWinner.toUpperCase()))
-            .evaluate()
-            .isNotEmpty,
-      );
-      expect(creditIndex, greaterThanOrEqualTo(0));
-      expect(bannerIndex, greaterThan(creditIndex));
+      expect(find.text(kShareLinkHost), findsOneWidget);
     });
   });
 }

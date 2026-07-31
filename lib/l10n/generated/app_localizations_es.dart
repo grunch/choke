@@ -706,8 +706,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get boardLiveCredit =>
-      'Marcador en vivo por bjjscore.live — creá el tuyo gratis';
+  String get boardLiveCredit => 'Marcador en vivo';
 
   @override
   String get scoreboardBrokenLinkTitle => 'Ese link está roto';
