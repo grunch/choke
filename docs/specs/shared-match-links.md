@@ -72,15 +72,47 @@ match = 4 * HEXDIG-lowercase          ; /^[0-9a-f]{4}$/
 That is exactly what `Match._generateMatchId()` produces — four characters drawn
 from `0123456789abcdef`. It follows that:
 
-- **No percent-encoding is involved.** Every legal character is URL-safe, so the
-  value is written and read verbatim. A builder must not encode it; a reader
-  must not decode it.
-- **Comparison is exact, after lowercasing.** Readers lowercase the incoming
-  value first, so a link mangled by an auto-capitalising keyboard still
-  resolves. Builders always emit lowercase. There is no other normalisation.
-- **Anything else is rejected rather than coerced**: wrong length, non-hex
-  characters, anything left after trimming. A rejected value is a *broken* link,
-  not an absent one — the sender named something, and §3.1 governs saying so.
+- **Builders emit it verbatim and lowercase.** Every legal character is
+  URL-safe, so there is nothing to encode.
+- **Readers validate the *decoded* value**, in this order: take what the URL
+  parser hands back → trim surrounding whitespace → lowercase → match the
+  pattern. Both platforms decode before a caller sees the value
+  (`Uri.queryParameters` here, `URLSearchParams` on the web); reading the raw
+  query string to avoid that would be fighting the platform for nothing.
+
+  That order settles the awkward cases explicitly, and both readers must agree
+  on all of them:
+
+  | Input | Decodes to | Verdict |
+  |---|---|---|
+  | `abcd` | `abcd` | accepted |
+  | `ABCD` | `ABCD` | accepted — lowercased |
+  | `abcd%20` | `abcd ` | accepted — trimmed |
+  | `%61%62%63%64` | `abcd` | accepted |
+  | `abc` / `abcde` / `wxyz` | — | **Broken** |
+
+  Accepting more than we emit is deliberate. Links are mangled by chat clients
+  and auto-capitalising keyboards, and the `npub` reader already trims for
+  exactly that reason.
+- **Anything that still fails the pattern is a *broken* link, not an absent
+  one** — the sender named something unreadable, and §3.1 governs saying so.
+
+#### The lookup key is (organizer, match), never match alone
+
+A match id is unique only inside one author's events, so an id on its own names
+nothing — which is why §2 calls a `match` without a readable `npub` broken.
+
+The same follows through to resolution, and it is a requirement rather than a
+description of what either reader does today: **a match resolves only if the
+event's author equals the npub the link named.** An event carrying the same id
+from a different author must neither resolve the route nor expire it.
+
+This matters more here than the arithmetic suggests. choke-scoreboard's
+`matchesMap` is keyed by match id alone, and this app looks a match up by id
+within whatever feed is loaded. Both are safe only for as long as exactly one
+organizer's events are in scope, which a link that switches organizers is
+precisely designed to break. Coverage for "the same id from two different
+authors" is owed on both sides.
 
 > **Known limitation.** Four hex characters is 16 bits, and ids are generated
 > randomly with no collision check. Two matches by one organizer inside the
@@ -210,18 +242,33 @@ particular thing, and showing them a different thing is a lie they cannot catch.
 are fixed here rather than left to each reader:
 
 1. **Settled signal.** A lookup is settled once the subscription reports it has
-   sent everything it holds — NIP-01's `EOSE`. **This does not exist today:**
-   `NostrRelayBackend` exposes only `Stream<NostrEvent> get events`, with no
-   end-of-stored-events signal. Implementing this spec means adding one, or
-   relying on rule 2 alone and saying so in the code.
-2. **Backstop.** Without a settled signal, Pending ends **8 seconds** after the
+   sent everything it holds — NIP-01's `EOSE`. **Neither reader can act on it
+   today, for different reasons**, and both need work:
+   - choke: `NostrRelayBackend` exposes only `Stream<NostrEvent> get events`.
+     The signal never reaches Dart at all, so it has to be plumbed through.
+   - choke-scoreboard: `src/lib/nostr.ts` *does* receive it — `subscribeMany`
+     is given an `oneose` handler — but it only clears the shared `isLoading`
+     store, which an unconditional 10-second `setTimeout` also clears. A caller
+     watching that store cannot tell "the relays answered" from "ten seconds
+     passed", which is precisely the distinction this rule needs. The signal is
+     there; it needs its own channel.
+2. **Backstop.** Without a settled signal, Pending ends **10 seconds** after the
    link opens. Long enough for a slow relay on venue wifi, short enough that
-   nobody concludes the app has hung. Both readers use this same number.
+   nobody concludes the app has hung.
+
+   Ten rather than a fresh number because choke-scoreboard already waits
+   exactly that long before giving up on EOSE. Inventing a second timeout two
+   seconds away from an existing one buys nothing and leaves two magic numbers
+   where there was one. Both readers use this same value.
 3. **A late arrival still wins.** If the event turns up *after* the move to
    Unresolved, the reader resolves to it. The link was right and the network was
    slow; refusing to show what did arrive would be gratuitous. Unresolved states
    what is known so far — it is not terminal.
-4. **Unresolved never becomes the board on its own**, per §4. The board stays
+4. **Either route reaches Unresolved.** Whichever comes first — the settled
+   signal with no matching event, or the backstop expiring — ends Pending. It
+   is not "wait for the timeout regardless": a feed that has answered and does
+   not have the match has answered.
+5. **Unresolved never becomes the board on its own**, per §4. The board stays
    one deliberate tap away.
 
 ### 3.2 Suggested shape
@@ -255,9 +302,12 @@ hours, so a shared match link resolves for a day and is Unresolved after that.
 as `scoreboardMaxAgeSeconds` (choke) and `MATCH_MAX_AGE_SECONDS`
 (choke-scoreboard, `src/lib/constants.ts`). Two languages and two build systems
 make a single shared source impractical, so the obligation is a conformance one:
-**neither value moves without the other**, and each repository asserts its own
-constant equals 86400 in its test suite, so a silent drift fails a build instead
-of quietly splitting the contract in half.
+**neither value moves without the other**.
+
+That obligation is currently unenforced in both repositories — nothing pins the
+number, so a one-character edit on either side would split the contract in half
+in silence. Each repo should assert its own constant equals 86400 in its test
+suite, which is a one-line addition on each side and belongs with this work.
 
 Both must also measure it the same way — from the event's `created_at`, against
 the same boundary — so any given link is Resolved in both readers or Unresolved
@@ -276,7 +326,7 @@ choice and not an accident:
 - Making it permanent is not a small change. It means fetching one event by its
   coordinates instead of reading the recent-matches window — a different query,
   a different cache, and a different empty state.
-- **Permanence is already a paid feature in the business plan** (§4.1, permanent
+- **Permanence is already a paid feature in the business plan** (its §4.1, permanent
   event archive under Event Page Pro). Giving away indefinite match permalinks
   for free spends that before it has been sold.
 

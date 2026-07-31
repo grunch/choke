@@ -678,6 +678,36 @@ void main() {
       expect(ref.read(selectedTabProvider), AppTab.scoreboard);
     });
 
+    testWidgets('has the request in place before the pubkey changes',
+        (tester) async {
+      // Arrange — switching the watched author rebuilds the feed, and anything
+      // reacting to that asks whether a match was requested. Set second, it
+      // would read the previous answer.
+      late ProviderContainer container;
+      late WidgetRef ref;
+      await tester.pumpWidget(ProviderScope(
+        child: Consumer(builder: (context, r, _) {
+          ref = r;
+          container = ProviderScope.containerOf(context);
+          return const SizedBox();
+        }),
+      ));
+
+      String? seenWhenPubkeyChanged;
+      container.listen<String?>(
+        watchedPubkeyProvider,
+        (_, __) =>
+            seenWhenPubkeyChanged = container.read(requestedMatchProvider),
+      );
+
+      // Act
+      openShareLink(Uri.parse(matchShareUrl('npub1fake', 'abcd')), crypto, ref);
+      await tester.pump();
+
+      // Assert
+      expect(seenWhenPubkeyChanged, 'abcd');
+    });
+
     testWidgets('a board link afterwards asks for no match', (tester) async {
       // Arrange — a link naming only a board is not a request for whatever
       // match happened to be open before it
