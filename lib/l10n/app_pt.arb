@@ -226,7 +226,7 @@
   },
   "boardLiveCredit": "Placar ao vivo",
   "scoreboardBrokenLinkTitle": "Esse link está quebrado",
-  "scoreboardBrokenLinkBody": "Ele apontava para um placar específico, mas não foi possível ler a chave pública que trazia. Peça para quem compartilhou enviar de novo.",
+  "scoreboardBrokenLinkBody": "Ele apontava para algo específico, mas não foi possível ler uma parte. Peça para quem compartilhou enviar de novo.",
   "scoreboardBrokenLinkDismiss": "Ver meu placar",
   "scoreboardShareBoard": "Compartilhar este placar",
   "scoreboardShareBoardMessage": "Acompanhe estas lutas de BJJ ao vivo em bjjscore.live:",

@@ -713,7 +713,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get scoreboardBrokenLinkBody =>
-      'Ele apontava para um placar específico, mas não foi possível ler a chave pública que trazia. Peça para quem compartilhou enviar de novo.';
+      'Ele apontava para algo específico, mas não foi possível ler uma parte. Peça para quem compartilhou enviar de novo.';
 
   @override
   String get scoreboardBrokenLinkDismiss => 'Ver meu placar';
