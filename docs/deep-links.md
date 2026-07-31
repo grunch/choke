@@ -1,5 +1,10 @@
 # Shared board links
 
+> **A link to one particular match** — `?npub=…&match=…` — is specified in
+> [`specs/shared-match-links.md`](specs/shared-match-links.md) and is not built
+> yet. Everything below describes the board link, which that one extends rather
+> than replaces.
+
 Sharing a pubkey from Account produces an ordinary web link:
 
 ```
