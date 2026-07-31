@@ -706,6 +706,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get boardLiveCredit => 'Marcador en vivo';
+
+  @override
   String get scoreboardBrokenLinkTitle => 'Ese link está roto';
 
   @override

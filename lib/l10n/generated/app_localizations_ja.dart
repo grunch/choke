@@ -676,6 +676,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get boardLiveCredit => 'ライブスコアボード';
+
+  @override
   String get scoreboardBrokenLinkTitle => 'このリンクは壊れています';
 
   @override

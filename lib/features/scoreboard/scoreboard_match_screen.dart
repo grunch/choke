@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 
 import 'board_palette.dart';
+import '../../services/deep_links/share_link.dart';
 import '../../services/wakelock/screen_wakelock.dart';
 import '../../shared/wall_clock.dart';
 import '../../shared/widgets/match_card.dart';
@@ -119,9 +120,8 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
 
   /// Vote to hold the screen exactly while the watched match is in the feed.
   void _syncWakelock() {
-    final present = ref
-        .read(scoreboardMatchesProvider)
-        .any((m) => m.id == widget.matchId);
+    final present =
+        ref.read(scoreboardMatchesProvider).any((m) => m.id == widget.matchId);
     unawaited(_wakelock.keepAwake(present));
   }
 
@@ -480,6 +480,11 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
                       )
                     : const SizedBox.shrink(),
               ),
+              // Last, so it settles at the foot of the centre column. That
+              // column is 28% of the width and centred, which puts it between
+              // the two fighters' chip rows rather than across them — the one
+              // strip along the bottom that belongs to neither half.
+              _buildCredit(l10n, unit, palette),
             ],
           ),
         ),
@@ -500,7 +505,10 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     // agree with each other at a glance.
     final (label, color) = switch (match) {
       Match(isPaused: true) => (l10n.statusPaused, palette.paused),
-      Match(status: MatchStatus.waiting) => (l10n.statusWaiting, palette.waiting),
+      Match(status: MatchStatus.waiting) => (
+          l10n.statusWaiting,
+          palette.waiting
+        ),
       Match(status: MatchStatus.inProgress) => (
           l10n.statusInProgress,
           palette.liveText,
@@ -572,8 +580,8 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     );
   }
 
-  Widget _buildTimerCard(AppLocalizations l10n, Match match, double unit,
-      BoardPalette palette) {
+  Widget _buildTimerCard(
+      AppLocalizations l10n, Match match, double unit, BoardPalette palette) {
     final remaining = match.remainingSecondsAt(_now);
     final minutes = (remaining ~/ 60).toString().padLeft(2, '0');
     final seconds = (remaining % 60).toString().padLeft(2, '0');
@@ -663,7 +671,8 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
           color: palette.bannerSurface,
           borderRadius: BorderRadius.circular(22),
           border: palette.bannerOutlined
-              ? Border.all(color: color.withValues(alpha: palette.pillBorderAlpha))
+              ? Border.all(
+                  color: color.withValues(alpha: palette.pillBorderAlpha))
               : null,
           boxShadow: palette.bannerOutlined
               ? [
@@ -766,6 +775,55 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
   }
 
   // ─── Chrome ─────────────────────────────────────────────────────────────
+
+  /// Where the board came from, along the bottom edge.
+  ///
+  /// Every match projected on a wall is watched for its whole length by a room
+  /// full of people who could run their own board, and none of them are holding
+  /// the phone. So this is a line of text and nothing else: no tap target, no
+  /// link — it is read across a room, not pressed.
+  ///
+  /// [BoardPalette.label] is the palette's own word for "explanation": the
+  /// colour the column headers are drawn in, chosen in both themes to be read
+  /// after the score rather than with it. That is exactly this line's rank.
+  Widget _buildCredit(
+      AppLocalizations l10n, double unit, BoardPalette palette) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          l10n.boardLiveCredit.toUpperCase(),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: palette.label,
+            // Scaled off the board's unit like everything else, so it reads
+            // the same on a phone held sideways and on a projector, and
+            // clamped so it never grows into the score or vanishes under it.
+            fontSize: (unit * 1.5).clamp(8.0, 15.0),
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.2,
+          ),
+        ),
+        SizedBox(height: unit * 0.6),
+        Text(
+          // The host the app itself answers for, not a second copy of it — the
+          // address a room is told to visit and the address the app opens are
+          // the same string or the invitation is a dead end.
+          kShareLinkHost,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          style: TextStyle(
+            color: palette.text,
+            fontSize: (unit * 2.6).clamp(12.0, 26.0),
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.4,
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildBack(AppLocalizations l10n, BoardPalette palette) {
     return Positioned(
