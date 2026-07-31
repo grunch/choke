@@ -676,6 +676,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get boardLiveCredit => 'ライブスコアボード提供 bjjscore.live — 無料で作成できます';
+
+  @override
   String get scoreboardBrokenLinkTitle => 'このリンクは壊れています';
 
   @override

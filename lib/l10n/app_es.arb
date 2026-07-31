@@ -224,6 +224,7 @@
       }
     }
   },
+  "boardLiveCredit": "Marcador en vivo por bjjscore.live — creá el tuyo gratis",
   "scoreboardBrokenLinkTitle": "Ese link está roto",
   "scoreboardBrokenLinkBody": "Apuntaba a un tablero en particular, pero no se pudo leer la clave pública que traía. Pedile a quien te lo compartió que te lo mande de nuevo.",
   "scoreboardBrokenLinkDismiss": "Ver mi tablero",

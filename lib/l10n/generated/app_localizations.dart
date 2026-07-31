@@ -1404,6 +1404,12 @@ abstract class AppLocalizations {
   /// **'{points} PTS'**
   String scoreboardPointsShort(int points);
 
+  /// Credit line along the bottom of the full-screen wall board, so the venue audience can see where the live scoreboard comes from. The brand bjjscore.live is a domain and stays untranslated.
+  ///
+  /// In en, this message translates to:
+  /// **'Live scoreboard by bjjscore.live — create yours free'**
+  String get boardLiveCredit;
+
   /// Title shown when a shared link named a board but its pubkey could not be read
   ///
   /// In en, this message translates to:

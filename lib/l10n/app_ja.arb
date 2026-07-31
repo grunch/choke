@@ -224,6 +224,7 @@
       }
     }
   },
+  "boardLiveCredit": "ライブスコアボード提供 bjjscore.live — 無料で作成できます",
   "scoreboardBrokenLinkTitle": "このリンクは壊れています",
   "scoreboardBrokenLinkBody": "特定のスコアボードを指していましたが、公開鍵を読み取れませんでした。共有した人にもう一度送ってもらってください。",
   "scoreboardBrokenLinkDismiss": "自分のスコアボードを見る",
