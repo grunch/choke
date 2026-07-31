@@ -684,4 +684,17 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get scoreboardBrokenLinkDismiss => '自分のスコアボードを見る';
+
+  @override
+  String get scoreboardShareBoard => 'このスコアボードを共有';
+
+  @override
+  String get scoreboardShareBoardMessage =>
+      'bjjscore.live でこれらの BJJ の試合をライブで観戦:';
+
+  @override
+  String get scoreboardQrTitle => 'スキャンしてライブ観戦';
+
+  @override
+  String get scoreboardQrHint => 'スマートフォンのカメラをこのコードに向けると、ライブスコアボードが開きます';
 }

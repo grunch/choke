@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 
 import '../../services/deep_links/share_link.dart';
 import '../../services/nostr/crypto/nostr_crypto.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/match_card.dart';
+import '../../shared/widgets/qr_dialog.dart';
 import '../../shared/widgets/status_filter_bar.dart';
 import '../match/models/match.dart';
 import 'providers/scoreboard_providers.dart';
@@ -63,6 +65,67 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
         Set<MatchStatus>.from(ref.read(scoreboardStatusFilterProvider));
     if (!current.remove(status)) current.add(status);
     ref.read(scoreboardStatusFilterProvider.notifier).state = current;
+  }
+
+  /// The link a spectator opens to reach the board being watched.
+  ///
+  /// The npub, not the hex: it is what the web board publishes and what a
+  /// person can recognise if they ever look at the URL.
+  String _boardUrl(String watchedHex) =>
+      liveBoardShareUrl(ref.read(nostrCryptoProvider).npubEncode(watchedHex));
+
+  /// Hand this board to somebody else.
+  ///
+  /// A board is worth nothing to the person already watching it — its value is
+  /// that it travels: a coach sends it to a parent two rooms away, a spectator
+  /// re-shares it into the academy group. Sharing the *link* rather than the
+  /// key means the recipient has nothing to paste, and the same URL serves both
+  /// of them: the app opens it if they have it, the web board if they do not.
+  Future<void> _shareBoard(String watchedHex) async {
+    final l10n = AppLocalizations.of(context);
+    final url = _boardUrl(watchedHex);
+
+    // iPad requires a non-null origin to anchor the share popover; the screen's
+    // render box is a safe fallback on phones.
+    final box = context.findRenderObject() as RenderBox?;
+    final origin =
+        box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+
+    try {
+      await Share.share(
+        '${l10n.scoreboardShareBoardMessage}\n$url',
+        subject: l10n.scoreboardShareBoard,
+        sharePositionOrigin: origin,
+      );
+    } on PlatformException catch (e) {
+      // The platform share sheet can fail to open (no handler registered, a
+      // transient platform error). Surface it instead of letting the failure
+      // escape this tap callback as an unhandled async error. Only the code is
+      // logged — never the message, which could echo shared content back out.
+      debugPrint('ScoreboardScreen: share sheet failed (${e.code})');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.shareFailed),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  /// The same link as a code, for a room rather than a chat.
+  ///
+  /// This is how a board reaches people who are physically present: the
+  /// organizer holds up or projects the code and the crowd points a camera at
+  /// it, with nothing typed and no key exchanged.
+  void _showQr(String watchedHex) {
+    final l10n = AppLocalizations.of(context);
+    showQrDialog(
+      context,
+      title: l10n.scoreboardQrTitle,
+      data: _boardUrl(watchedHex),
+      caption: l10n.scoreboardQrHint,
+    );
   }
 
   void _open(Match match) {
@@ -146,6 +209,25 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
                       ],
                     ),
                   ),
+                  // Only once there is a board to hand over. With nothing
+                  // watched there is no link to give, and behind a broken link
+                  // the board underneath is not the one that was asked for —
+                  // passing it on would spread the substitution the broken-link
+                  // state exists to stop.
+                  if (watched != null && !brokenLink) ...[
+                    IconButton(
+                      onPressed: () => _showQr(watched),
+                      tooltip: l10n.showQr,
+                      color: tk.muted,
+                      icon: const Icon(Icons.qr_code_2),
+                    ),
+                    IconButton(
+                      onPressed: () => _shareBoard(watched),
+                      tooltip: l10n.scoreboardShareBoard,
+                      color: tk.muted,
+                      icon: const Icon(Icons.ios_share),
+                    ),
+                  ],
                 ],
               ),
             ),

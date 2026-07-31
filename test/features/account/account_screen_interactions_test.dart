@@ -7,9 +7,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:choke/features/account/account_screen.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
+import 'package:choke/services/deep_links/share_link.dart';
 import 'package:choke/services/key_management/key_manager.dart';
 
 import '../../support/nostr_fakes.dart';
+import '../../support/share_channel.dart';
 
 const _npub = 'npub1testpublickey';
 const _nsec = 'nsec1testprivatekey';
@@ -106,31 +108,6 @@ void main() {
           .setMockMethodCallHandler(SystemChannels.platform, null);
     });
     return copied;
-  }
-
-  /// Mock the share_plus platform channel; records the shared text, or throws
-  /// when [fail] is set.
-  List<Map<Object?, Object?>> mockShareChannel(
-    WidgetTester tester, {
-    bool fail = false,
-  }) {
-    const channel = MethodChannel('dev.fluttercommunity.plus/share');
-    final calls = <Map<Object?, Object?>>[];
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      channel,
-      (call) async {
-        if (fail) {
-          throw PlatformException(code: 'no-share-target');
-        }
-        calls.add((call.arguments as Map).cast<Object?, Object?>());
-        return 'dev.fluttercommunity.plus/share/success';
-      },
-    );
-    addTearDown(() {
-      tester.binding.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, null);
-    });
-    return calls;
   }
 
   test('liveBoardShareUrl carries the npub in the query string', () {

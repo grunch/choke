@@ -12,6 +12,21 @@ import '../nostr/crypto/nostr_crypto.dart';
 /// to somebody else, and is ignored rather than guessed at.
 const String kShareLinkHost = 'bjjscore.live';
 
+/// Base of the public live board.
+///
+/// Built from [kShareLinkHost] rather than written out again: the host this app
+/// answers for and the host it hands out have to be the same one, and two
+/// literals are two things to forget to change together.
+const String kLiveBoardBaseUrl = 'https://$kShareLinkHost';
+
+/// Build the share link for an organizer's npub.
+///
+/// A shared link carries the npub in the query string (`?npub=…`), so opening
+/// it drops the spectator straight onto that board with nothing to paste — in
+/// the app if they have it, on the web board if they do not. Must match the
+/// reader in choke-scoreboard (`buildShareLink` / `readSharedPubkey`).
+String liveBoardShareUrl(String npub) => '$kLiveBoardBaseUrl/?npub=$npub';
+
 /// The query parameters a shared board link may carry the pubkey in.
 ///
 /// Both, and in this order, because choke-scoreboard has always accepted both
