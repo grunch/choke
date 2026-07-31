@@ -1,9 +1,12 @@
 # Shared board links
 
 > **A link to one particular match** — `?npub=…&match=…` — is specified in
-> [`specs/shared-match-links.md`](specs/shared-match-links.md) and is not built
-> yet. Everything below describes the board link, which that one extends rather
-> than replaces.
+> [`specs/shared-match-links.md`](specs/shared-match-links.md). It is **read**
+> but not yet **shown**: `readShareLink` returns `SharedMatch` and
+> `openShareLink` records the request in `requestedMatchProvider`, and the
+> scoreboard does not act on it yet. Nothing produces such a link either.
+> Everything below describes the board link, which that one extends rather than
+> replaces.
 
 Sharing a pubkey from Account produces an ordinary web link:
 
