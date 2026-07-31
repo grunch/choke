@@ -210,13 +210,24 @@ particular thing, and showing them a different thing is a lie they cannot catch.
 are fixed here rather than left to each reader:
 
 1. **Settled signal.** A lookup is settled once the subscription reports it has
-   sent everything it holds — NIP-01's `EOSE`. **This does not exist today:**
-   `NostrRelayBackend` exposes only `Stream<NostrEvent> get events`, with no
-   end-of-stored-events signal. Implementing this spec means adding one, or
-   relying on rule 2 alone and saying so in the code.
-2. **Backstop.** Without a settled signal, Pending ends **8 seconds** after the
+   sent everything it holds — NIP-01's `EOSE`. **Neither reader can act on it
+   today, for different reasons**, and both need work:
+   - choke: `NostrRelayBackend` exposes only `Stream<NostrEvent> get events`.
+     The signal never reaches Dart at all, so it has to be plumbed through.
+   - choke-scoreboard: `src/lib/nostr.ts` *does* receive it — `subscribeMany`
+     is given an `oneose` handler — but it only clears the shared `isLoading`
+     store, which an unconditional 10-second `setTimeout` also clears. A caller
+     watching that store cannot tell "the relays answered" from "ten seconds
+     passed", which is precisely the distinction this rule needs. The signal is
+     there; it needs its own channel.
+2. **Backstop.** Without a settled signal, Pending ends **10 seconds** after the
    link opens. Long enough for a slow relay on venue wifi, short enough that
-   nobody concludes the app has hung. Both readers use this same number.
+   nobody concludes the app has hung.
+
+   Ten rather than a fresh number because choke-scoreboard already waits
+   exactly that long before giving up on EOSE. Inventing a second timeout two
+   seconds away from an existing one buys nothing and leaves two magic numbers
+   where there was one. Both readers use this same value.
 3. **A late arrival still wins.** If the event turns up *after* the move to
    Unresolved, the reader resolves to it. The link was right and the network was
    slow; refusing to show what did arrive would be gratuitous. Unresolved states
@@ -255,9 +266,12 @@ hours, so a shared match link resolves for a day and is Unresolved after that.
 as `scoreboardMaxAgeSeconds` (choke) and `MATCH_MAX_AGE_SECONDS`
 (choke-scoreboard, `src/lib/constants.ts`). Two languages and two build systems
 make a single shared source impractical, so the obligation is a conformance one:
-**neither value moves without the other**, and each repository asserts its own
-constant equals 86400 in its test suite, so a silent drift fails a build instead
-of quietly splitting the contract in half.
+**neither value moves without the other**.
+
+That obligation is currently unenforced in both repositories — nothing pins the
+number, so a one-character edit on either side would split the contract in half
+in silence. Each repo should assert its own constant equals 86400 in its test
+suite, which is a one-line addition on each side and belongs with this work.
 
 Both must also measure it the same way — from the event's `created_at`, against
 the same boundary — so any given link is Resolved in both readers or Unresolved
