@@ -119,9 +119,8 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
 
   /// Vote to hold the screen exactly while the watched match is in the feed.
   void _syncWakelock() {
-    final present = ref
-        .read(scoreboardMatchesProvider)
-        .any((m) => m.id == widget.matchId);
+    final present =
+        ref.read(scoreboardMatchesProvider).any((m) => m.id == widget.matchId);
     unawaited(_wakelock.keepAwake(present));
   }
 
@@ -503,7 +502,10 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     // agree with each other at a glance.
     final (label, color) = switch (match) {
       Match(isPaused: true) => (l10n.statusPaused, palette.paused),
-      Match(status: MatchStatus.waiting) => (l10n.statusWaiting, palette.waiting),
+      Match(status: MatchStatus.waiting) => (
+          l10n.statusWaiting,
+          palette.waiting
+        ),
       Match(status: MatchStatus.inProgress) => (
           l10n.statusInProgress,
           palette.liveText,
@@ -575,8 +577,8 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     );
   }
 
-  Widget _buildTimerCard(AppLocalizations l10n, Match match, double unit,
-      BoardPalette palette) {
+  Widget _buildTimerCard(
+      AppLocalizations l10n, Match match, double unit, BoardPalette palette) {
     final remaining = match.remainingSecondsAt(_now);
     final minutes = (remaining ~/ 60).toString().padLeft(2, '0');
     final seconds = (remaining % 60).toString().padLeft(2, '0');
@@ -666,7 +668,8 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
           color: palette.bannerSurface,
           borderRadius: BorderRadius.circular(22),
           border: palette.bannerOutlined
-              ? Border.all(color: color.withValues(alpha: palette.pillBorderAlpha))
+              ? Border.all(
+                  color: color.withValues(alpha: palette.pillBorderAlpha))
               : null,
           boxShadow: palette.bannerOutlined
               ? [
@@ -790,7 +793,9 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
           child: Text(
             l10n.boardLiveCredit,
             textAlign: TextAlign.center,
-            maxLines: 1,
+            // Two lines, not one: the half that would be cut is "create yours
+            // free", which is the whole reason this line is on the wall.
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: palette.label,
