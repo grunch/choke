@@ -26,10 +26,14 @@ Both need the platform to hand the link to the framework rather than merely
 launching the activity, which is what `flutter_deeplinking_enabled` does in the
 Android manifest.
 
-The accepted parameters are `npub` and `pubkey`, holding either an `npub1…` or
-64-character hex — the same pair choke-scoreboard accepts (`SHARE_PUBKEY_PARAMS`
-in its `share-link.ts`), because the same URL is opened by whichever of the two
-the recipient has.
+The accepted parameter is `npub`, holding either an `npub1…` or 64-character hex
+— the same name choke-scoreboard accepts (`SHARE_PUBKEY_PARAM` in its
+`share-link.ts`), because the same URL is opened by whichever of the two the
+recipient has.
+
+A `pubkey` alias used to be accepted alongside it. Nothing ever produced one, so
+it was removed rather than carried: two names for one thing doubled the cases to
+cover and left "which is canonical?" to be asked every time a link was built.
 
 A link for any other host is ignored. So is one that names no usable key: the
 app keeps whatever board the user was already watching rather than dropping them
