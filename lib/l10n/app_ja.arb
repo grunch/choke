@@ -231,5 +231,9 @@
   "scoreboardShareBoard": "このスコアボードを共有",
   "scoreboardShareBoardMessage": "bjjscore.live でこれらの BJJ の試合をライブで観戦:",
   "scoreboardQrTitle": "スキャンしてライブ観戦",
-  "scoreboardQrHint": "スマートフォンのカメラをこのコードに向けると、ライブスコアボードが開きます"
+  "scoreboardQrHint": "スマートフォンのカメラをこのコードに向けると、ライブスコアボードが開きます",
+  "scoreboardMatchPendingTitle": "その試合を探しています…",
+  "scoreboardMatchPendingBody": "リンクはこのスコアボードの試合を指しています。届くのを待っています。",
+  "scoreboardMatchUnresolvedTitle": "その試合はこのスコアボードにありません",
+  "scoreboardMatchUnresolvedBody": "しばらく前に終了した可能性があります。試合のリンクは約1日で切れます。共有した人に新しいリンクをもらってください。"
 }

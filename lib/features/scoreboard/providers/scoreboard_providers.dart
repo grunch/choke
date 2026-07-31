@@ -157,6 +157,15 @@ class ScoreboardFeedNotifier extends StateNotifier<List<Match>> {
     // author, and carries no hint of which filter matched. Without this the
     // user's own matches would appear as though the watched pubkey had refereed
     // them.
+    //
+    // Load-bearing beyond that, and not obviously so. A shared match link names
+    // an (organizer, matchId) pair, because a match id is four hex characters
+    // and unique only inside one author's events. Nothing downstream re-checks
+    // the author: `ScoreboardMatchScreen` looks its match up by id alone, and
+    // it is *this* line, plus the feed being rebuilt whenever the watched
+    // pubkey changes, that makes that a lookup within one organizer rather than
+    // across all of them. Remove it and a link would silently resolve to
+    // somebody else's match with the same id.
     if (event.pubkey != _pubkey) return;
 
     try {

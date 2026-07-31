@@ -34,10 +34,73 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
   /// edit again, so the error always describes what is in the field now.
   bool _invalid = false;
 
+  /// The request this screen has already pushed a board for.
+  ///
+  /// The consuming half of [requestedMatchProvider]: the provider says what a
+  /// link asked for and keeps saying it for as long as that board is up, and
+  /// this says whether the asking has been acted on. Without it every rebuild —
+  /// a tab change, a new event, a keystroke — would push the same match again.
+  String? _openedRequest;
+
+  @override
+  void initState() {
+    super.initState();
+    // A link the app was *launched* by is read after the first frame, which can
+    // land either side of this listener being registered. Reading the current
+    // value once covers the side that would otherwise be missed; the guard in
+    // [_openRequestedMatch] makes doing it twice harmless.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final requested = ref.read(requestedMatchProvider);
+      if (requested != null) _openRequestedMatch(requested);
+    });
+  }
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  /// Put the match a link named on screen.
+  ///
+  /// This lives here, and not in `MainNavigation` or the link handler, because
+  /// this screen is the one that is always alive: it sits in an [IndexedStack]
+  /// that builds every tab and keeps them, so a link arriving while the user is
+  /// on Home still finds a listener — and `openShareLink` has already selected
+  /// this tab by the time the push happens.
+  ///
+  /// The board is pushed rather than swapped in, so Back returns to the list
+  /// the recipient was never shown. It is marked as coming from a link, which
+  /// is the whole difference between waiting for the feed and declaring the
+  /// match gone.
+  void _openRequestedMatch(String matchId) {
+    // Re-opening the link already on screen must do nothing: no flicker, no
+    // reload. That is the group-chat re-share, and pushing a second identical
+    // board would read as the app losing the viewer's place.
+    if (_openedRequest == matchId) return;
+    _openedRequest = matchId;
+
+    Navigator.of(context)
+        .push(MaterialPageRoute(
+      builder: (_) => ScoreboardMatchScreen(matchId: matchId, fromLink: true),
+    ))
+        .then((_) {
+      if (!mounted) return;
+      // Only if this is still the board that came down. A link naming a
+      // *different* match pops this one and pushes the next in the same turn,
+      // and the pop's answer arrives after the push — clearing unconditionally
+      // would forget the board that is now on screen and let a re-share of it
+      // push a duplicate.
+      if (_openedRequest == matchId) _openedRequest = null;
+      // The request outlived the screen that answered it. Dropping it here —
+      // and only if it is still the one this screen opened — lets the same
+      // link, tapped again later, open the match a second time, while a link
+      // that arrived in the meantime keeps its claim.
+      if (ref.read(requestedMatchProvider) == matchId) {
+        ref.read(requestedMatchProvider.notifier).state = null;
+      }
+    });
   }
 
   void _watch() {
@@ -141,6 +204,12 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final tk = ChokeTokens.of(context);
+    // Nothing reads this as state — the board it names is a route, not a
+    // branch of this build — so it is listened to rather than watched.
+    ref.listen<String?>(requestedMatchProvider, (_, requested) {
+      if (requested != null) _openRequestedMatch(requested);
+    });
+
     final brokenLink = ref.watch(brokenShareLinkProvider);
     final watched = ref.watch(watchedPubkeyProvider);
     // Two lists: everything in scope, which the chips count from, and what

@@ -25,12 +25,35 @@ import 'providers/scoreboard_providers.dart';
 /// Strictly read-only. It renders what the relays say and has no way to change
 /// it; the match belongs to whoever is refereeing it somewhere else.
 class ScoreboardMatchScreen extends ConsumerStatefulWidget {
-  const ScoreboardMatchScreen({super.key, required this.matchId});
+  const ScoreboardMatchScreen({
+    super.key,
+    required this.matchId,
+    this.fromLink = false,
+  });
 
   /// Looked up by id on every build rather than passed in whole, so the screen
   /// re-renders as revisions arrive. Handing it a [Match] would freeze the match
   /// at the moment it was tapped.
+  ///
+  /// The lookup is by id alone, and that is enough: `ScoreboardFeedNotifier`
+  /// drops every event whose author is not the watched pubkey, and the feed is
+  /// rebuilt when that pubkey changes, so everything in
+  /// [scoreboardMatchesProvider] belongs to the watched author by construction.
+  /// That filter is what makes this an (organizer, matchId) lookup — the pair
+  /// the link contract names — rather than a global id lookup. A second check
+  /// here would restate it; removing the filter there would silently break it.
   final String matchId;
+
+  /// Whether a shared link put this screen here, rather than a tap on a card.
+  ///
+  /// The two arrive knowing different things, so they wait differently. A tap
+  /// comes from a list that is already holding the match, so an absent match
+  /// means it went away — the dead end is the truth. A link names a match
+  /// before any data exists, so an absent match means nothing yet, and saying
+  /// "not available" there would break the link's promise on the happy path.
+  /// Hence Pending, and hence only here: making every navigation wait would
+  /// put a spinner in front of a match the user is already looking at.
+  final bool fromLink;
 
   @override
   ConsumerState<ScoreboardMatchScreen> createState() =>
@@ -43,6 +66,22 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
   late final ScreenWakelockLease _wakelock;
 
   Timer? _ticker;
+
+  /// Ends Pending when nothing has answered. Only ever set for a link.
+  Timer? _backstop;
+
+  /// Whether the wait is over: the feed has had its chance and said nothing.
+  ///
+  /// Not terminal. It is what is known so far, and an event arriving after it
+  /// still resolves — [_resolved] outranks this everywhere it is read.
+  bool _settled = false;
+
+  /// Whether the match has ever been in the feed while this screen was open.
+  ///
+  /// Once it has, this screen is the ordinary read-only board and stays that
+  /// way: a match that later ages out under a viewer gets the dead end that has
+  /// always described exactly that, not the copy about a link's window.
+  bool _resolved = false;
 
   /// Now, in unix seconds, advanced once a second so the clock counts down.
   ///
@@ -76,6 +115,14 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     _syncWakelock();
 
     _scheduleTick();
+
+    // Only a link waits. A tap already has the match, so there is nothing for
+    // a backstop to be the backstop of.
+    if (widget.fromLink) {
+      _backstop = Timer(kMatchLinkBackstop, () {
+        if (mounted) setState(() => _settled = true);
+      });
+    }
   }
 
   /// One tick per wall-clock second, scheduled against the *next* boundary
@@ -113,6 +160,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
   @override
   void dispose() {
     _ticker?.cancel();
+    _backstop?.cancel();
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     unawaited(_wakelock.release());
     super.dispose();
@@ -140,7 +188,13 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
 
     final palette = BoardPalette.of(context);
 
-    if (match == null) return _buildGone(l10n, palette);
+    if (match == null) return _buildAbsent(l10n, palette);
+
+    // Latched here rather than through setState: this frame is already the
+    // board, so nothing about it changes, and the flag only decides what a
+    // *later* frame says if the match goes away again.
+    _resolved = true;
+    _backstop?.cancel();
 
     return Scaffold(
       backgroundColor: palette.background,
@@ -842,11 +896,82 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     );
   }
 
+  // ─── No match on screen ─────────────────────────────────────────────────
+
+  /// Which of the three "there is no board here" states this is.
+  ///
+  /// The order is the whole rule. A match that has been here once is never
+  /// described as a link that failed, and a link that has not run out of time
+  /// is never described as a match that is missing — before the feed answers,
+  /// nothing is known either way, and saying otherwise is the failure the
+  /// waiting state exists to prevent.
+  Widget _buildAbsent(AppLocalizations l10n, BoardPalette palette) {
+    if (_resolved || !widget.fromLink) return _buildGone(l10n, palette);
+    return _settled
+        ? _buildUnresolved(l10n, palette)
+        : _buildPending(l10n, palette);
+  }
+
+  /// The link named this match and the feed has not answered yet.
+  ///
+  /// A cold link arrives before any data does: the app sets the watched pubkey,
+  /// subscribes, and events reach it from the relays some unknown time later.
+  /// This is that gap, said out loud, instead of a dead end the recipient would
+  /// read as the link being a lie.
+  Widget _buildPending(AppLocalizations l10n, BoardPalette palette) {
+    return _buildMessage(
+      l10n,
+      palette,
+      // An hourglass, not a spinner. This is the same "waiting on the relays"
+      // the board list already draws that way, and a spinner on a screen that
+      // can be projected onto a wall animates forever in front of a room.
+      icon: Icons.hourglass_empty,
+      title: l10n.scoreboardMatchPendingTitle,
+      body: l10n.scoreboardMatchPendingBody,
+    );
+  }
+
+  /// The feed had its chance and this id is not in it.
+  ///
+  /// The body has to carry the *window*, not just the absence: a match link
+  /// lasts about a day, and a recipient who is not told that reads yesterday's
+  /// link as the app being broken, or blames the sender for something that
+  /// worked when they sent it.
+  ///
+  /// Never becomes the board on its own — the list is one deliberate tap away,
+  /// behind Back, for the same reason a broken link does not quietly hand over
+  /// somebody else's board.
+  Widget _buildUnresolved(AppLocalizations l10n, BoardPalette palette) {
+    return _buildMessage(
+      l10n,
+      palette,
+      icon: Icons.link_off,
+      title: l10n.scoreboardMatchUnresolvedTitle,
+      body: l10n.scoreboardMatchUnresolvedBody,
+    );
+  }
+
   /// The match aged out of the feed, or the relays never had it.
   ///
   /// It can happen while this screen is open: the feed keeps a day, and a board
   /// left running overnight will watch a match disappear out from under it.
   Widget _buildGone(AppLocalizations l10n, BoardPalette palette) {
+    return _buildMessage(
+      l10n,
+      palette,
+      icon: Icons.search_off,
+      title: l10n.scoreboardEmptyTitle,
+    );
+  }
+
+  /// The shape every "no board here" state takes: a glyph, a line, a way out.
+  Widget _buildMessage(
+    AppLocalizations l10n,
+    BoardPalette palette, {
+    required IconData icon,
+    required String title,
+    String? body,
+  }) {
     return Scaffold(
       backgroundColor: palette.background,
       body: Center(
@@ -855,10 +980,10 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.search_off, size: 44, color: palette.label),
+              Icon(icon, size: 44, color: palette.label),
               const SizedBox(height: 14),
               Text(
-                l10n.scoreboardEmptyTitle,
+                title,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: palette.label,
@@ -866,6 +991,14 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              if (body != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  body,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: palette.label, fontSize: 13),
+                ),
+              ],
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () => Navigator.of(context).maybePop(),
