@@ -42,7 +42,7 @@ const String kShareMatchParam = 'match';
 ///
 /// Four lowercase hex characters, which is what `Match.create` generates.
 /// Matched against the *decoded* value after trimming and lowercasing — see
-/// [readMatchId] for why that order, and `docs/specs/shared-match-links.md`
+/// [_rawMatchId] for why that order, and `docs/specs/shared-match-links.md`
 /// for the contract both readers implement.
 final RegExp _matchIdPattern = RegExp(r'^[0-9a-f]{4}$');
 
@@ -224,9 +224,14 @@ bool openShareLink(Uri uri, NostrCrypto crypto, WidgetRef ref) {
         _clearStack(ref);
       }
 
+      // The request goes in before the pubkey, not after. Switching the
+      // watched author rebuilds the feed, and anything that reacts to that
+      // synchronously asks "was a match asked for?" — set second, it would
+      // read the previous answer. The board case above clears it first for
+      // the same reason; these two have to agree.
       ref.read(brokenShareLinkProvider.notifier).state = false;
-      ref.read(watchedPubkeyProvider.notifier).watch(pubkeyHex);
       ref.read(requestedMatchProvider.notifier).state = matchId;
+      ref.read(watchedPubkeyProvider.notifier).watch(pubkeyHex);
       ref.read(selectedTabProvider.notifier).state = AppTab.scoreboard;
       return true;
 
