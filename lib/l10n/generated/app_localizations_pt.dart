@@ -714,4 +714,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get scoreboardBrokenLinkDismiss => 'Ver meu placar';
+
+  @override
+  String get scoreboardShareBoard => 'Compartilhar este placar';
+
+  @override
+  String get scoreboardShareBoardMessage =>
+      'Acompanhe estas lutas de BJJ ao vivo em bjjscore.live:';
+
+  @override
+  String get scoreboardQrTitle => 'Escaneie para ver ao vivo';
+
+  @override
+  String get scoreboardQrHint =>
+      'Aponte a câmera do celular para este código para abrir o placar ao vivo';
 }

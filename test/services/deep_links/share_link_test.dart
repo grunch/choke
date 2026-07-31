@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:choke/features/account/account_screen.dart';
 import 'package:choke/features/scoreboard/providers/scoreboard_providers.dart';
 import 'package:choke/services/deep_links/share_link.dart';
 import 'package:choke/shared/providers/navigation_provider.dart';

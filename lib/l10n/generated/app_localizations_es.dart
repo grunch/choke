@@ -714,4 +714,18 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get scoreboardBrokenLinkDismiss => 'Ver mi tablero';
+
+  @override
+  String get scoreboardShareBoard => 'Compartir este tablero';
+
+  @override
+  String get scoreboardShareBoardMessage =>
+      'Seguí estas luchas de BJJ en vivo en bjjscore.live:';
+
+  @override
+  String get scoreboardQrTitle => 'Escaneá para ver en vivo';
+
+  @override
+  String get scoreboardQrHint =>
+      'Apuntá la cámara del teléfono a este código para abrir el tablero en vivo';
 }

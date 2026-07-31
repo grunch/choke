@@ -709,4 +709,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scoreboardBrokenLinkDismiss => 'Show my board';
+
+  @override
+  String get scoreboardShareBoard => 'Share this board';
+
+  @override
+  String get scoreboardShareBoardMessage =>
+      'Follow these BJJ matches live on bjjscore.live:';
+
+  @override
+  String get scoreboardQrTitle => 'Scan to watch live';
+
+  @override
+  String get scoreboardQrHint =>
+      'Point a phone camera at this code to open the live board';
 }

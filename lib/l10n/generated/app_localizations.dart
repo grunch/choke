@@ -1421,6 +1421,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show my board'**
   String get scoreboardBrokenLinkDismiss;
+
+  /// Tooltip and share-sheet subject for sharing a link to the board being watched
+  ///
+  /// In en, this message translates to:
+  /// **'Share this board'**
+  String get scoreboardShareBoard;
+
+  /// Message shown before the shared bjjscore.live link when sharing a watched board
+  ///
+  /// In en, this message translates to:
+  /// **'Follow these BJJ matches live on bjjscore.live:'**
+  String get scoreboardShareBoardMessage;
+
+  /// Title of the dialog holding a QR code of the watched board's link
+  ///
+  /// In en, this message translates to:
+  /// **'Scan to watch live'**
+  String get scoreboardQrTitle;
+
+  /// Caption under the QR code of the watched board's link
+  ///
+  /// In en, this message translates to:
+  /// **'Point a phone camera at this code to open the live board'**
+  String get scoreboardQrHint;
 }
 
 class _AppLocalizationsDelegate

@@ -226,5 +226,9 @@
   },
   "scoreboardBrokenLinkTitle": "Esse link está quebrado",
   "scoreboardBrokenLinkBody": "Ele apontava para um placar específico, mas não foi possível ler a chave pública que trazia. Peça para quem compartilhou enviar de novo.",
-  "scoreboardBrokenLinkDismiss": "Ver meu placar"
+  "scoreboardBrokenLinkDismiss": "Ver meu placar",
+  "scoreboardShareBoard": "Compartilhar este placar",
+  "scoreboardShareBoardMessage": "Acompanhe estas lutas de BJJ ao vivo em bjjscore.live:",
+  "scoreboardQrTitle": "Escaneie para ver ao vivo",
+  "scoreboardQrHint": "Aponte a câmera do celular para este código para abrir o placar ao vivo"
 }

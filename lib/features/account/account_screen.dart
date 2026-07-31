@@ -1,22 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../services/deep_links/share_link.dart';
 import '../../services/nostr/nostr_service.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import '../../shared/theme/app_theme.dart';
+import '../../shared/widgets/qr_dialog.dart';
 import '../../services/key_management/key_manager.dart';
-
-/// Base of the public live board. A shared link carries the organizer's npub in
-/// the query string (`?npub=…`), so opening it drops the spectator straight onto
-/// this user's matches with nothing to paste. Must match the reader in
-/// choke-scoreboard (`buildShareLink` / `readSharedPubkey`).
-const String kLiveBoardBaseUrl = 'https://bjjscore.live';
-
-/// Build the share link for an organizer's npub.
-String liveBoardShareUrl(String npub) => '$kLiveBoardBaseUrl/?npub=$npub';
 
 /// Point the relays and the home feed at the identity that is now stored.
 ///
@@ -806,73 +798,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   void _showQRCode(BuildContext context, String data) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final l10n = AppLocalizations.of(context);
-        final theme = Theme.of(context);
-        final colors = theme.colorScheme;
-        return AlertDialog(
-          backgroundColor: colors.surface,
-          title: Text(
-            l10n.yourPublicKey,
-            style: TextStyle(color: colors.onSurface),
-            textAlign: TextAlign.center,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: BJJColors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: SizedBox(
-                  width: 200,
-                  height: 200,
-                  child: QrImageView(
-                    data: data,
-                    backgroundColor: BJJColors.white,
-                    eyeStyle: const QrEyeStyle(
-                      eyeShape: QrEyeShape.square,
-                      color: BJJColors.navy,
-                    ),
-                    dataModuleStyle: const QrDataModuleStyle(
-                      dataModuleShape: QrDataModuleShape.square,
-                      color: BJJColors.navy,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                data,
-                style: TextStyle(
-                  color: theme.textTheme.bodyMedium?.color,
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.scanQrToShare,
-                style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l10n.close),
-            ),
-          ],
-        );
-      },
+    final l10n = AppLocalizations.of(context);
+    showQrDialog(
+      context,
+      title: l10n.yourPublicKey,
+      data: data,
+      caption: l10n.scanQrToShare,
     );
   }
 }

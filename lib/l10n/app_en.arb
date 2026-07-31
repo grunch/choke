@@ -885,5 +885,21 @@
   "scoreboardBrokenLinkDismiss": "Show my board",
   "@scoreboardBrokenLinkDismiss": {
     "description": "Button that dismisses the broken-link state and returns to the board the user was already watching"
+  },
+  "scoreboardShareBoard": "Share this board",
+  "@scoreboardShareBoard": {
+    "description": "Tooltip and share-sheet subject for sharing a link to the board being watched"
+  },
+  "scoreboardShareBoardMessage": "Follow these BJJ matches live on bjjscore.live:",
+  "@scoreboardShareBoardMessage": {
+    "description": "Message shown before the shared bjjscore.live link when sharing a watched board"
+  },
+  "scoreboardQrTitle": "Scan to watch live",
+  "@scoreboardQrTitle": {
+    "description": "Title of the dialog holding a QR code of the watched board's link"
+  },
+  "scoreboardQrHint": "Point a phone camera at this code to open the live board",
+  "@scoreboardQrHint": {
+    "description": "Caption under the QR code of the watched board's link"
   }
 }
