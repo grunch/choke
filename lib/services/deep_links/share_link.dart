@@ -27,6 +27,35 @@ const String kLiveBoardBaseUrl = 'https://$kShareLinkHost';
 /// reader in choke-scoreboard (`buildShareLink` / `readSharedPubkey`).
 String liveBoardShareUrl(String npub) => '$kLiveBoardBaseUrl/?npub=$npub';
 
+/// Build the share link for one match on an organizer's board.
+///
+/// The board link plus the match it names. A recipient whose client predates
+/// this parameter reads the npub, ignores the rest, and lands on the board —
+/// one tap from the match instead of on it.
+String matchShareUrl(String npub, String matchId) =>
+    '${liveBoardShareUrl(npub)}&$kShareMatchParam=$matchId';
+
+/// The query parameter naming one match on the board.
+const String kShareMatchParam = 'match';
+
+/// What a match id is allowed to look like.
+///
+/// Four lowercase hex characters, which is what `Match.create` generates.
+/// Matched against the *decoded* value after trimming and lowercasing — see
+/// [_rawMatchId] for why that order, and `docs/specs/shared-match-links.md`
+/// for the contract both readers implement.
+final RegExp _matchIdPattern = RegExp(r'^[0-9a-f]{4}$');
+
+/// The match id in [uri], or null if it names none.
+///
+/// Returns the id, or null both for "no match parameter" and for one that is
+/// not a match id — the caller separates those, because they are the difference
+/// between a board link and a broken one.
+String? _rawMatchId(Uri uri) {
+  final value = uri.queryParameters[kShareMatchParam]?.trim().toLowerCase();
+  return (value == null || value.isEmpty) ? null : value;
+}
+
 /// The query parameter a shared board link carries the pubkey in.
 ///
 /// One name, matching `SHARE_PUBKEY_PARAM` in choke-scoreboard's
@@ -63,6 +92,20 @@ class SharedBoard extends ShareLink {
   final String pubkeyHex;
 }
 
+/// A shared link naming one match on [pubkeyHex].
+///
+/// Both halves, always. A match id is unique only inside one author's events,
+/// so an id without an organizer names nothing and never reaches here.
+class SharedMatch extends ShareLink {
+  const SharedMatch(this.pubkeyHex, this.matchId);
+
+  /// The watched author, in lowercase hex.
+  final String pubkeyHex;
+
+  /// The requested match, already validated against the contract's grammar.
+  final String matchId;
+}
+
 /// A shared board link whose pubkey could not be read.
 ///
 /// The user followed a link meant for one particular board. Showing them any
@@ -74,8 +117,9 @@ class BrokenShareLink extends ShareLink {
 
 /// Read a link the OS handed over.
 ///
-/// Accepts exactly what the web board accepts: `https://bjjscore.live/?npub=…`,
-/// holding either an npub or bare hex.
+/// Accepts exactly what the web board accepts: `https://bjjscore.live/?npub=…`
+/// holding either an npub or bare hex, optionally followed by `&match=…`
+/// naming one match on that board.
 ///
 /// Never throws. What arrives here is whatever was tapped, which is not a
 /// trusted caller.
@@ -89,14 +133,29 @@ ShareLink readShareLink(Uri uri, NostrCrypto crypto) {
     return const NotAShareLink();
   }
 
+  final match = _rawMatchId(uri);
   final value = uri.queryParameters[kSharePubkeyParam]?.trim();
 
   // An empty value is not a broken key, it is no key — the web board skips it
   // the same way, and a bare `?npub=` should not accuse anybody of anything.
-  if (value == null || value.isEmpty) return const NotAShareLink();
+  //
+  // Unless a match was named. Then the link did promise something, and an id
+  // with no author to look it up under cannot deliver it: ids are unique only
+  // inside one organizer's events.
+  if (value == null || value.isEmpty) {
+    return match == null ? const NotAShareLink() : const BrokenShareLink();
+  }
 
   final hex = parsePubkey(value, crypto);
-  return hex != null ? SharedBoard(hex) : const BrokenShareLink();
+  if (hex == null) return const BrokenShareLink();
+
+  if (match == null) return SharedBoard(hex);
+
+  // A named match that is not a match id is a promise this app cannot keep,
+  // and saying so beats quietly handing over the board it sits on.
+  return _matchIdPattern.hasMatch(match)
+      ? SharedMatch(hex, match)
+      : const BrokenShareLink();
 }
 
 /// Set when a link named a board and its pubkey could not be read.
@@ -105,6 +164,18 @@ ShareLink readShareLink(Uri uri, NostrCrypto crypto) {
 /// its own: only the user can say "fine, show me what I had", because only they
 /// know they did not get what they tapped.
 final brokenShareLinkProvider = StateProvider<bool>((ref) => false);
+
+/// The match a link asked for, until something shows it.
+///
+/// Set by [openShareLink] and read by the scoreboard, which owns the waiting:
+/// the feed answers whenever it answers, and until then there is a request and
+/// no match. Deliberately not "the match to display" — the parser's job ends at
+/// saying what was named, and Pending, Resolved and Unresolved are states of a
+/// screen, not of a URL.
+///
+/// Cleared by any link that names no match, so a board link never inherits the
+/// request left by the one before it.
+final requestedMatchProvider = StateProvider<String?>((ref) => null);
 
 /// Open a shared board link.
 ///
@@ -135,6 +206,31 @@ bool openShareLink(Uri uri, NostrCrypto crypto, WidgetRef ref) {
       }
 
       ref.read(brokenShareLinkProvider.notifier).state = false;
+      ref.read(requestedMatchProvider.notifier).state = null;
+      ref.read(watchedPubkeyProvider.notifier).watch(pubkeyHex);
+      ref.read(selectedTabProvider.notifier).state = AppTab.scoreboard;
+      return true;
+
+    case SharedMatch(:final pubkeyHex, :final matchId):
+      // The same "only when there is something to gain" rule as above, widened
+      // by what this link names. A re-share of the match already on screen must
+      // still change nothing — that is the group-chat case, and it reads as the
+      // app losing the viewer's place. But a link naming a *different* match on
+      // the board already being watched now has something to do, where a board
+      // link would have had nothing: the stack has to come down for the new
+      // match to be seen.
+      if (ref.read(watchedPubkeyProvider) != pubkeyHex ||
+          ref.read(requestedMatchProvider) != matchId) {
+        _clearStack(ref);
+      }
+
+      // The request goes in before the pubkey, not after. Switching the
+      // watched author rebuilds the feed, and anything that reacts to that
+      // synchronously asks "was a match asked for?" — set second, it would
+      // read the previous answer. The board case above clears it first for
+      // the same reason; these two have to agree.
+      ref.read(brokenShareLinkProvider.notifier).state = false;
+      ref.read(requestedMatchProvider.notifier).state = matchId;
       ref.read(watchedPubkeyProvider.notifier).watch(pubkeyHex);
       ref.read(selectedTabProvider.notifier).state = AppTab.scoreboard;
       return true;
@@ -152,6 +248,10 @@ bool openShareLink(Uri uri, NostrCrypto crypto, WidgetRef ref) {
       _log(uri, 'reporting as broken');
       _clearStack(ref);
 
+      // No request survives the message. Leaving one behind would have the
+      // scoreboard still waiting on a match underneath a screen saying the
+      // link could not be read.
+      ref.read(requestedMatchProvider.notifier).state = null;
       ref.read(brokenShareLinkProvider.notifier).state = true;
       ref.read(selectedTabProvider.notifier).state = AppTab.scoreboard;
       return true;

@@ -882,9 +882,9 @@
   "@scoreboardBrokenLinkTitle": {
     "description": "Title shown when a shared link named a board but its pubkey could not be read"
   },
-  "scoreboardBrokenLinkBody": "It was meant for a specific board, but the pubkey in it could not be read. Ask whoever shared it to send it again.",
+  "scoreboardBrokenLinkBody": "It was meant for something in particular, but part of it could not be read. Ask whoever shared it to send it again.",
   "@scoreboardBrokenLinkBody": {
-    "description": "Explanation shown with scoreboardBrokenLinkTitle"
+    "description": "Explanation shown with scoreboardBrokenLinkTitle. Deliberately does not name which part failed: a link can now break on its organizer or on the match it names, the recipient does the same thing either way, and claiming the wrong one sends them to fix something that was never wrong"
   },
   "scoreboardBrokenLinkDismiss": "Show my board",
   "@scoreboardBrokenLinkDismiss": {

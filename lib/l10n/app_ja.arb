@@ -226,7 +226,7 @@
   },
   "boardLiveCredit": "ライブスコアボード",
   "scoreboardBrokenLinkTitle": "このリンクは壊れています",
-  "scoreboardBrokenLinkBody": "特定のスコアボードを指していましたが、公開鍵を読み取れませんでした。共有した人にもう一度送ってもらってください。",
+  "scoreboardBrokenLinkBody": "特定の対象を指していましたが、一部を読み取れませんでした。共有した人にもう一度送ってもらってください。",
   "scoreboardBrokenLinkDismiss": "自分のスコアボードを見る",
   "scoreboardShareBoard": "このスコアボードを共有",
   "scoreboardShareBoardMessage": "bjjscore.live でこれらの BJJ の試合をライブで観戦:",

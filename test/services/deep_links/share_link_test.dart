@@ -556,4 +556,191 @@ void main() {
       expect(find.text('a match in progress'), findsOneWidget);
     });
   });
+
+  group('readShareLink — match links', () {
+    /// The match a link names, or null when it names none this app can read.
+    String? matchOf(Uri uri) {
+      final link = readShareLink(uri, crypto);
+      return link is SharedMatch ? link.matchId : null;
+    }
+
+    test('reads the link matchShareUrl actually builds', () {
+      // Arrange — the exact URL the sharer produces, so the two cannot drift
+      final uri = Uri.parse(matchShareUrl('npub1fake', 'abcd'));
+
+      // Act
+      final link = readShareLink(uri, crypto);
+
+      // Assert — both halves, because either alone names nothing
+      expect(link, isA<SharedMatch>());
+      expect((link as SharedMatch).pubkeyHex, _watched);
+      expect(link.matchId, 'abcd');
+    });
+
+    test('accepts the spellings a chat client might hand back', () {
+      // Arrange — validation is on the decoded value, trimmed and lowercased,
+      // so all three of these are the same id
+      for (final raw in ['abcd', '%61%62%63%64', 'abcd%20', 'ABCD']) {
+        final uri =
+            Uri.parse('https://bjjscore.live/?npub=npub1fake&match=$raw');
+
+        // Act + Assert
+        expect(matchOf(uri), 'abcd', reason: raw);
+      }
+    });
+
+    test('a value that is not a match id breaks the link', () {
+      // Arrange — the sender named something and it cannot be read. That is
+      // not the same as naming nothing.
+      for (final raw in ['abc', 'abcde', 'zzzz', 'ab-cd']) {
+        final uri =
+            Uri.parse('https://bjjscore.live/?npub=npub1fake&match=$raw');
+
+        // Act + Assert
+        expect(readShareLink(uri, crypto), isA<BrokenShareLink>(), reason: raw);
+      }
+    });
+
+    test('an empty match is no match, and leaves a board link intact', () {
+      // Arrange — `&match=` on its own should not accuse anybody of anything,
+      // exactly as a bare `?npub=` does not
+      final uri = Uri.parse('https://bjjscore.live/?npub=npub1fake&match=');
+
+      // Act
+      final link = readShareLink(uri, crypto);
+
+      // Assert
+      expect(link, isA<SharedBoard>());
+      expect((link as SharedBoard).pubkeyHex, _watched);
+    });
+
+    test('a match with no organizer names nothing at all', () {
+      // Arrange — a match id is unique only inside one author's events, so
+      // there is nobody to subscribe to and nothing to show
+      expect(
+        readShareLink(Uri.parse('https://bjjscore.live/?match=abcd'), crypto),
+        isA<BrokenShareLink>(),
+      );
+      expect(
+        readShareLink(
+            Uri.parse('https://bjjscore.live/?npub=&match=abcd'), crypto),
+        isA<BrokenShareLink>(),
+      );
+    });
+
+    test('an unreadable organizer breaks the link, match or no match', () {
+      expect(
+        readShareLink(
+            Uri.parse('https://bjjscore.live/?npub=nonsense&match=abcd'),
+            crypto),
+        isA<BrokenShareLink>(),
+      );
+    });
+
+    test('another host is still not ours, match or no match', () {
+      expect(
+        readShareLink(
+            Uri.parse('https://evil.example/?npub=npub1fake&match=abcd'),
+            crypto),
+        isA<NotAShareLink>(),
+      );
+    });
+  });
+
+  group('openShareLink — match links', () {
+    setUp(() => SharedPreferences.setMockInitialValues({}));
+
+    Future<WidgetRef> pumpRef(WidgetTester tester) async {
+      late WidgetRef captured;
+      await tester.pumpWidget(ProviderScope(
+        child: Consumer(builder: (context, ref, _) {
+          captured = ref;
+          return const SizedBox();
+        }),
+      ));
+      return captured;
+    }
+
+    testWidgets('asks for the match the link named', (tester) async {
+      // Arrange
+      final ref = await pumpRef(tester);
+
+      // Act
+      final handled = openShareLink(
+          Uri.parse(matchShareUrl('npub1fake', 'abcd')), crypto, ref);
+      await tester.pump();
+
+      // Assert — the board is watched and the match is requested; resolving it
+      // is the screen's job, not this one's
+      expect(handled, isTrue);
+      expect(ref.read(watchedPubkeyProvider), _watched);
+      expect(ref.read(requestedMatchProvider), 'abcd');
+      expect(ref.read(selectedTabProvider), AppTab.scoreboard);
+    });
+
+    testWidgets('has the request in place before the pubkey changes',
+        (tester) async {
+      // Arrange — switching the watched author rebuilds the feed, and anything
+      // reacting to that asks whether a match was requested. Set second, it
+      // would read the previous answer.
+      late ProviderContainer container;
+      late WidgetRef ref;
+      await tester.pumpWidget(ProviderScope(
+        child: Consumer(builder: (context, r, _) {
+          ref = r;
+          container = ProviderScope.containerOf(context);
+          return const SizedBox();
+        }),
+      ));
+
+      String? seenWhenPubkeyChanged;
+      container.listen<String?>(
+        watchedPubkeyProvider,
+        (_, __) =>
+            seenWhenPubkeyChanged = container.read(requestedMatchProvider),
+      );
+
+      // Act
+      openShareLink(Uri.parse(matchShareUrl('npub1fake', 'abcd')), crypto, ref);
+      await tester.pump();
+
+      // Assert
+      expect(seenWhenPubkeyChanged, 'abcd');
+    });
+
+    testWidgets('a board link afterwards asks for no match', (tester) async {
+      // Arrange — a link naming only a board is not a request for whatever
+      // match happened to be open before it
+      final ref = await pumpRef(tester);
+      openShareLink(Uri.parse(matchShareUrl('npub1fake', 'abcd')), crypto, ref);
+      await tester.pump();
+      expect(ref.read(requestedMatchProvider), 'abcd');
+
+      // Act
+      openShareLink(Uri.parse(liveBoardShareUrl('npub1fake')), crypto, ref);
+      await tester.pump();
+
+      // Assert
+      expect(ref.read(requestedMatchProvider), isNull);
+    });
+
+    testWidgets('a broken link asks for no match either', (tester) async {
+      // Arrange
+      final ref = await pumpRef(tester);
+      openShareLink(Uri.parse(matchShareUrl('npub1fake', 'abcd')), crypto, ref);
+      await tester.pump();
+
+      // Act
+      openShareLink(
+        Uri.parse('https://bjjscore.live/?npub=npub1fake&match=zzzz'),
+        crypto,
+        ref,
+      );
+      await tester.pump();
+
+      // Assert — the message must not sit over a match still being requested
+      expect(ref.read(brokenShareLinkProvider), isTrue);
+      expect(ref.read(requestedMatchProvider), isNull);
+    });
+  });
 }

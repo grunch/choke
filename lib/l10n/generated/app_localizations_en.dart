@@ -708,7 +708,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scoreboardBrokenLinkBody =>
-      'It was meant for a specific board, but the pubkey in it could not be read. Ask whoever shared it to send it again.';
+      'It was meant for something in particular, but part of it could not be read. Ask whoever shared it to send it again.';
 
   @override
   String get scoreboardBrokenLinkDismiss => 'Show my board';

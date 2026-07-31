@@ -226,7 +226,7 @@
   },
   "boardLiveCredit": "Marcador en vivo",
   "scoreboardBrokenLinkTitle": "Ese link está roto",
-  "scoreboardBrokenLinkBody": "Apuntaba a un tablero en particular, pero no se pudo leer la clave pública que traía. Pedile a quien te lo compartió que te lo mande de nuevo.",
+  "scoreboardBrokenLinkBody": "Apuntaba a algo en particular, pero no se pudo leer una parte. Pedile a quien te lo compartió que te lo mande de nuevo.",
   "scoreboardBrokenLinkDismiss": "Ver mi tablero",
   "scoreboardShareBoard": "Compartir este tablero",
   "scoreboardShareBoardMessage": "Seguí estas luchas de BJJ en vivo en bjjscore.live:",

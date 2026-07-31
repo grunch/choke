@@ -1416,10 +1416,10 @@ abstract class AppLocalizations {
   /// **'That link is broken'**
   String get scoreboardBrokenLinkTitle;
 
-  /// Explanation shown with scoreboardBrokenLinkTitle
+  /// Explanation shown with scoreboardBrokenLinkTitle. Deliberately does not name which part failed: a link can now break on its organizer or on the match it names, the recipient does the same thing either way, and claiming the wrong one sends them to fix something that was never wrong
   ///
   /// In en, this message translates to:
-  /// **'It was meant for a specific board, but the pubkey in it could not be read. Ask whoever shared it to send it again.'**
+  /// **'It was meant for something in particular, but part of it could not be read. Ask whoever shared it to send it again.'**
   String get scoreboardBrokenLinkBody;
 
   /// Button that dismisses the broken-link state and returns to the board the user was already watching

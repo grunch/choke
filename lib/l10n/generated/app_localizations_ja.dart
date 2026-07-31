@@ -683,7 +683,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get scoreboardBrokenLinkBody =>
-      '特定のスコアボードを指していましたが、公開鍵を読み取れませんでした。共有した人にもう一度送ってもらってください。';
+      '特定の対象を指していましたが、一部を読み取れませんでした。共有した人にもう一度送ってもらってください。';
 
   @override
   String get scoreboardBrokenLinkDismiss => '自分のスコアボードを見る';

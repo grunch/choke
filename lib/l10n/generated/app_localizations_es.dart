@@ -713,7 +713,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get scoreboardBrokenLinkBody =>
-      'Apuntaba a un tablero en particular, pero no se pudo leer la clave pública que traía. Pedile a quien te lo compartió que te lo mande de nuevo.';
+      'Apuntaba a algo en particular, pero no se pudo leer una parte. Pedile a quien te lo compartió que te lo mande de nuevo.';
 
   @override
   String get scoreboardBrokenLinkDismiss => 'Ver mi tablero';
