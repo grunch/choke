@@ -706,6 +706,9 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get boardLiveCredit => 'Placar ao vivo';
+
+  @override
   String get scoreboardBrokenLinkTitle => 'Esse link está quebrado';
 
   @override

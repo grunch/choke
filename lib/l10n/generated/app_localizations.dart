@@ -1404,6 +1404,12 @@ abstract class AppLocalizations {
   /// **'{points} PTS'**
   String scoreboardPointsShort(int points);
 
+  /// Label above the domain at the foot of the full-screen wall board, so the venue audience can see where the live scoreboard comes from. Rendered uppercase, with the domain underneath it taken from kShareLinkHost — do not put the domain in this string.
+  ///
+  /// In en, this message translates to:
+  /// **'Live scoreboard'**
+  String get boardLiveCredit;
+
   /// Title shown when a shared link named a board but its pubkey could not be read
   ///
   /// In en, this message translates to:

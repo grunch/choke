@@ -701,6 +701,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get boardLiveCredit => 'Live scoreboard';
+
+  @override
   String get scoreboardBrokenLinkTitle => 'That link is broken';
 
   @override
