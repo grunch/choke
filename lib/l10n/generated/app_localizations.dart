@@ -1440,6 +1440,18 @@ abstract class AppLocalizations {
   /// **'Follow these BJJ matches live on bjjscore.live:'**
   String get scoreboardShareBoardMessage;
 
+  /// Tooltip and share-sheet subject for sharing a link to one particular match. Never a bare 'Share': it sits beside scoreboardShareBoard, and a user who cannot tell the two apart sends a whole board when they meant to send one fight
+  ///
+  /// In en, this message translates to:
+  /// **'Share this match'**
+  String get scoreboardShareMatch;
+
+  /// Message shown before the shared bjjscore.live link when sharing one match. Singular and about watching, where the board's message is plural and about following, so the two read differently in a chat even without the link
+  ///
+  /// In en, this message translates to:
+  /// **'Watch this BJJ match live on bjjscore.live:'**
+  String get scoreboardShareMatchMessage;
+
   /// Title of the dialog holding a QR code of the watched board's link
   ///
   /// In en, this message translates to:

@@ -136,13 +136,22 @@ class _SmallBadge extends StatelessWidget {
 /// matches and differ only in what opening one means — hence [onTap], rather
 /// than a card that knows where it is.
 class MatchCard extends StatelessWidget {
-  const MatchCard({super.key, required this.match, this.onTap});
+  const MatchCard({super.key, required this.match, this.onTap, this.onShare});
 
   final Match match;
 
   /// What opening this match means here. A card with no [onTap] does not react
   /// to being pressed.
   final VoidCallback? onTap;
+
+  /// How to hand this match to somebody else, where that is possible.
+  ///
+  /// Optional, and absent by default, because only the read-only scoreboard has
+  /// a link to give: it knows whose board it is watching, and a match id names
+  /// nothing without an organizer. A card with no callback renders exactly what
+  /// it rendered before this existed, which is what keeps the home feed
+  /// untouched.
+  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -187,7 +196,7 @@ class MatchCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              MatchStatusChip(status: match.status),
+              _buildTrailing(l10n, tk),
             ],
           ),
           const SizedBox(height: 11),
@@ -331,6 +340,39 @@ class MatchCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(18),
       child: isCanceled ? Opacity(opacity: .72, child: card) : card,
+    );
+  }
+
+  /// The right-hand end of the card's first line: the status, and a way to pass
+  /// the match on where there is one.
+  ///
+  /// Returns the chip alone when there is nothing to share, rather than a Row
+  /// holding only the chip, so a card without [onShare] lays out exactly as it
+  /// did before this existed.
+  ///
+  /// The affordance is deliberately secondary — small, faint, and sharing the
+  /// line with the status rather than claiming one of its own. A list of ten
+  /// cards each shouting "share" is a list nobody reads, and the card's own tap
+  /// target is still "open this match".
+  Widget _buildTrailing(AppLocalizations l10n, ChokeTokens tk) {
+    if (onShare == null) return MatchStatusChip(status: match.status);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        MatchStatusChip(status: match.status),
+        const SizedBox(width: 2),
+        IconButton(
+          onPressed: onShare,
+          tooltip: l10n.scoreboardShareMatch,
+          // Sized down to the chip beside it so the header line does not grow
+          // a taller row for one glyph.
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(width: 30, height: 26),
+          visualDensity: VisualDensity.compact,
+          icon: Icon(Icons.ios_share, size: 14, color: tk.faint),
+        ),
+      ],
     );
   }
 }

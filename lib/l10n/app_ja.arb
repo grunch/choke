@@ -230,6 +230,8 @@
   "scoreboardBrokenLinkDismiss": "自分のスコアボードを見る",
   "scoreboardShareBoard": "このスコアボードを共有",
   "scoreboardShareBoardMessage": "bjjscore.live でこれらの BJJ の試合をライブで観戦:",
+  "scoreboardShareMatch": "この試合を共有",
+  "scoreboardShareMatchMessage": "bjjscore.live でこの BJJ の試合をライブで観戦:",
   "scoreboardQrTitle": "スキャンしてライブ観戦",
   "scoreboardQrHint": "スマートフォンのカメラをこのコードに向けると、ライブスコアボードが開きます",
   "scoreboardMatchPendingTitle": "その試合を探しています…",

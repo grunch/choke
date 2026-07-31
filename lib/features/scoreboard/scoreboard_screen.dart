@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 
 import '../../services/deep_links/share_link.dart';
 import '../../services/nostr/crypto/nostr_crypto.dart';
+import '../../shared/share_sheet.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/match_card.dart';
 import '../../shared/widgets/qr_dialog.dart';
@@ -146,34 +146,33 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
   /// of them: the app opens it if they have it, the web board if they do not.
   Future<void> _shareBoard(String watchedHex) async {
     final l10n = AppLocalizations.of(context);
-    final url = _boardUrl(watchedHex);
+    await shareLink(
+      context,
+      message: l10n.scoreboardShareBoardMessage,
+      url: _boardUrl(watchedHex),
+      subject: l10n.scoreboardShareBoard,
+      logTag: 'ScoreboardScreen',
+    );
+  }
 
-    // iPad requires a non-null origin to anchor the share popover; the screen's
-    // render box is a safe fallback on phones.
-    final box = context.findRenderObject() as RenderBox?;
-    final origin =
-        box != null ? box.localToGlobal(Offset.zero) & box.size : null;
-
-    try {
-      await Share.share(
-        '${l10n.scoreboardShareBoardMessage}\n$url',
-        subject: l10n.scoreboardShareBoard,
-        sharePositionOrigin: origin,
-      );
-    } on PlatformException catch (e) {
-      // The platform share sheet can fail to open (no handler registered, a
-      // transient platform error). Surface it instead of letting the failure
-      // escape this tap callback as an unhandled async error. Only the code is
-      // logged — never the message, which could echo shared content back out.
-      debugPrint('ScoreboardScreen: share sheet failed (${e.code})');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.shareFailed),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-    }
+  /// Hand one fight to somebody else, without opening it first.
+  ///
+  /// The unit people actually share. A board link says "follow this academy"
+  /// and leaves the recipient hunting a list that reorders itself as matches
+  /// start and finish; this one says "watch this fight" and lands on it.
+  ///
+  /// The npub travels with the id because an id names nothing on its own — four
+  /// hex characters are unique only inside one organizer's events.
+  Future<void> _shareMatch(Match match, String watchedHex) async {
+    final l10n = AppLocalizations.of(context);
+    final npub = ref.read(nostrCryptoProvider).npubEncode(watchedHex);
+    await shareLink(
+      context,
+      message: l10n.scoreboardShareMatchMessage,
+      url: matchShareUrl(npub, match.id),
+      subject: l10n.scoreboardShareMatch,
+      logTag: 'ScoreboardScreen',
+    );
   }
 
   /// The same link as a code, for a room rather than a chat.
@@ -321,7 +320,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
                 (true, _, _) => _buildBrokenLink(l10n, tk),
                 (_, null, _) => _buildWelcome(l10n, tk),
                 (_, _, true) => _buildEmpty(l10n, tk),
-                _ => _buildList(matches),
+                _ => _buildList(matches, watched),
               },
             ),
           ],
@@ -396,7 +395,15 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
     );
   }
 
-  Widget _buildList(List<Match> matches) {
+  /// The board, one card per match.
+  ///
+  /// [watchedHex] is what makes a card shareable: the link a card hands out
+  /// names the organizer as well as the match, so with nobody watched there is
+  /// no link to give and the icon does not appear. In practice this list is
+  /// only reached with a board watched — the argument is threaded rather than
+  /// asserted because the alternative is a `!` on something the type system
+  /// cannot see is settled.
+  Widget _buildList(List<Match> matches, String? watchedHex) {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       itemCount: matches.length,
@@ -404,7 +411,13 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
         final match = matches[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 11),
-          child: MatchCard(match: match, onTap: () => _open(match)),
+          child: MatchCard(
+            match: match,
+            onTap: () => _open(match),
+            onShare: watchedHex == null
+                ? null
+                : () => _shareMatch(match, watchedHex),
+          ),
         );
       },
     );

@@ -726,6 +726,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Seguí estas luchas de BJJ en vivo en bjjscore.live:';
 
   @override
+  String get scoreboardShareMatch => 'Compartir esta lucha';
+
+  @override
+  String get scoreboardShareMatchMessage =>
+      'Mirá esta lucha de BJJ en vivo en bjjscore.live:';
+
+  @override
   String get scoreboardQrTitle => 'Escaneá para ver en vivo';
 
   @override
