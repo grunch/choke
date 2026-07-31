@@ -38,13 +38,17 @@ void main() {
       expect(boardOf(uri), 'a' * 64);
     });
 
-    test('accepts the pubkey parameter the web board also accepts', () {
-      // Arrange — choke-scoreboard takes either name, and one link is shared to
-      // everyone
+    test('ignores the pubkey parameter that used to be an alias', () {
+      // Arrange — `pubkey` was a second spelling of `npub` that nothing ever
+      // produced. This asserts the removal rather than merely dropping the
+      // case that covered it: silently starting to accept it again is the
+      // regression worth catching.
       final uri = Uri.parse('https://bjjscore.live/?pubkey=npub1fake');
 
-      // Act + Assert
-      expect(boardOf(uri), _watched);
+      // Act + Assert — not a *broken* link either. It names nothing this app
+      // answers for, which is the silent case, not the accusing one.
+      expect(boardOf(uri), isNull);
+      expect(readShareLink(uri, crypto), isA<NotAShareLink>());
     });
 
     test('ignores whitespace around a pasted key', () {

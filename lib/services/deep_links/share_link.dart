@@ -27,13 +27,15 @@ const String kLiveBoardBaseUrl = 'https://$kShareLinkHost';
 /// reader in choke-scoreboard (`buildShareLink` / `readSharedPubkey`).
 String liveBoardShareUrl(String npub) => '$kLiveBoardBaseUrl/?npub=$npub';
 
-/// The query parameters a shared board link may carry the pubkey in.
+/// The query parameter a shared board link carries the pubkey in.
 ///
-/// Both, and in this order, because choke-scoreboard has always accepted both
-/// (`SHARE_PUBKEY_PARAMS` in its `share-link.ts`) and one URL is shared to
-/// everyone: whichever of the two the recipient opens it in has to understand
-/// it.
-const List<String> kSharePubkeyParams = ['npub', 'pubkey'];
+/// One name, matching `SHARE_PUBKEY_PARAM` in choke-scoreboard's
+/// `share-link.ts`, because one URL is shared to everyone and whichever of the
+/// two the recipient opens it in has to understand it.
+///
+/// The *value* may still be an `npub1…` or bare 64-character hex — `parsePubkey`
+/// sorts that out, so this stays a question about the URL and not about crypto.
+const String kSharePubkeyParam = 'npub';
 
 /// What a link turned out to be.
 ///
@@ -72,8 +74,8 @@ class BrokenShareLink extends ShareLink {
 
 /// Read a link the OS handed over.
 ///
-/// Accepts exactly what the web board accepts: `https://bjjscore.live/?npub=…`
-/// or `?pubkey=…`, holding either an npub or bare hex.
+/// Accepts exactly what the web board accepts: `https://bjjscore.live/?npub=…`,
+/// holding either an npub or bare hex.
 ///
 /// Never throws. What arrives here is whatever was tapped, which is not a
 /// trusted caller.
@@ -87,21 +89,14 @@ ShareLink readShareLink(Uri uri, NostrCrypto crypto) {
     return const NotAShareLink();
   }
 
-  var sawParameter = false;
+  final value = uri.queryParameters[kSharePubkeyParam]?.trim();
 
-  for (final param in kSharePubkeyParams) {
-    final value = uri.queryParameters[param]?.trim();
+  // An empty value is not a broken key, it is no key — the web board skips it
+  // the same way, and a bare `?npub=` should not accuse anybody of anything.
+  if (value == null || value.isEmpty) return const NotAShareLink();
 
-    // An empty value is not a broken key, it is no key — the web board skips it
-    // the same way, and a bare `?npub=` should not accuse anybody of anything.
-    if (value == null || value.isEmpty) continue;
-
-    sawParameter = true;
-    final hex = parsePubkey(value, crypto);
-    if (hex != null) return SharedBoard(hex);
-  }
-
-  return sawParameter ? const BrokenShareLink() : const NotAShareLink();
+  final hex = parsePubkey(value, crypto);
+  return hex != null ? SharedBoard(hex) : const BrokenShareLink();
 }
 
 /// Set when a link named a board and its pubkey could not be read.
@@ -171,11 +166,10 @@ bool openShareLink(Uri uri, NostrCrypto crypto, WidgetRef ref) {
 /// [what] names the decision, because "ignoring" and "showing the user an
 /// error" read identically in a support report otherwise.
 void _log(Uri uri, String what) {
-  final named =
-      kSharePubkeyParams.where(uri.queryParameters.containsKey).join(',');
+  final named = uri.queryParameters.containsKey(kSharePubkeyParam);
   debugPrint(
     'DeepLink: $what a link for ${uri.host.isEmpty ? '(no host)' : uri.host}'
-    '${named.isEmpty ? ' with no pubkey parameter' : ' whose $named did not parse'}',
+    '${named ? ' whose $kSharePubkeyParam did not parse' : ' with no pubkey parameter'}',
   );
 }
 
