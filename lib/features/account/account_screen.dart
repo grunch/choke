@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../services/deep_links/share_link.dart';
 import '../../services/nostr/nostr_service.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
+import '../../shared/share_sheet.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/qr_dialog.dart';
 import '../../services/key_management/key_manager.dart';
@@ -60,34 +60,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   /// a spectator only has to tap it — no key to copy or paste on the web.
   Future<void> _shareLiveBoard(String npub) async {
     final l10n = AppLocalizations.of(context);
-    final url = liveBoardShareUrl(npub);
-
-    // iPad requires a non-null origin to anchor the share popover; the screen's
-    // render box is a safe fallback on phones.
-    final box = context.findRenderObject() as RenderBox?;
-    final origin =
-        box != null ? box.localToGlobal(Offset.zero) & box.size : null;
-
-    try {
-      await Share.share(
-        '${l10n.shareLiveBoardMessage}\n$url',
-        subject: l10n.shareLiveBoard,
-        sharePositionOrigin: origin,
-      );
-    } on PlatformException catch (e) {
-      // The platform share sheet can fail to open (no handler registered, a
-      // transient platform error). Surface it instead of letting the failure
-      // escape this tap callback as an unhandled async error. Only the code is
-      // logged — never the message, which could echo shared content back out.
-      debugPrint('AccountScreen: share sheet failed (${e.code})');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.shareFailed),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-    }
+    await shareLink(
+      context,
+      message: l10n.shareLiveBoardMessage,
+      url: liveBoardShareUrl(npub),
+      subject: l10n.shareLiveBoard,
+      logTag: 'AccountScreen',
+    );
   }
 
   Future<void> _showImportDialog() async {
