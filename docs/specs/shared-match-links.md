@@ -1,6 +1,6 @@
 # Shared Match Links — Specification
 
-**Status:** Draft — not yet implemented
+**Status:** Agreed — ready to implement. Nothing here is built yet.
 **Created:** 2026-07-31
 **Applies to:** choke (Flutter app) and choke-scoreboard (web board)
 **Companion document:** [`docs/deep-links.md`](../deep-links.md) — the existing board-level link
@@ -377,7 +377,51 @@ they must leave deliberately.
 
 ---
 
-## 9. Out of scope
+## 9. Build order
+
+### 9.1 Baseline already on `main`
+
+This work starts on top of, and reuses:
+
+- `liveBoardShareUrl` / `kLiveBoardBaseUrl` / `kShareLinkHost` in
+  `lib/services/deep_links/share_link.dart` (PR #150)
+- `QrDialog` / `showQrDialog` in `lib/shared/widgets/qr_dialog.dart` (#150)
+- The board share + QR actions on the scoreboard header, and the share-sheet
+  call with its `PlatformException` handling and `shareFailed` snackbar (#150)
+- The bjjscore.live credit at the foot of the wall board (#151), which is why
+  §5.2 needs no QR
+- `mockShareChannel` in `test/support/share_channel.dart` (#150)
+
+### 9.2 Readers land before writers
+
+**This is the ordering constraint that matters.** Both readers — the app and
+choke-scoreboard — must understand `match=` *before* anything starts producing
+links that carry it.
+
+A link lives in a chat forever. If a share button ships first, the links people
+send during that window degrade to board links for good: opened tomorrow, next
+month, by anyone, they still land on a list. §2.2 makes that degradation safe;
+it does not make it desirable, and it is entirely avoidable by ordering the
+work.
+
+So: parse first, resolve second, offer third.
+
+### 9.3 Sequence
+
+| # | Step | Notes |
+|---|---|---|
+| 1 | `kShareMatchParam`, `matchShareUrl(npub, matchId)`, and `SharedMatch` returned by `readShareLink` | Pure functions, no UI. Cheapest step and the one everything else rests on. Extend `test/services/deep_links/share_link_test.dart` rather than starting a new file. |
+| 2 | `openShareLink` handles `SharedMatch`, and the stack-clearing condition inverts per §6.1 | Extend the existing tests; do not rewrite around them. The referee protection of §6.2 must keep passing untouched. |
+| 3 | Pending / Resolved / Unresolved on the read-only match view (§3.1) | The hard part, and the only step with real design left in it. Do not start it in the same change as step 4. |
+| 4 | `MatchCard.onShare` (§5.1) and the top-right icon (§5.2), plus their strings in all four locales | Small once 1–3 exist, and pointless before them. |
+
+Steps 1–2 and step 3 are separable changes. Step 4 must not merge before step 3
+resolves, per §9.2.
+
+Cross-repo: choke-scoreboard's reader should land alongside step 1–2, before
+step 4 in either repo. See its companion doc.
+
+## 10. Out of scope
 
 - `naddr1…` parameter support (§2.4).
 - Permanent match permalinks (§4) — tied to the paid event archive.
