@@ -65,10 +65,15 @@ Future<void> shareMatchLink(
   required String matchId,
   required String logTag,
 }) {
-  assert(
-    (watchedHex == null) != (npub == null),
-    'name the organizer once: watchedHex or npub, not both and not neither',
-  );
+  // Thrown, not asserted: an assert is compiled out of a release build, which
+  // is where this would matter. Naming nobody would otherwise surface as a null
+  // check failing inside the encode below — a crash that says nothing about the
+  // caller — and naming twice would silently pick one.
+  if ((watchedHex == null) == (npub == null)) {
+    throw ArgumentError(
+      'name the organizer once: watchedHex or npub, not both and not neither',
+    );
+  }
 
   final l10n = AppLocalizations.of(context);
   final encoded = npub ?? ref.read(nostrCryptoProvider).npubEncode(watchedHex!);
