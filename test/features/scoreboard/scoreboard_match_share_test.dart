@@ -165,6 +165,33 @@ void main() {
       expect(icon.size!, lessThan(name.style!.fontSize!));
       expect(icon.color, ChokeTokens.dark.faint);
     });
+
+    testWidgets('is quiet to look at without being small to hit',
+        (tester) async {
+      // Arrange — quiet is a matter of size, weight and colour; the thing you
+      // tap has to clear Material's 48x48 either way, and it sits next to a
+      // much larger competing target, so a near miss opens the match instead
+      // of sharing it.
+      var shared = 0;
+      await tester.pumpWidget(_wrap(
+        Scaffold(body: MatchCard(match: _match(), onShare: () => shared++)),
+      ));
+      await tester.pump();
+
+      // Act + Assert — the tap target, not the glyph
+      final target = tester.getRect(find.byType(IconButton));
+      final glyph = tester.getRect(find.byIcon(Icons.ios_share));
+      expect(target.width, greaterThanOrEqualTo(48));
+      expect(target.height, greaterThanOrEqualTo(48));
+      expect(glyph.height, lessThan(target.height));
+
+      // A tap a pixel inside the corner is nowhere near the glyph, and still
+      // shares. `constraints` on an IconButton cannot shrink this — only
+      // `MaterialTapTargetSize` can — which is why none is set.
+      await tester.tapAt(target.topLeft + const Offset(1, 1));
+      await tester.pump();
+      expect(shared, 1);
+    });
   });
 
   group('ScoreboardScreen match sharing', () {

@@ -354,6 +354,10 @@ class MatchCard extends StatelessWidget {
   /// line with the status rather than claiming one of its own. A list of ten
   /// cards each shouting "share" is a list nobody reads, and the card's own tap
   /// target is still "open this match".
+  ///
+  /// Secondary is not the same as small to hit: the icon costs the header line
+  /// the height of a full 48×48 tap target, and that is the price of the
+  /// affordance rather than an accident to shave down.
   Widget _buildTrailing(AppLocalizations l10n, ChokeTokens tk) {
     if (onShare == null) return MatchStatusChip(status: match.status);
 
@@ -365,11 +369,18 @@ class MatchCard extends StatelessWidget {
         IconButton(
           onPressed: onShare,
           tooltip: l10n.scoreboardShareMatch,
-          // Sized down to the chip beside it so the header line does not grow
-          // a taller row for one glyph.
+          // The glyph is 14px; the thing you tap is 48×48, which is Material's
+          // minimum and clears Apple's 44pt. Quiet is a matter of size, weight
+          // and colour — not of being hard to hit, and this one sits beside a
+          // much larger competing target (the card itself opens the match), so
+          // a near miss does the wrong thing rather than nothing.
+          //
+          // Left to the tap target rather than set here: an IconButton's hit
+          // area comes from `MaterialTapTargetSize`, and tightening
+          // `constraints` under it only shrinks the ink, never the gesture. A
+          // `constraints: tightFor(30, 26)` here read as 30×26 and measured
+          // 40×40.
           padding: EdgeInsets.zero,
-          constraints: const BoxConstraints.tightFor(width: 30, height: 26),
-          visualDensity: VisualDensity.compact,
           icon: Icon(Icons.ios_share, size: 14, color: tk.faint),
         ),
       ],

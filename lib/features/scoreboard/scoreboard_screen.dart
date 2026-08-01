@@ -164,13 +164,11 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
   /// The npub travels with the id because an id names nothing on its own — four
   /// hex characters are unique only inside one organizer's events.
   Future<void> _shareMatch(Match match, String watchedHex) async {
-    final l10n = AppLocalizations.of(context);
-    final npub = ref.read(nostrCryptoProvider).npubEncode(watchedHex);
-    await shareLink(
+    await shareMatchLink(
       context,
-      message: l10n.scoreboardShareMatchMessage,
-      url: matchShareUrl(npub, match.id),
-      subject: l10n.scoreboardShareMatch,
+      ref,
+      watchedHex: watchedHex,
+      matchId: match.id,
       logTag: 'ScoreboardScreen',
     );
   }

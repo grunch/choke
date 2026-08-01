@@ -7,9 +7,7 @@ import 'package:choke/l10n/generated/app_localizations.dart';
 
 import 'board_palette.dart';
 import '../../services/deep_links/share_link.dart';
-import '../../services/nostr/crypto/nostr_crypto.dart';
 import '../../services/wakelock/screen_wakelock.dart';
-import '../../shared/share_sheet.dart';
 import '../../shared/wall_clock.dart';
 import '../../shared/widgets/match_card.dart';
 import '../match/models/match.dart';
@@ -927,7 +925,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
       right: 8,
       child: SafeArea(
         child: IconButton(
-          onPressed: () => _share(l10n, watched),
+          onPressed: () => _share(watched),
           tooltip: l10n.scoreboardShareMatch,
           color: palette.backLabel,
           icon: const Icon(Icons.ios_share, size: 18),
@@ -936,13 +934,12 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
     );
   }
 
-  Future<void> _share(AppLocalizations l10n, String watchedHex) async {
-    final npub = ref.read(nostrCryptoProvider).npubEncode(watchedHex);
-    await shareLink(
+  Future<void> _share(String watchedHex) async {
+    await shareMatchLink(
       context,
-      message: l10n.scoreboardShareMatchMessage,
-      url: matchShareUrl(npub, widget.matchId),
-      subject: l10n.scoreboardShareMatch,
+      ref,
+      watchedHex: watchedHex,
+      matchId: widget.matchId,
       logTag: 'ScoreboardMatchScreen',
     );
   }
