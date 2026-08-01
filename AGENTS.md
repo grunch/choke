@@ -33,7 +33,8 @@ generated `flutter_rust_bridge` bindings (`lib/src/rust/`):
   (`rust/src/api/crypto.rs`)
 - **Nostr protocol** — event ids, serialization, subscriptions, publishing
 - **Relay networking** — every WebSocket a relay sees is opened by the Rust
-  relay pool (`rust/src/api/relay.rs`), never by Dart
+  relay pool (`rust/src/api/relay.rs`), never by Dart (one deviation exists
+  today; it is named below, and it is being removed rather than extended)
 
 Rules for agents:
 
