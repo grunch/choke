@@ -54,8 +54,9 @@ Rules for agents:
 Known deviation (do not copy): `testRelayConnectivity` in
 `lib/features/settings/providers/relay_config_provider.dart` opens a raw
 WebSocket from Dart to health-check a relay URL before saving it. It is the
-only Dart-side relay connection in the app, it should eventually move into the
-crate, and it is **not** a precedent for new Dart-side networking.
+only Dart-side relay connection in the app and it is **not** a precedent for
+new Dart-side networking. PR #158 moves it into the crate (`relay_probe`);
+once that merges, delete this paragraph.
 
 ## Project Overview
 
