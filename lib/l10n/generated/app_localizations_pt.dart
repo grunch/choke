@@ -659,7 +659,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get navScoreboard => 'Placar';
 
   @override
-  String get scoreboardPubkeyHint => 'npub ou chave pública hex do organizador';
+  String get scoreboardPubkeyHint => 'npub do organizador';
 
   @override
   String get scoreboardWatch => 'Ver';
@@ -668,8 +668,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get scoreboardStopWatching => 'Parar de ver';
 
   @override
-  String get scoreboardInvalidPubkey =>
-      'Chave pública inválida: precisa ser npub ou hex de 64 caracteres';
+  String get scoreboardInvalidPubkey => 'Essa chave pública não é válida';
 
   @override
   String get scoreboardWelcomeTitle => 'Acompanhe os tatames de outros';

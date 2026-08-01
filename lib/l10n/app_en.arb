@@ -813,7 +813,7 @@
   "@navScoreboard": {
     "description": "Bottom navigation label for the read-only Scoreboard tab"
   },
-  "scoreboardPubkeyHint": "Organizer npub or hex pubkey",
+  "scoreboardPubkeyHint": "Organizer npub",
   "@scoreboardPubkeyHint": {
     "description": "Placeholder in the field where the viewer pastes the organizer pubkey"
   },
@@ -825,9 +825,9 @@
   "@scoreboardStopWatching": {
     "description": "Button that stops watching and forgets the pubkey"
   },
-  "scoreboardInvalidPubkey": "Invalid pubkey: must be an npub or 64-char hex",
+  "scoreboardInvalidPubkey": "That is not a valid public key",
   "@scoreboardInvalidPubkey": {
-    "description": "Error shown when the pasted pubkey is neither an npub nor 64-char hex"
+    "description": "Error shown when the pasted key cannot be read. Names no format on purpose: the hint asks for an npub, hex is still accepted, and claiming npub-only would misread a mistyped hex key back to the person who pasted it"
   },
   "scoreboardWelcomeTitle": "Watch somebody else’s mats",
   "@scoreboardWelcomeTitle": {

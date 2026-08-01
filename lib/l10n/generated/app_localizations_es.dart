@@ -659,7 +659,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navScoreboard => 'Tablero';
 
   @override
-  String get scoreboardPubkeyHint => 'npub o clave pública hex del organizador';
+  String get scoreboardPubkeyHint => 'npub del organizador';
 
   @override
   String get scoreboardWatch => 'Ver';
@@ -668,8 +668,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get scoreboardStopWatching => 'Dejar de ver';
 
   @override
-  String get scoreboardInvalidPubkey =>
-      'Clave pública inválida: debe ser npub o hex de 64 caracteres';
+  String get scoreboardInvalidPubkey => 'Esa clave pública no es válida';
 
   @override
   String get scoreboardWelcomeTitle => 'Mirá los tatamis de otros';

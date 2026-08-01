@@ -654,7 +654,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navScoreboard => 'Scoreboard';
 
   @override
-  String get scoreboardPubkeyHint => 'Organizer npub or hex pubkey';
+  String get scoreboardPubkeyHint => 'Organizer npub';
 
   @override
   String get scoreboardWatch => 'Watch';
@@ -663,8 +663,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scoreboardStopWatching => 'Stop watching';
 
   @override
-  String get scoreboardInvalidPubkey =>
-      'Invalid pubkey: must be an npub or 64-char hex';
+  String get scoreboardInvalidPubkey => 'That is not a valid public key';
 
   @override
   String get scoreboardWelcomeTitle => 'Watch somebody else’s mats';
