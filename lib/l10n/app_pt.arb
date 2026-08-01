@@ -206,7 +206,7 @@
   "scoreboardPubkeyHint": "npub do organizador",
   "scoreboardWatch": "Ver",
   "scoreboardStopWatching": "Parar de ver",
-  "scoreboardInvalidPubkey": "Isso não é um npub",
+  "scoreboardInvalidPubkey": "Essa chave pública não é válida",
   "scoreboardWelcomeTitle": "Acompanhe os tatames de outros",
   "scoreboardWelcomeBody": "Cole a chave pública que um organizador compartilhou e as lutas dele aparecem aqui ao vivo.",
   "scoreboardEmptyTitle": "Ainda sem lutas",

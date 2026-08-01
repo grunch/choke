@@ -825,9 +825,9 @@
   "@scoreboardStopWatching": {
     "description": "Button that stops watching and forgets the pubkey"
   },
-  "scoreboardInvalidPubkey": "That is not an npub",
+  "scoreboardInvalidPubkey": "That is not a valid public key",
   "@scoreboardInvalidPubkey": {
-    "description": "Error shown when the pasted key cannot be read. Names only npub: hex is still accepted, but it is not what anybody is handed"
+    "description": "Error shown when the pasted key cannot be read. Names no format on purpose: the hint asks for an npub, hex is still accepted, and claiming npub-only would misread a mistyped hex key back to the person who pasted it"
   },
   "scoreboardWelcomeTitle": "Watch somebody else’s mats",
   "@scoreboardWelcomeTitle": {

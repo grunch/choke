@@ -663,7 +663,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scoreboardStopWatching => 'Stop watching';
 
   @override
-  String get scoreboardInvalidPubkey => 'That is not an npub';
+  String get scoreboardInvalidPubkey => 'That is not a valid public key';
 
   @override
   String get scoreboardWelcomeTitle => 'Watch somebody else’s mats';

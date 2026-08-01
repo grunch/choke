@@ -641,7 +641,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scoreboardStopWatching => '表示をやめる';
 
   @override
-  String get scoreboardInvalidPubkey => 'これは npub ではありません';
+  String get scoreboardInvalidPubkey => 'その公開鍵は無効です';
 
   @override
   String get scoreboardWelcomeTitle => '他の会場の試合を見る';

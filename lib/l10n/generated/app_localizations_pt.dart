@@ -668,7 +668,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get scoreboardStopWatching => 'Parar de ver';
 
   @override
-  String get scoreboardInvalidPubkey => 'Isso não é um npub';
+  String get scoreboardInvalidPubkey => 'Essa chave pública não é válida';
 
   @override
   String get scoreboardWelcomeTitle => 'Acompanhe os tatames de outros';

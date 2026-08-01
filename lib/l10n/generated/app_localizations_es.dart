@@ -668,7 +668,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get scoreboardStopWatching => 'Dejar de ver';
 
   @override
-  String get scoreboardInvalidPubkey => 'Eso no es un npub';
+  String get scoreboardInvalidPubkey => 'Esa clave pública no es válida';
 
   @override
   String get scoreboardWelcomeTitle => 'Mirá los tatamis de otros';

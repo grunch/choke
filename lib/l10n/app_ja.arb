@@ -206,7 +206,7 @@
   "scoreboardPubkeyHint": "主催者の npub",
   "scoreboardWatch": "見る",
   "scoreboardStopWatching": "表示をやめる",
-  "scoreboardInvalidPubkey": "これは npub ではありません",
+  "scoreboardInvalidPubkey": "その公開鍵は無効です",
   "scoreboardWelcomeTitle": "他の会場の試合を見る",
   "scoreboardWelcomeBody": "主催者が共有した公開鍵を貼ると、その試合がここにリアルタイムで表示されます。",
   "scoreboardEmptyTitle": "まだ試合がありません",

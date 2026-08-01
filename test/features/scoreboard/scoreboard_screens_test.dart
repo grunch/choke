@@ -96,6 +96,19 @@ class _RecordingLease implements ScreenWakelockLease {
   Future<void> release() async => _owner.requests.add(false);
 }
 
+/// A crypto whose npub is as long as a real one.
+///
+/// [FakeNostrCrypto] answers with a 9-character sentinel, which is shorter than
+/// the truncation threshold and so returns whole — fine for asserting WHICH
+/// encoding is shown, useless for asserting HOW it is shortened. This one is 63
+/// characters, like every npub a board is actually watched by.
+class _LongNpubCrypto extends FakeNostrCrypto {
+  @override
+  String npubEncode(String publicKeyHex) =>
+      'npub1abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz'
+          .substring(0, 63);
+}
+
 Widget _wrap(Widget child, {List<Override> overrides = const []}) {
   return ProviderScope(
     overrides: [
@@ -171,6 +184,31 @@ void main() {
       // rendering hex would ask them to compare two encodings by eye.
       expect(capturedRef.read(watchedPubkeyProvider), _watched);
       expect(find.text('npub1fake'), findsWidgets);
+      expect(find.textContaining(_watched.substring(0, 8)), findsNothing);
+    });
+
+    testWidgets('shows both ends of a full-length npub, not of the hex',
+        (tester) async {
+      // Arrange — a real npub is 63 characters, where the sentinel the other
+      // tests use is 9 and comes back whole. Truncation only happens at this
+      // length, which is the length every real board has.
+      await tester.pumpWidget(_wrap(
+        const ScoreboardScreen(),
+        overrides: [
+          nostrCryptoProvider.overrideWithValue(_LongNpubCrypto()),
+        ],
+      ));
+      await tester.pump();
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+      // Act
+      await tester.enterText(find.byType(TextField), 'npub1fake');
+      await tester.tap(find.text(l10n.scoreboardWatch));
+      await tester.pump();
+
+      // Assert — first eight and last eight of the NPUB, keeping the npub1
+      // prefix that is what makes it recognisable as a key
+      expect(find.text('npub1abc…opqrstuv'), findsWidgets);
       expect(find.textContaining(_watched.substring(0, 8)), findsNothing);
     });
 

@@ -1338,10 +1338,10 @@ abstract class AppLocalizations {
   /// **'Stop watching'**
   String get scoreboardStopWatching;
 
-  /// Error shown when the pasted key cannot be read. Names only npub: hex is still accepted, but it is not what anybody is handed
+  /// Error shown when the pasted key cannot be read. Names no format on purpose: the hint asks for an npub, hex is still accepted, and claiming npub-only would misread a mistyped hex key back to the person who pasted it
   ///
   /// In en, this message translates to:
-  /// **'That is not an npub'**
+  /// **'That is not a valid public key'**
   String get scoreboardInvalidPubkey;
 
   /// Title before any pubkey has been entered
