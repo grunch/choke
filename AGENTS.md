@@ -33,8 +33,9 @@ generated `flutter_rust_bridge` bindings (`lib/src/rust/`):
   (`rust/src/api/crypto.rs`)
 - **Nostr protocol** — event ids, serialization, subscriptions, publishing
 - **Relay networking** — every WebSocket a relay sees is opened by the Rust
-  relay pool (`rust/src/api/relay.rs`), never by Dart (one deviation exists
-  today; it is named below, and it is being removed rather than extended)
+  relay pool (`rust/src/api/relay.rs`), never by Dart. Including the
+  connectivity probe Settings runs before saving a relay URL: that is
+  `relay_probe`, on a throwaway client, and it was the last exception
 
 Rules for agents:
 
@@ -52,12 +53,9 @@ Rules for agents:
    `NostrRelayBackend`, never to a crypto library or a socket directly. New
    sensitive capability = new method on the interface + Rust implementation.
 
-Known deviation (do not copy): `testRelayConnectivity` in
-`lib/features/settings/providers/relay_config_provider.dart` opens a raw
-WebSocket from Dart to health-check a relay URL before saving it. It is the
-only Dart-side relay connection in the app and it is **not** a precedent for
-new Dart-side networking. PR #158 moves it into the crate (`relay_probe`);
-once that merges, delete this paragraph.
+There are no deviations. The rule above describes the code as it is, not a
+direction it is heading in, so a Dart-side socket or crypto call is a bug
+rather than a precedent.
 
 ## Project Overview
 
