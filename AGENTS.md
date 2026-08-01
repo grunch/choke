@@ -22,6 +22,41 @@ the l10n system (`lib/l10n/*.arb`) and legitimately contains other languages
 (English, Spanish, Portuguese, Japanese). Everything a developer writes stays in
 English regardless of the contributor's native language.
 
+## Sensitive code lives in Rust (non-negotiable)
+
+Dart is for UI and state. **Everything security-sensitive or protocol-critical
+is implemented in the Rust crate** (`rust/`) and reached only through the
+generated `flutter_rust_bridge` bindings (`lib/src/rust/`):
+
+- **Cryptography** — key generation, public-key derivation, event signing and
+  verification, NIP-19 (`npub`/`nsec`) encoding and decoding
+  (`rust/src/api/crypto.rs`)
+- **Nostr protocol** — event ids, serialization, subscriptions, publishing
+- **Relay networking** — every WebSocket a relay sees is opened by the Rust
+  relay pool (`rust/src/api/relay.rs`), never by Dart
+
+Rules for agents:
+
+1. **Never implement crypto in Dart** — no signing, no hashing keys, no bech32,
+   not even "temporarily". Call the `NostrCrypto` interface
+   (`lib/services/nostr/crypto/`), which is backed by `RustNostrCrypto`.
+2. **Never open connections to relays from Dart.** Relay traffic goes through
+   the `NostrRelayBackend` interface (`lib/services/nostr/relay/`), backed by
+   `RustRelayBackend`.
+3. **Never add Dart dependencies for crypto or Nostr networking** to
+   `pubspec.yaml`. If a capability is missing, extend the Rust crate under
+   `rust/src/api/`, regenerate the bindings, and expose it through the existing
+   Dart interfaces.
+4. The Dart interfaces are the seam: app code talks to `NostrCrypto` /
+   `NostrRelayBackend`, never to a crypto library or a socket directly. New
+   sensitive capability = new method on the interface + Rust implementation.
+
+Known deviation (do not copy): `testRelayConnectivity` in
+`lib/features/settings/providers/relay_config_provider.dart` opens a raw
+WebSocket from Dart to health-check a relay URL before saving it. It is the
+only Dart-side relay connection in the app, it should eventually move into the
+crate, and it is **not** a precedent for new Dart-side networking.
+
 ## Project Overview
 
 Choke is a modern decentralized BJJ (Brazilian Jiu-Jitsu) match scoring and
@@ -158,6 +193,8 @@ cargo test --manifest-path rust/Cargo.toml
 - Match data is published as Nostr addressable events, kind `31415`.
 - Key handling, NIP-19, signing, and the relay pool all live in the Rust crate —
   reach them through the generated bindings, never reimplement crypto in Dart.
+  See [Sensitive code lives in Rust](#sensitive-code-lives-in-rust-non-negotiable)
+  at the top of this file — those rules are binding.
 
 ## Security
 
