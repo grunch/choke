@@ -330,6 +330,39 @@ pub async fn relay_publish(url: String, event: SignedEventData) -> Result<bool, 
     }
 }
 
+/// Whether `url` answers a relay's WebSocket handshake within `timeout_ms`.
+///
+/// Settings vets a URL with this before saving it. The question is "is
+/// something listening there", nothing more — success is the handshake
+/// completing, not any Nostr traffic — which mirrors what the app accepted
+/// before this probe existed.
+///
+/// Runs on a throwaway client, never the app's pool: the candidate joins no
+/// registry, inherits none of the pool's subscriptions, and a URL the user
+/// then decides not to save leaves nothing behind. `shutdown` reaps the
+/// throwaway's tasks whichever way the probe went.
+pub async fn relay_probe(url: String, timeout_ms: u32) -> bool {
+    let probe = Client::default();
+
+    // A URL that cannot be parsed is unreachable by definition. The caller
+    // hears `false` rather than an error, because "can this be my relay?"
+    // has exactly two answers.
+    if probe.add_relay(&url).await.is_err() {
+        return false;
+    }
+
+    let connected = probe
+        .try_connect_relay(
+            &url,
+            std::time::Duration::from_millis(u64::from(timeout_ms)),
+        )
+        .await
+        .is_ok();
+
+    probe.shutdown().await;
+    connected
+}
+
 pub async fn relay_subscribe(subscription_id: String, filter: FilterData) -> Result<(), String> {
     let mut f = Filter::new();
 
@@ -478,5 +511,37 @@ pub async fn relay_status_stream(sink: StreamSink<RelayStatusData>) {
             }
             Err(broadcast::error::RecvError::Closed) => break,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // The probe's failure paths are testable without any relay: garbage, a
+    // refused port, and a socket that accepts and then says nothing. The
+    // success path needs a live WebSocket server, which the Dart side already
+    // owns — `rust_relay_probe_test.dart` runs it against this same binary.
+
+    #[tokio::test]
+    async fn probe_rejects_a_url_that_does_not_parse() {
+        assert!(!relay_probe("not a relay url".to_string(), 1_000).await);
+    }
+
+    #[tokio::test]
+    async fn probe_reports_a_refused_connection_as_unreachable() {
+        // Port 1 on loopback: privileged, nothing listens there.
+        assert!(!relay_probe("ws://127.0.0.1:1".to_string(), 2_000).await);
+    }
+
+    #[tokio::test]
+    async fn probe_times_out_on_a_socket_that_never_completes_the_handshake() {
+        // A TCP listener that is never accepted from: the kernel completes
+        // the TCP handshake out of the backlog, and then nothing ever
+        // answers the WebSocket upgrade — the timeout is the only way out.
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+
+        assert!(!relay_probe(format!("ws://127.0.0.1:{port}"), 1_500).await);
     }
 }

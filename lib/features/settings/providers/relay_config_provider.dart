@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-
+import '../../../services/nostr/relay/rust_relay_backend.dart';
 import '../../../shared/nostr_relays.dart';
 
 /// Error codes emitted by [RelayConfigNotifier].
@@ -357,44 +356,21 @@ class RelayConfigNotifier extends StateNotifier<RelayConfigState> {
     return trimmed.startsWith('wss://');
   }
 
-  /// Tests WebSocket connectivity to a relay.
-  /// Returns true if connection succeeds within timeout, false otherwise.
-  Future<bool> testRelayConnectivity(String url) async {
-    WebSocketChannel? channel;
-    try {
-      // Attempt connection with 5 second timeout
-      channel = WebSocketChannel.connect(Uri.parse(url.trim()));
-      await channel.ready.timeout(const Duration(seconds: 5));
+  /// How long [testRelayConnectivity] waits for the handshake before calling
+  /// the relay unreachable. The same five seconds the old Dart-side probe
+  /// used; long enough for venue wifi, short enough for the "Adding…" spinner.
+  static const Duration probeTimeout = Duration(seconds: 5);
 
-      // Send a simple ping-like message to verify it's a Nostr relay
-      channel.sink.add('["REQ","test",{}]');
-
-      // Wait briefly for any response (even an error confirms it's a relay)
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      await channel.sink.close();
-      return true;
-    } on TimeoutException {
-      debugPrint('RelayConfigNotifier: Connection timeout to $url');
-      _closeQuietly(channel);
-      return false;
-    } catch (e) {
-      debugPrint('RelayConfigNotifier: Connection failed to $url: $e');
-      _closeQuietly(channel);
-      return false;
-    }
-  }
-
-  /// Best-effort close that never blocks.
+  /// Tests connectivity to a relay before it is saved.
+  /// Returns true if the WebSocket handshake completes within [probeTimeout].
   ///
-  /// When the handshake never completed (connection refused, silent host),
-  /// the sink's close future never resolves — awaiting it here is what used
-  /// to hang addRelay forever behind the "Adding…" spinner. The failure paths
-  /// fire it and move on; there is nothing to wait for on a socket that
-  /// never existed.
-  void _closeQuietly(WebSocketChannel? channel) {
-    if (channel == null) return;
-    unawaited(channel.sink.close().catchError((_) {}));
+  /// The handshake itself happens in the Rust crate, on a throwaway client
+  /// that never touches the app's relay pool — Dart opens no socket here
+  /// (see AGENTS.md: relay networking lives in Rust). Kept as an instance
+  /// method because it is the seam tests override to keep addRelay off the
+  /// network.
+  Future<bool> testRelayConnectivity(String url) {
+    return RustRelayBackend.probe(url.trim(), timeout: probeTimeout);
   }
 }
 

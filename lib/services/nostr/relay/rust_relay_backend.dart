@@ -75,6 +75,17 @@ class RustRelayBackend implements NostrRelayBackend {
     }
   }
 
+  /// Whether [url] answers a relay's WebSocket handshake within [timeout].
+  ///
+  /// Settings vets a URL with this before saving it. Static, because it
+  /// deliberately does not touch this backend's pool: the handshake happens in
+  /// the Rust crate on a throwaway client (`relay_probe`), so a candidate URL
+  /// inherits no subscriptions and leaves nothing behind if the user walks
+  /// away. Dart opens no socket here — relay networking stays in Rust.
+  static Future<bool> probe(String url, {required Duration timeout}) {
+    return rust.relayProbe(url: url, timeoutMs: timeout.inMilliseconds);
+  }
+
   @override
   Stream<NostrEvent> get events => _eventController.stream;
 

@@ -67,6 +67,21 @@ Future<bool> relayPublish(
         {required String url, required SignedEventData event}) =>
     RustLib.instance.api.crateApiRelayRelayPublish(url: url, event: event);
 
+/// Whether `url` answers a relay's WebSocket handshake within `timeout_ms`.
+///
+/// Settings vets a URL with this before saving it. The question is "is
+/// something listening there", nothing more — success is the handshake
+/// completing, not any Nostr traffic — which mirrors what the app accepted
+/// before this probe existed.
+///
+/// Runs on a throwaway client, never the app's pool: the candidate joins no
+/// registry, inherits none of the pool's subscriptions, and a URL the user
+/// then decides not to save leaves nothing behind. `shutdown` reaps the
+/// throwaway's tasks whichever way the probe went.
+Future<bool> relayProbe({required String url, required int timeoutMs}) =>
+    RustLib.instance.api
+        .crateApiRelayRelayProbe(url: url, timeoutMs: timeoutMs);
+
 Future<void> relaySubscribe(
         {required String subscriptionId, required FilterData filter}) =>
     RustLib.instance.api.crateApiRelayRelaySubscribe(
