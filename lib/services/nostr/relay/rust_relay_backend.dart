@@ -82,8 +82,23 @@ class RustRelayBackend implements NostrRelayBackend {
   /// the Rust crate on a throwaway client (`relay_probe`), so a candidate URL
   /// inherits no subscriptions and leaves nothing behind if the user walks
   /// away. Dart opens no socket here — relay networking stays in Rust.
-  static Future<bool> probe(String url, {required Duration timeout}) {
-    return rust.relayProbe(url: url, timeoutMs: timeout.inMilliseconds);
+  /// Answers `false` rather than throwing when the call itself fails — a
+  /// `PanicException` out of the crate, an uninitialized binding, anything.
+  /// The caller is a tap on "Add", and it awaits this *outside* its own
+  /// `try`: an escaping exception would leave the sheet spinning on "Adding…"
+  /// with nothing to dismiss it, on top of surfacing a raw error. Unreachable
+  /// is also the honest answer — a probe that could not run has not found a
+  /// relay.
+  static Future<bool> probe(String url, {required Duration timeout}) async {
+    try {
+      return await rust.relayProbe(
+        url: url,
+        timeoutMs: timeout.inMilliseconds,
+      );
+    } catch (e) {
+      debugPrint('RustRelayBackend: probe of $url failed: $e');
+      return false;
+    }
   }
 
   @override

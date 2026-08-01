@@ -347,17 +347,22 @@ pub async fn relay_probe(url: String, timeout_ms: u32) -> bool {
     // A URL that cannot be parsed is unreachable by definition. The caller
     // hears `false` rather than an error, because "can this be my relay?"
     // has exactly two answers.
-    if probe.add_relay(&url).await.is_err() {
-        return false;
-    }
-
-    let connected = probe
-        .try_connect_relay(
-            &url,
-            std::time::Duration::from_millis(u64::from(timeout_ms)),
-        )
-        .await
-        .is_ok();
+    //
+    // Written as one expression so `shutdown` below is on every path,
+    // including this one. Dropping the client would very likely be enough —
+    // nothing is connected when `add_relay` fails — but "very likely enough"
+    // is a worse thing to leave behind than one branch.
+    let connected = if probe.add_relay(&url).await.is_err() {
+        false
+    } else {
+        probe
+            .try_connect_relay(
+                &url,
+                std::time::Duration::from_millis(u64::from(timeout_ms)),
+            )
+            .await
+            .is_ok()
+    };
 
     probe.shutdown().await;
     connected
@@ -530,8 +535,15 @@ mod tests {
 
     #[tokio::test]
     async fn probe_reports_a_refused_connection_as_unreachable() {
-        // Port 1 on loopback: privileged, nothing listens there.
-        assert!(!relay_probe("ws://127.0.0.1:1".to_string(), 2_000).await);
+        // A port this test held and let go, rather than a low one assumed to
+        // be free: the kernel hands out one nothing is listening on, and
+        // dropping the listener leaves it refusing. A hardcoded port is only
+        // unused until the machine running the tests disagrees.
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        drop(listener);
+
+        assert!(!relay_probe(format!("ws://127.0.0.1:{port}"), 2_000).await);
     }
 
     #[tokio::test]
@@ -542,6 +554,16 @@ mod tests {
         let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
         let port = listener.local_addr().unwrap().port();
 
-        assert!(!relay_probe(format!("ws://127.0.0.1:{port}"), 1_500).await);
+        // The outer deadline is the point: if the probe's own timeout ever
+        // stops firing, this fails in three seconds instead of hanging the
+        // suite until CI gives up on the whole job.
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(3),
+            relay_probe(format!("ws://127.0.0.1:{port}"), 1_500),
+        )
+        .await
+        .expect("relay probe exceeded the outer test deadline");
+
+        assert!(!result);
     }
 }

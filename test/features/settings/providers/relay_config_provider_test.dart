@@ -529,6 +529,49 @@ void main() {
   // tagged 'rust'. What stays here is everything above the seam: addRelay
   // consults testRelayConnectivity, and the fakes override it.
 
+  group('a probe that cannot run', () {
+    // This file never calls `RustLib.init`, so the binding underneath the
+    // probe is not loaded — which is exactly the shape of every way the call
+    // itself can fail, a panic out of the crate included. No native library
+    // needed to test it, and none wanted: the point is what happens when the
+    // crate is not reachable.
+
+    test('reports unreachable instead of throwing', () async {
+      // Arrange
+      final notifier = RelayConfigNotifier(
+        RelayConfigService(secureStorage: InMemorySecureStorage()),
+      );
+      await pumpEventQueue();
+
+      // Act + Assert — the caller awaits this outside its own try, so an
+      // escaping exception would strand the sheet on "Adding…"
+      await expectLater(
+        notifier.testRelayConnectivity('wss://relay.example'),
+        completion(isFalse),
+      );
+    });
+
+    test('leaves addRelay saying unreachable, not spinning', () async {
+      // Arrange
+      final storage = InMemorySecureStorage();
+      final notifier = RelayConfigNotifier(
+        RelayConfigService(secureStorage: storage),
+      );
+      await pumpEventQueue();
+      final before = storage.writeCount;
+
+      // Act
+      final added = await notifier.addRelay('wss://relay.example');
+
+      // Assert — refused, said so, and finished: isLoading back to false is
+      // the whole regression this guards
+      expect(added, isFalse);
+      expect(notifier.state.error, RelayError.unreachable);
+      expect(notifier.state.isLoading, isFalse);
+      expect(storage.writeCount, before);
+    });
+  });
+
   group('providers', () {
     test('relayConfigServiceProvider builds a service', () {
       // Arrange
