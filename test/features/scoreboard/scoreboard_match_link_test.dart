@@ -26,10 +26,11 @@ class _OfflineNostrService extends NostrService {
       : super(KeyManager(crypto: FakeNostrCrypto()),
             crypto: FakeNostrCrypto(), backend: FakeRelayBackend());
 
-  final controller = StreamController<NostrEvent>.broadcast();
-
+  /// Empty, not a controller nobody writes to: events reach these tests
+  /// through the [_feed] override, and a live controller here would only be
+  /// one more thing left open at the end of every test.
   @override
-  Stream<NostrEvent> get eventStream => controller.stream;
+  Stream<NostrEvent> get eventStream => const Stream.empty();
 
   @override
   void subscribeToAuthor(String authorPubkey, {String? subscriptionId}) {}

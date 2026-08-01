@@ -193,10 +193,13 @@ final requestedMatchProvider = StateProvider<String?>((ref) => null);
 /// that arrives after this still wins, because the link was right and the
 /// network was slow.
 ///
-/// > **Cross-repo note.** The spec's §3.1 rule 2 currently writes this number
-/// > as 8 seconds and requires both readers to use the same one. This ships as
-/// > 10 on explicit instruction; choke-scoreboard and the spec text need the
-/// > same value before a link can be trusted to resolve identically in both.
+/// > **Cross-repo note.** Ten is the number both readers use, and the spec's
+/// > §3.1 rule 2 says so: choke-scoreboard already waits exactly this long
+/// > before giving up on EOSE, and a second timeout a couple of seconds away
+/// > from it would leave two magic numbers where there was one. Changing it
+/// > here means changing it there and in the spec in the same breath — a link
+/// > that resolves in one reader and not the other is what §4 exists to
+/// > prevent.
 const Duration kMatchLinkBackstop = Duration(seconds: 10);
 
 /// Open a shared board link.
