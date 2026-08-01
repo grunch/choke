@@ -166,8 +166,12 @@ void main() {
       await tester.tap(find.text(l10n.scoreboardWatch));
       await tester.pump();
 
-      // Assert
+      // Assert — hex is what the app watches, and an npub is what it shows.
+      // A spectator compares the pill against the npub in their chat, so
+      // rendering hex would ask them to compare two encodings by eye.
       expect(capturedRef.read(watchedPubkeyProvider), _watched);
+      expect(find.text('npub1fake'), findsWidgets);
+      expect(find.textContaining(_watched.substring(0, 8)), findsNothing);
     });
 
     testWidgets("lists the watched pubkey's matches", (tester) async {

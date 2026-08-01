@@ -508,10 +508,21 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
     );
   }
 
-  /// A pubkey is 64 characters of hex nobody reads. Show enough of both ends to
-  /// tell which one it is.
+  /// The watched organizer, short enough to fit and still recognisable.
+  ///
+  /// Shown as an **npub**, whatever was pasted. Hex is the app's internal
+  /// currency — the subscription filter, the event author, the lookup key — but
+  /// it is not what anybody was handed: an organizer gives out an npub, and a
+  /// spectator checking they are on the right board compares what is on screen
+  /// against what is in their chat. Truncated hex makes them compare two
+  /// different encodings of the same key, which nobody can do by eye.
+  ///
+  /// Truncated after encoding, so both ends belong to the npub. The leading
+  /// `npub1` is kept on purpose: it is what makes the string recognisable as a
+  /// key at all.
   String _shortPubkey(String hex) {
-    if (hex.length <= 16) return hex;
-    return '${hex.substring(0, 8)}…${hex.substring(hex.length - 8)}';
+    final npub = ref.read(nostrCryptoProvider).npubEncode(hex);
+    if (npub.length <= 16) return npub;
+    return '${npub.substring(0, 8)}…${npub.substring(npub.length - 8)}';
   }
 }

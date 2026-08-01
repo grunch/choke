@@ -1323,7 +1323,7 @@ abstract class AppLocalizations {
   /// Placeholder in the field where the viewer pastes the organizer pubkey
   ///
   /// In en, this message translates to:
-  /// **'Organizer npub or hex pubkey'**
+  /// **'Organizer npub'**
   String get scoreboardPubkeyHint;
 
   /// Button that starts watching the entered pubkey
@@ -1338,10 +1338,10 @@ abstract class AppLocalizations {
   /// **'Stop watching'**
   String get scoreboardStopWatching;
 
-  /// Error shown when the pasted pubkey is neither an npub nor 64-char hex
+  /// Error shown when the pasted key cannot be read. Names only npub: hex is still accepted, but it is not what anybody is handed
   ///
   /// In en, this message translates to:
-  /// **'Invalid pubkey: must be an npub or 64-char hex'**
+  /// **'That is not an npub'**
   String get scoreboardInvalidPubkey;
 
   /// Title before any pubkey has been entered

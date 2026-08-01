@@ -632,7 +632,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get navScoreboard => 'スコアボード';
 
   @override
-  String get scoreboardPubkeyHint => '主催者の npub または 16 進公開鍵';
+  String get scoreboardPubkeyHint => '主催者の npub';
 
   @override
   String get scoreboardWatch => '見る';
@@ -641,7 +641,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scoreboardStopWatching => '表示をやめる';
 
   @override
-  String get scoreboardInvalidPubkey => '無効な公開鍵：npub または 64 文字の 16 進数が必要です';
+  String get scoreboardInvalidPubkey => 'これは npub ではありません';
 
   @override
   String get scoreboardWelcomeTitle => '他の会場の試合を見る';
