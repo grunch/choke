@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
+import '../../services/deep_links/share_link.dart';
+import '../../services/key_management/key_manager.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/match_card.dart';
 import '../../shared/widgets/status_filter_bar.dart';
@@ -18,6 +20,10 @@ class HomeScreen extends ConsumerWidget {
     final filteredMatches = ref.watch(filteredMatchListProvider);
     final allMatches = ref.watch(recentMatchListProvider);
     final statusFilter = ref.watch(statusFilterProvider);
+    // `valueOrNull`, not a `when`: the identity is read from storage and the
+    // list must not wait on it. A card that appears before the key does simply
+    // has no share icon for that frame.
+    final npub = ref.watch(npubProvider).valueOrNull;
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final tk = ChokeTokens.of(context);
@@ -103,7 +109,13 @@ class HomeScreen extends ConsumerWidget {
                         MediaQuery.of(context).padding.bottom + 80,
                       ),
                       itemCount: filteredMatches.length,
-                      itemBuilder: (context, index) {
+                      // Deliberately not shadowing `context` with the builder's
+                      // own: the share sheet asks its context for a RenderBox
+                      // to anchor a popover to, and a builder inside a
+                      // ListView hands back a RenderSliverList. The page's
+                      // context is a box, and is the right anchor anyway — the
+                      // sheet belongs to the screen, not to one row of it.
+                      itemBuilder: (_, index) {
                         final match = filteredMatches[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 11),
@@ -120,6 +132,24 @@ class HomeScreen extends ConsumerWidget {
                                 ),
                               );
                             },
+                            // The organizer's own feed, so the link names this
+                            // app's identity: the same icon and the same link
+                            // the scoreboard hands out, offered from the screen
+                            // the person who created the fight is already on.
+                            //
+                            // No npub means no key generated yet, and a link
+                            // with nobody in it names nothing — the card then
+                            // renders exactly as it did before there was a
+                            // share icon at all.
+                            onShare: npub == null
+                                ? null
+                                : () => shareMatchLink(
+                                      context,
+                                      ref,
+                                      npub: npub,
+                                      matchId: match.id,
+                                      logTag: 'HomeScreen',
+                                    ),
                           ),
                         );
                       },
@@ -199,5 +229,4 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
-
 }
