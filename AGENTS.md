@@ -220,6 +220,10 @@ cargo test --manifest-path rust/Cargo.toml
    `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`.
 5. Push and open a PR. On merge, only the tests re-run on `main`; the APK build
    runs on PRs. Releases are built from `v*` tags by `.github/workflows/release.yml`.
+6. **Agents: subscribe to the PR you just opened** (`subscribe_pr_activity`), and
+   stay subscribed until it is merged or closed. Opening a PR is not the end of
+   the task — CI failures and review comments on it are yours to drive to green
+   or to answer, without waiting to be asked.
 
 All commits, branches, PRs, and issues are written in **English** (see the top
 of this file).
