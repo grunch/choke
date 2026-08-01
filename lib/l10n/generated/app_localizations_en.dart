@@ -721,6 +721,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Follow these BJJ matches live on bjjscore.live:';
 
   @override
+  String get scoreboardShareMatch => 'Share this match';
+
+  @override
+  String get scoreboardShareMatchMessage =>
+      'Watch this BJJ match live on bjjscore.live:';
+
+  @override
   String get scoreboardQrTitle => 'Scan to watch live';
 
   @override

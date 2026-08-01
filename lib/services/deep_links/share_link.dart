@@ -2,7 +2,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/scoreboard/providers/scoreboard_providers.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../shared/providers/navigation_provider.dart';
+import '../../shared/share_sheet.dart';
 import '../nostr/crypto/nostr_crypto.dart';
 
 /// The host whose links this app answers for.
@@ -34,6 +36,38 @@ String liveBoardShareUrl(String npub) => '$kLiveBoardBaseUrl/?npub=$npub';
 /// one tap from the match instead of on it.
 String matchShareUrl(String npub, String matchId) =>
     '${liveBoardShareUrl(npub)}&$kShareMatchParam=$matchId';
+
+/// Hand one match to the platform share sheet.
+///
+/// Two surfaces send a match — a card in the scoreboard list, and the wall
+/// board while it is on screen — and what they send has to be the same thing:
+/// the same npub encoding, the same `&match=` link, and the same pair of
+/// strings, because "watch this fight" is one promise however it was reached.
+/// Written once here, next to [matchShareUrl], so that promise cannot drift
+/// into two slightly different ones.
+///
+/// [watchedHex] is the organizer's key, not the recipient's: an id names
+/// nothing on its own, and it is encoded to an npub here rather than by each
+/// caller. [logTag] is the only thing the two surfaces differ by, and it names
+/// which one in the debug line [shareLink] writes.
+Future<void> shareMatchLink(
+  BuildContext context,
+  WidgetRef ref, {
+  required String watchedHex,
+  required String matchId,
+  required String logTag,
+}) {
+  final l10n = AppLocalizations.of(context);
+  final npub = ref.read(nostrCryptoProvider).npubEncode(watchedHex);
+
+  return shareLink(
+    context,
+    message: l10n.scoreboardShareMatchMessage,
+    url: matchShareUrl(npub, matchId),
+    subject: l10n.scoreboardShareMatch,
+    logTag: logTag,
+  );
+}
 
 /// The query parameter naming one match on the board.
 const String kShareMatchParam = 'match';

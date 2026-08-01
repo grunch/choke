@@ -136,13 +136,22 @@ class _SmallBadge extends StatelessWidget {
 /// matches and differ only in what opening one means — hence [onTap], rather
 /// than a card that knows where it is.
 class MatchCard extends StatelessWidget {
-  const MatchCard({super.key, required this.match, this.onTap});
+  const MatchCard({super.key, required this.match, this.onTap, this.onShare});
 
   final Match match;
 
   /// What opening this match means here. A card with no [onTap] does not react
   /// to being pressed.
   final VoidCallback? onTap;
+
+  /// How to hand this match to somebody else, where that is possible.
+  ///
+  /// Optional, and absent by default, because only the read-only scoreboard has
+  /// a link to give: it knows whose board it is watching, and a match id names
+  /// nothing without an organizer. A card with no callback renders exactly what
+  /// it rendered before this existed, which is what keeps the home feed
+  /// untouched.
+  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -187,7 +196,7 @@ class MatchCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              MatchStatusChip(status: match.status),
+              _buildTrailing(l10n, tk),
             ],
           ),
           const SizedBox(height: 11),
@@ -331,6 +340,50 @@ class MatchCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(18),
       child: isCanceled ? Opacity(opacity: .72, child: card) : card,
+    );
+  }
+
+  /// The right-hand end of the card's first line: the status, and a way to pass
+  /// the match on where there is one.
+  ///
+  /// Returns the chip alone when there is nothing to share, rather than a Row
+  /// holding only the chip, so a card without [onShare] lays out exactly as it
+  /// did before this existed.
+  ///
+  /// The affordance is deliberately secondary — small, faint, and sharing the
+  /// line with the status rather than claiming one of its own. A list of ten
+  /// cards each shouting "share" is a list nobody reads, and the card's own tap
+  /// target is still "open this match".
+  ///
+  /// Secondary is not the same as small to hit: the icon costs the header line
+  /// the height of a full 48×48 tap target, and that is the price of the
+  /// affordance rather than an accident to shave down.
+  Widget _buildTrailing(AppLocalizations l10n, ChokeTokens tk) {
+    if (onShare == null) return MatchStatusChip(status: match.status);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        MatchStatusChip(status: match.status),
+        const SizedBox(width: 2),
+        IconButton(
+          onPressed: onShare,
+          tooltip: l10n.scoreboardShareMatch,
+          // The glyph is 14px; the thing you tap is 48×48, which is Material's
+          // minimum and clears Apple's 44pt. Quiet is a matter of size, weight
+          // and colour — not of being hard to hit, and this one sits beside a
+          // much larger competing target (the card itself opens the match), so
+          // a near miss does the wrong thing rather than nothing.
+          //
+          // Left to the tap target rather than set here: an IconButton's hit
+          // area comes from `MaterialTapTargetSize`, and tightening
+          // `constraints` under it only shrinks the ink, never the gesture. A
+          // `constraints: tightFor(30, 26)` here read as 30×26 and measured
+          // 40×40.
+          padding: EdgeInsets.zero,
+          icon: Icon(Icons.ios_share, size: 14, color: tk.faint),
+        ),
+      ],
     );
   }
 }

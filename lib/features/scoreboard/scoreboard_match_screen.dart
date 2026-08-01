@@ -211,6 +211,7 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
               _buildCenter(context, l10n, match, unit),
               _buildWinnerBanner(context, l10n, match, unit),
               _buildBack(l10n, palette),
+              _buildShare(l10n, palette),
             ],
           );
         },
@@ -893,6 +894,53 @@ class _ScoreboardMatchScreenState extends ConsumerState<ScoreboardMatchScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Send this fight to somebody, from the screen that is watching it.
+  ///
+  /// Mirrors [_buildBack] exactly — same offsets, same [SafeArea], same
+  /// [BoardPalette.backLabel] — at the opposite corner, so the two chrome items
+  /// read as a pair rather than as one control and one decoration.
+  ///
+  /// Icon only, where Back carries a word. Leaving is a decision and wants
+  /// naming; sharing is one glyph everybody already knows, and a board that
+  /// gets projected onto a wall has no room to spend on saying so twice.
+  ///
+  /// One tap straight to the platform share sheet, with no chooser in front of
+  /// it: this is the "look at this" reflex, and a menu costs more than it
+  /// offers. No QR either — when this screen *is* the projection, the audience
+  /// is already reading the bjjscore.live credit along the bottom of it, and a
+  /// code here would do that job again on the surface least able to afford the
+  /// clutter.
+  ///
+  /// Absent with nobody watched, because there is then no npub to name the
+  /// organizer, and a match id on its own names nothing.
+  Widget _buildShare(AppLocalizations l10n, BoardPalette palette) {
+    final watched = ref.watch(watchedPubkeyProvider);
+    if (watched == null) return const SizedBox.shrink();
+
+    return Positioned(
+      top: 8,
+      right: 8,
+      child: SafeArea(
+        child: IconButton(
+          onPressed: () => _share(watched),
+          tooltip: l10n.scoreboardShareMatch,
+          color: palette.backLabel,
+          icon: const Icon(Icons.ios_share, size: 18),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _share(String watchedHex) async {
+    await shareMatchLink(
+      context,
+      ref,
+      watchedHex: watchedHex,
+      matchId: widget.matchId,
+      logTag: 'ScoreboardMatchScreen',
     );
   }
 

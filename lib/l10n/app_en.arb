@@ -898,6 +898,14 @@
   "@scoreboardShareBoardMessage": {
     "description": "Message shown before the shared bjjscore.live link when sharing a watched board"
   },
+  "scoreboardShareMatch": "Share this match",
+  "@scoreboardShareMatch": {
+    "description": "Tooltip and share-sheet subject for sharing a link to one particular match. Never a bare 'Share': it sits beside scoreboardShareBoard, and a user who cannot tell the two apart sends a whole board when they meant to send one fight"
+  },
+  "scoreboardShareMatchMessage": "Watch this BJJ match live on bjjscore.live:",
+  "@scoreboardShareMatchMessage": {
+    "description": "Message shown before the shared bjjscore.live link when sharing one match. Singular and about watching, where the board's message is plural and about following, so the two read differently in a chat even without the link"
+  },
   "scoreboardQrTitle": "Scan to watch live",
   "@scoreboardQrTitle": {
     "description": "Title of the dialog holding a QR code of the watched board's link"
