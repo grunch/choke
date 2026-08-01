@@ -700,4 +700,17 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get scoreboardQrHint => 'スマートフォンのカメラをこのコードに向けると、ライブスコアボードが開きます';
+
+  @override
+  String get scoreboardMatchPendingTitle => 'その試合を探しています…';
+
+  @override
+  String get scoreboardMatchPendingBody => 'リンクはこのスコアボードの試合を指しています。届くのを待っています。';
+
+  @override
+  String get scoreboardMatchUnresolvedTitle => 'その試合はこのスコアボードにありません';
+
+  @override
+  String get scoreboardMatchUnresolvedBody =>
+      'しばらく前に終了した可能性があります。試合のリンクは約1日で切れます。共有した人に新しいリンクをもらってください。';
 }

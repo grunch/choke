@@ -731,4 +731,19 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get scoreboardQrHint =>
       'Aponte a câmera do celular para este código para abrir o placar ao vivo';
+
+  @override
+  String get scoreboardMatchPendingTitle => 'Procurando essa luta…';
+
+  @override
+  String get scoreboardMatchPendingBody =>
+      'O link apontava para uma luta deste placar. Aguardando ela chegar.';
+
+  @override
+  String get scoreboardMatchUnresolvedTitle =>
+      'Essa luta não está neste placar';
+
+  @override
+  String get scoreboardMatchUnresolvedBody =>
+      'Ela pode ter terminado faz um tempo — um link de luta dura cerca de um dia. Peça um novo para quem compartilhou.';
 }

@@ -177,6 +177,31 @@ final brokenShareLinkProvider = StateProvider<bool>((ref) => false);
 /// request left by the one before it.
 final requestedMatchProvider = StateProvider<String?>((ref) => null);
 
+/// How long a match link waits before it admits the match is not there.
+///
+/// **There is no settled signal, and this is the whole of the answer.** NIP-01
+/// ends a stored-events replay with `EOSE`, which is what "the feed has
+/// answered" should mean — but `NostrRelayBackend` exposes only
+/// `Stream<NostrEvent> get events`, with nothing to say a subscription has sent
+/// everything it holds. Plumbing one through the backend, and probably through
+/// the Rust layer under it, is deliberate follow-up rather than an oversight:
+/// the spec (`docs/specs/shared-match-links.md` §3.1) permits leaning on this
+/// backstop alone provided the code says so out loud. This is it saying so.
+///
+/// Long enough for a slow relay on venue wifi, short enough that nobody
+/// concludes the app has hung. Waiting is not terminal either way — an event
+/// that arrives after this still wins, because the link was right and the
+/// network was slow.
+///
+/// > **Cross-repo note.** Ten is the number both readers use, and the spec's
+/// > §3.1 rule 2 says so: choke-scoreboard already waits exactly this long
+/// > before giving up on EOSE, and a second timeout a couple of seconds away
+/// > from it would leave two magic numbers where there was one. Changing it
+/// > here means changing it there and in the spec in the same breath — a link
+/// > that resolves in one reader and not the other is what §4 exists to
+/// > prevent.
+const Duration kMatchLinkBackstop = Duration(seconds: 10);
+
 /// Open a shared board link.
 ///
 /// Returns whether the link was one this app answers for — true both for a

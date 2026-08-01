@@ -905,5 +905,21 @@
   "scoreboardQrHint": "Point a phone camera at this code to open the live board",
   "@scoreboardQrHint": {
     "description": "Caption under the QR code of the watched board's link"
+  },
+  "scoreboardMatchPendingTitle": "Looking for that match…",
+  "@scoreboardMatchPendingTitle": {
+    "description": "Title shown after a shared link named one match and before the relays have answered. Never says the match is missing: at this point nothing is known either way, and saying so is the failure the pending state exists to prevent"
+  },
+  "scoreboardMatchPendingBody": "The link named one match on this board. Waiting for it to come through.",
+  "@scoreboardMatchPendingBody": {
+    "description": "Explanation shown with scoreboardMatchPendingTitle while a shared match link is still waiting on the feed"
+  },
+  "scoreboardMatchUnresolvedTitle": "That match isn’t on this board",
+  "@scoreboardMatchUnresolvedTitle": {
+    "description": "Title shown when a shared link named a match and the feed had its chance without producing it"
+  },
+  "scoreboardMatchUnresolvedBody": "It may have ended some time ago — a match link lasts about a day. Ask whoever shared it for a fresh one.",
+  "@scoreboardMatchUnresolvedBody": {
+    "description": "Explanation shown with scoreboardMatchUnresolvedTitle. Must say the match may have ended some time ago and that a link lasts about a day: without that the recipient reads the app as broken, or blames the sender for a link that was fine when it was sent"
   }
 }

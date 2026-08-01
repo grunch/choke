@@ -731,4 +731,19 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get scoreboardQrHint =>
       'Apuntá la cámara del teléfono a este código para abrir el tablero en vivo';
+
+  @override
+  String get scoreboardMatchPendingTitle => 'Buscando esa lucha…';
+
+  @override
+  String get scoreboardMatchPendingBody =>
+      'El link nombraba una lucha de este tablero. Esperando a que llegue.';
+
+  @override
+  String get scoreboardMatchUnresolvedTitle =>
+      'Esa lucha no está en este tablero';
+
+  @override
+  String get scoreboardMatchUnresolvedBody =>
+      'Puede que haya terminado hace rato: un link de lucha dura alrededor de un día. Pedile uno nuevo a quien te lo compartió.';
 }

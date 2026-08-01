@@ -231,5 +231,9 @@
   "scoreboardShareBoard": "Compartilhar este placar",
   "scoreboardShareBoardMessage": "Acompanhe estas lutas de BJJ ao vivo em bjjscore.live:",
   "scoreboardQrTitle": "Escaneie para ver ao vivo",
-  "scoreboardQrHint": "Aponte a câmera do celular para este código para abrir o placar ao vivo"
+  "scoreboardQrHint": "Aponte a câmera do celular para este código para abrir o placar ao vivo",
+  "scoreboardMatchPendingTitle": "Procurando essa luta…",
+  "scoreboardMatchPendingBody": "O link apontava para uma luta deste placar. Aguardando ela chegar.",
+  "scoreboardMatchUnresolvedTitle": "Essa luta não está neste placar",
+  "scoreboardMatchUnresolvedBody": "Ela pode ter terminado faz um tempo — um link de luta dura cerca de um dia. Peça um novo para quem compartilhou."
 }

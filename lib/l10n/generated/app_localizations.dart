@@ -1451,6 +1451,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Point a phone camera at this code to open the live board'**
   String get scoreboardQrHint;
+
+  /// Title shown after a shared link named one match and before the relays have answered. Never says the match is missing: at this point nothing is known either way, and saying so is the failure the pending state exists to prevent
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for that match…'**
+  String get scoreboardMatchPendingTitle;
+
+  /// Explanation shown with scoreboardMatchPendingTitle while a shared match link is still waiting on the feed
+  ///
+  /// In en, this message translates to:
+  /// **'The link named one match on this board. Waiting for it to come through.'**
+  String get scoreboardMatchPendingBody;
+
+  /// Title shown when a shared link named a match and the feed had its chance without producing it
+  ///
+  /// In en, this message translates to:
+  /// **'That match isn’t on this board'**
+  String get scoreboardMatchUnresolvedTitle;
+
+  /// Explanation shown with scoreboardMatchUnresolvedTitle. Must say the match may have ended some time ago and that a link lasts about a day: without that the recipient reads the app as broken, or blames the sender for a link that was fine when it was sent
+  ///
+  /// In en, this message translates to:
+  /// **'It may have ended some time ago — a match link lasts about a day. Ask whoever shared it for a fresh one.'**
+  String get scoreboardMatchUnresolvedBody;
 }
 
 class _AppLocalizationsDelegate

@@ -726,4 +726,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get scoreboardQrHint =>
       'Point a phone camera at this code to open the live board';
+
+  @override
+  String get scoreboardMatchPendingTitle => 'Looking for that match…';
+
+  @override
+  String get scoreboardMatchPendingBody =>
+      'The link named one match on this board. Waiting for it to come through.';
+
+  @override
+  String get scoreboardMatchUnresolvedTitle => 'That match isn’t on this board';
+
+  @override
+  String get scoreboardMatchUnresolvedBody =>
+      'It may have ended some time ago — a match link lasts about a day. Ask whoever shared it for a fresh one.';
 }
