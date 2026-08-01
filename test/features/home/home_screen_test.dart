@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:choke/features/home/home_screen.dart';
 import 'package:choke/features/home/providers/home_providers.dart';
@@ -9,10 +10,12 @@ import 'package:choke/features/match/match_control_screen.dart';
 import 'package:choke/features/match/models/match.dart';
 import 'package:choke/features/match/providers/match_control_provider.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
+import 'package:choke/services/deep_links/share_link.dart';
 import 'package:choke/services/key_management/key_manager.dart';
 import 'package:choke/services/nostr/nostr_service.dart';
 import 'package:choke/services/wakelock/screen_wakelock.dart';
 import 'package:choke/shared/theme/app_theme.dart';
+import 'package:choke/shared/widgets/qr_dialog.dart';
 
 import '../../support/nostr_fakes.dart';
 import '../../support/share_channel.dart';
@@ -384,6 +387,38 @@ void main() {
       expect(calls, hasLength(1));
       expect(calls.single['text'], contains('npub=npub1fake'));
       expect(calls.single['text'], contains('match=cccd'));
+    });
+
+    testWidgets('offers this app own board as a code, for the room',
+        (tester) async {
+      // Arrange — the organizer's own identity, so the code carries their
+      // board. The scoreboard's code carries whoever is being watched; this is
+      // the same dialog on the other side of that.
+      container.updateOverrides([
+        nostrServiceProvider.overrideWithValue(service),
+        matchControlProvider.overrideWith(
+          (ref) => MatchControlNotifier(
+            _match(id: 'aaaa', status: MatchStatus.inProgress),
+            service,
+          ),
+        ),
+        screenWakelockProvider.overrideWithValue(const NoopScreenWakelock()),
+        npubProvider.overrideWith((ref) async => 'npub1fake'),
+      ]);
+      await container.read(npubProvider.future);
+      await pumpHome(tester);
+
+      // Act
+      await tester.tap(find.byIcon(Icons.qr_code_2));
+      await tester.pumpAndSettle();
+
+      // Assert — the board link, and the scoreboard's own strings: one dialog,
+      // not two that drifted apart
+      expect(find.byType(QrImageView), findsOneWidget);
+      final dialog = tester.widget<QrDialog>(find.byType(QrDialog));
+      expect(dialog.data, liveBoardShareUrl('npub1fake'));
+      expect(find.text(l10n.scoreboardQrTitle), findsOneWidget);
+      expect(find.text(l10n.scoreboardQrHint), findsOneWidget);
     });
 
     testWidgets('offers no share icon before an identity exists',

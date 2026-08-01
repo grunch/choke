@@ -5,6 +5,7 @@ import '../../services/deep_links/share_link.dart';
 import '../../services/key_management/key_manager.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/match_card.dart';
+import '../../shared/widgets/qr_dialog.dart';
 import '../../shared/widgets/status_filter_bar.dart';
 import '../match/create_match_screen.dart';
 import '../match/match_control_screen.dart';
@@ -83,6 +84,22 @@ class HomeScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  // The same code the scoreboard offers, for the board on the
+                  // other side of it: there it hands over the organizer being
+                  // watched, here it hands over this app's own. Same icon,
+                  // same dialog, same strings — a room pointing a camera at it
+                  // cannot tell whose phone is holding it up, and should not
+                  // have to.
+                  //
+                  // Hidden until an identity exists, like the cards' share
+                  // icon: a board link with nobody in it names nothing.
+                  if (npub != null)
+                    IconButton(
+                      onPressed: () => _showQr(context, npub),
+                      tooltip: l10n.showQr,
+                      color: tk.muted,
+                      icon: const Icon(Icons.qr_code_2),
+                    ),
                 ],
               ),
             ),
@@ -158,6 +175,24 @@ class HomeScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// This app's own board, as a code for the room.
+  ///
+  /// The organizer holds up or projects it and the crowd points a camera at
+  /// it — nothing typed, no key exchanged. Deliberately the same dialog and the
+  /// same strings the scoreboard uses (`scoreboardQrTitle` / `scoreboardQrHint`)
+  /// rather than new copy: it is the same board link, and the only difference
+  /// is whose. Not the account screen's QR, which carries the raw public key
+  /// for importing an identity — a different thing that happens to be square.
+  void _showQr(BuildContext context, String npub) {
+    final l10n = AppLocalizations.of(context);
+    showQrDialog(
+      context,
+      title: l10n.scoreboardQrTitle,
+      data: liveBoardShareUrl(npub),
+      caption: l10n.scoreboardQrHint,
     );
   }
 
