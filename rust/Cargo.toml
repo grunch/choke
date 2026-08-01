@@ -12,6 +12,10 @@ nostr = { version = "=0.44.4", default-features = false, features = ["std"] }
 nostr-sdk = "=0.44.1"
 tokio = { version = "1.52.3", features = ["rt"] }
 
+[dev-dependencies]
+# The probe tests are async; "macros" brings #[tokio::test], nothing else.
+tokio = { version = "1.52.3", features = ["rt", "macros"] }
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }
 

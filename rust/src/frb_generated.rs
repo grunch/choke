@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -465090834;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -392479397;
 
 // Section: executor
 
@@ -469,6 +469,45 @@ fn wire__crate__api__relay__relay_event_stream_impl(
                         let output_ok = Result::<_, ()>::Ok({
                             crate::api::relay::relay_event_stream(api_sink).await;
                         })?;
+                        Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__relay__relay_probe_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "relay_probe",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_url = <String>::sse_decode(&mut deserializer);
+            let api_timeout_ms = <u32>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let output_ok = Result::<_, ()>::Ok(
+                            crate::api::relay::relay_probe(api_url, api_timeout_ms).await,
+                        )?;
                         Ok(output_ok)
                     })()
                     .await,
@@ -1059,13 +1098,14 @@ fn pde_ffi_dispatcher_primary_impl(
         11 => wire__crate__api__relay__relay_connected_impl(port, ptr, rust_vec_len, data_len),
         12 => wire__crate__api__relay__relay_disconnect_impl(port, ptr, rust_vec_len, data_len),
         13 => wire__crate__api__relay__relay_event_stream_impl(port, ptr, rust_vec_len, data_len),
-        14 => wire__crate__api__relay__relay_publish_impl(port, ptr, rust_vec_len, data_len),
-        15 => wire__crate__api__relay__relay_reconnect_all_impl(port, ptr, rust_vec_len, data_len),
-        16 => wire__crate__api__relay__relay_remove_impl(port, ptr, rust_vec_len, data_len),
-        17 => wire__crate__api__relay__relay_status_stream_impl(port, ptr, rust_vec_len, data_len),
-        18 => wire__crate__api__relay__relay_subscribe_impl(port, ptr, rust_vec_len, data_len),
-        19 => wire__crate__api__relay__relay_unsubscribe_impl(port, ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__relay__relay_urls_impl(port, ptr, rust_vec_len, data_len),
+        14 => wire__crate__api__relay__relay_probe_impl(port, ptr, rust_vec_len, data_len),
+        15 => wire__crate__api__relay__relay_publish_impl(port, ptr, rust_vec_len, data_len),
+        16 => wire__crate__api__relay__relay_reconnect_all_impl(port, ptr, rust_vec_len, data_len),
+        17 => wire__crate__api__relay__relay_remove_impl(port, ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__relay__relay_status_stream_impl(port, ptr, rust_vec_len, data_len),
+        19 => wire__crate__api__relay__relay_subscribe_impl(port, ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__relay__relay_unsubscribe_impl(port, ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__relay__relay_urls_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1085,8 +1125,8 @@ fn pde_ffi_dispatcher_sync_impl(
         6 => wire__crate__api__crypto__nsec_decode_impl(ptr, rust_vec_len, data_len),
         7 => wire__crate__api__crypto__nsec_encode_impl(ptr, rust_vec_len, data_len),
         8 => wire__crate__api__crypto__public_key_from_secret_impl(ptr, rust_vec_len, data_len),
-        21 => wire__crate__api__crypto__verify_event_impl(ptr, rust_vec_len, data_len),
-        22 => wire__crate__api__crypto__verify_event_data_impl(ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__crypto__verify_event_impl(ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__crypto__verify_event_data_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }

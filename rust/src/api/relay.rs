@@ -330,6 +330,44 @@ pub async fn relay_publish(url: String, event: SignedEventData) -> Result<bool, 
     }
 }
 
+/// Whether `url` answers a relay's WebSocket handshake within `timeout_ms`.
+///
+/// Settings vets a URL with this before saving it. The question is "is
+/// something listening there", nothing more — success is the handshake
+/// completing, not any Nostr traffic — which mirrors what the app accepted
+/// before this probe existed.
+///
+/// Runs on a throwaway client, never the app's pool: the candidate joins no
+/// registry, inherits none of the pool's subscriptions, and a URL the user
+/// then decides not to save leaves nothing behind. `shutdown` reaps the
+/// throwaway's tasks whichever way the probe went.
+pub async fn relay_probe(url: String, timeout_ms: u32) -> bool {
+    let probe = Client::default();
+
+    // A URL that cannot be parsed is unreachable by definition. The caller
+    // hears `false` rather than an error, because "can this be my relay?"
+    // has exactly two answers.
+    //
+    // Written as one expression so `shutdown` below is on every path,
+    // including this one. Dropping the client would very likely be enough —
+    // nothing is connected when `add_relay` fails — but "very likely enough"
+    // is a worse thing to leave behind than one branch.
+    let connected = if probe.add_relay(&url).await.is_err() {
+        false
+    } else {
+        probe
+            .try_connect_relay(
+                &url,
+                std::time::Duration::from_millis(u64::from(timeout_ms)),
+            )
+            .await
+            .is_ok()
+    };
+
+    probe.shutdown().await;
+    connected
+}
+
 pub async fn relay_subscribe(subscription_id: String, filter: FilterData) -> Result<(), String> {
     let mut f = Filter::new();
 
@@ -478,5 +516,54 @@ pub async fn relay_status_stream(sink: StreamSink<RelayStatusData>) {
             }
             Err(broadcast::error::RecvError::Closed) => break,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // The probe's failure paths are testable without any relay: garbage, a
+    // refused port, and a socket that accepts and then says nothing. The
+    // success path needs a live WebSocket server, which the Dart side already
+    // owns — `rust_relay_probe_test.dart` runs it against this same binary.
+
+    #[tokio::test]
+    async fn probe_rejects_a_url_that_does_not_parse() {
+        assert!(!relay_probe("not a relay url".to_string(), 1_000).await);
+    }
+
+    #[tokio::test]
+    async fn probe_reports_a_refused_connection_as_unreachable() {
+        // A port this test held and let go, rather than a low one assumed to
+        // be free: the kernel hands out one nothing is listening on, and
+        // dropping the listener leaves it refusing. A hardcoded port is only
+        // unused until the machine running the tests disagrees.
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        drop(listener);
+
+        assert!(!relay_probe(format!("ws://127.0.0.1:{port}"), 2_000).await);
+    }
+
+    #[tokio::test]
+    async fn probe_times_out_on_a_socket_that_never_completes_the_handshake() {
+        // A TCP listener that is never accepted from: the kernel completes
+        // the TCP handshake out of the backlog, and then nothing ever
+        // answers the WebSocket upgrade — the timeout is the only way out.
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+
+        // The outer deadline is the point: if the probe's own timeout ever
+        // stops firing, this fails in three seconds instead of hanging the
+        // suite until CI gives up on the whole job.
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(3),
+            relay_probe(format!("ws://127.0.0.1:{port}"), 1_500),
+        )
+        .await
+        .expect("relay probe exceeded the outer test deadline");
+
+        assert!(!result);
     }
 }

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -523,96 +522,54 @@ void main() {
     });
   });
 
-  group('testRelayConnectivity', () {
-    // These use loopback sockets only — nothing leaves the machine.
+  // The real connectivity probe lives in the Rust crate now (`relay_probe`,
+  // reached through RustRelayBackend.probe) and needs the native library, so
+  // its socket-level tests — live endpoint, garbage URL, refused port, silent
+  // socket — live in test/services/nostr/relay/rust_relay_probe_test.dart,
+  // tagged 'rust'. What stays here is everything above the seam: addRelay
+  // consults testRelayConnectivity, and the fakes override it.
 
-    test('succeeds against a live local WebSocket endpoint', () async {
-      // Arrange — a WebSocket server on 127.0.0.1; the method does not care
-      // about the scheme, only the notifier's validator does, so ws:// keeps
-      // TLS out of the test
-      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      final sockets = <WebSocket>[];
-      server.listen((request) async {
-        final ws = await WebSocketTransformer.upgrade(request);
-        sockets.add(ws);
-        ws.listen((_) {});
-      });
-      addTearDown(() async {
-        for (final ws in sockets) {
-          await ws.close();
-        }
-        await server.close(force: true);
-      });
+  group('a probe that cannot run', () {
+    // This file never calls `RustLib.init`, so the binding underneath the
+    // probe is not loaded — which is exactly the shape of every way the call
+    // itself can fail, a panic out of the crate included. No native library
+    // needed to test it, and none wanted: the point is what happens when the
+    // crate is not reachable.
+
+    test('reports unreachable instead of throwing', () async {
+      // Arrange
       final notifier = RelayConfigNotifier(
-          RelayConfigService(secureStorage: InMemorySecureStorage()));
+        RelayConfigService(secureStorage: InMemorySecureStorage()),
+      );
       await pumpEventQueue();
+
+      // Act + Assert — the caller awaits this outside its own try, so an
+      // escaping exception would strand the sheet on "Adding…"
+      await expectLater(
+        notifier.testRelayConnectivity('wss://relay.example'),
+        completion(isFalse),
+      );
+    });
+
+    test('leaves addRelay saying unreachable, not spinning', () async {
+      // Arrange
+      final storage = InMemorySecureStorage();
+      final notifier = RelayConfigNotifier(
+        RelayConfigService(secureStorage: storage),
+      );
+      await pumpEventQueue();
+      final before = storage.writeCount;
 
       // Act
-      final reachable =
-          await notifier.testRelayConnectivity('ws://127.0.0.1:${server.port}');
+      final added = await notifier.addRelay('wss://relay.example');
 
-      // Assert
-      expect(reachable, isTrue);
+      // Assert — refused, said so, and finished: isLoading back to false is
+      // the whole regression this guards
+      expect(added, isFalse);
+      expect(notifier.state.error, RelayError.unreachable);
+      expect(notifier.state.isLoading, isFalse);
+      expect(storage.writeCount, before);
     });
-
-    test('returns false when the URL cannot even be parsed', () async {
-      // Arrange — Uri.parse throws before any channel exists, which is the
-      // only failure whose cleanup path can actually finish (see below)
-      final notifier = RelayConfigNotifier(
-          RelayConfigService(secureStorage: InMemorySecureStorage()));
-      await pumpEventQueue();
-
-      // Act — unterminated IPv6 literal: FormatException, synchronously
-      final reachable = await notifier.testRelayConnectivity('ws://[::1');
-
-      // Assert
-      expect(reachable, isFalse);
-    });
-
-    test('reports a refused connection as unreachable, promptly', () async {
-      // Arrange — port 1 on loopback: privileged, nothing listens there
-      final notifier = RelayConfigNotifier(
-          RelayConfigService(secureStorage: InMemorySecureStorage()));
-      await pumpEventQueue();
-
-      // Act — regression guard: this used to hang forever, because the
-      // failure path awaited `channel.sink.close()` on a socket whose
-      // handshake never completed. The method must now RETURN false itself;
-      // if the hang comes back, the test-level timeout fails this test.
-      final reachable =
-          await notifier.testRelayConnectivity('ws://127.0.0.1:1');
-
-      // Assert
-      expect(reachable, isFalse);
-    }, timeout: const Timeout(Duration(seconds: 15)));
-
-    test('times out against a socket that never completes the handshake',
-        () async {
-      // Arrange — a raw TCP listener that accepts and then says nothing, so
-      // channel.ready can only end by the 5 second timeout. This test costs
-      // those 5 real seconds; it is the only way to reach the timeout branch.
-      final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
-      final held = <Socket>[];
-      server.listen(held.add);
-      addTearDown(() async {
-        for (final socket in held) {
-          socket.destroy();
-        }
-        await server.close();
-      });
-      final notifier = RelayConfigNotifier(
-          RelayConfigService(secureStorage: InMemorySecureStorage()));
-      await pumpEventQueue();
-
-      // Act — regression guard for the same hang: after the 5s ready timeout
-      // fires, the method must return false on its own instead of wedging on
-      // a close() that can never complete.
-      final reachable =
-          await notifier.testRelayConnectivity('ws://127.0.0.1:${server.port}');
-
-      // Assert
-      expect(reachable, isFalse);
-    }, timeout: const Timeout(Duration(seconds: 15)));
   });
 
   group('providers', () {
