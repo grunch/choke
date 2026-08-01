@@ -15,6 +15,7 @@ import 'package:choke/services/wakelock/screen_wakelock.dart';
 import 'package:choke/shared/theme/app_theme.dart';
 
 import '../../support/nostr_fakes.dart';
+import '../../support/share_channel.dart';
 
 /// A NostrService that never reaches a relay, so tapping into the match
 /// control screen cannot try to publish anything.
@@ -94,6 +95,11 @@ void main() {
         // Tapping through to the control screen would otherwise reach a real
         // method channel that nothing answers in a test.
         screenWakelockProvider.overrideWithValue(const NoopScreenWakelock()),
+        // No identity by default, which is what every test here but the
+        // sharing ones is about — and what keeps them looking at the card they
+        // have always looked at. Declared here rather than added later:
+        // updateOverrides can change an override, never add one.
+        npubProvider.overrideWith((ref) async => null),
       ],
     );
   });
@@ -342,5 +348,55 @@ void main() {
     // Assert — the tapped match became the active one and the screen opened
     expect(find.byType(MatchControlScreen), findsOneWidget);
     expect(scope.read(activeMatchProvider)?.id, 'bbbb');
+  });
+
+  group('sharing a match from the feed', () {
+    testWidgets('sends a link naming this app own identity and that match',
+        (tester) async {
+      // Arrange — the organizer's own feed, so the link carries this app's
+      // npub. The card is the one surface the person who created the fight is
+      // already looking at; before this it could only be shared by watching
+      // one's own board from the spectator tab.
+      final calls = mockShareChannel(tester);
+      container.updateOverrides([
+        nostrServiceProvider.overrideWithValue(service),
+        matchControlProvider.overrideWith(
+          (ref) => MatchControlNotifier(
+            _match(id: 'aaaa', status: MatchStatus.inProgress),
+            service,
+          ),
+        ),
+        screenWakelockProvider.overrideWithValue(const NoopScreenWakelock()),
+        npubProvider.overrideWith((ref) async => 'npub1fake'),
+      ]);
+      await container.read(npubProvider.future);
+      await pumpHome(tester);
+      addMatch(_match(id: 'cccd', status: MatchStatus.inProgress));
+      await tester.pump();
+
+      // Act
+      await tester.tap(find.byIcon(Icons.ios_share).first);
+      await tester.pumpAndSettle();
+
+      // Assert — one link, naming the organizer AND the match. Both halves
+      // matter: an id alone names nothing, because ids are only unique within
+      // one author's events.
+      expect(calls, hasLength(1));
+      expect(calls.single['text'], contains('npub=npub1fake'));
+      expect(calls.single['text'], contains('match=cccd'));
+    });
+
+    testWidgets('offers no share icon before an identity exists',
+        (tester) async {
+      // Arrange — no key generated yet, so there is no organizer to name and a
+      // link would name nothing. The card renders as it did before there was a
+      // share icon at all.
+      await pumpHome(tester);
+      addMatch(_match(id: 'cccd', status: MatchStatus.inProgress));
+      await tester.pump();
+
+      // Assert
+      expect(find.byIcon(Icons.ios_share), findsNothing);
+    });
   });
 }

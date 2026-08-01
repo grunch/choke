@@ -39,31 +39,44 @@ String matchShareUrl(String npub, String matchId) =>
 
 /// Hand one match to the platform share sheet.
 ///
-/// Two surfaces send a match — a card in the scoreboard list, and the wall
-/// board while it is on screen — and what they send has to be the same thing:
-/// the same npub encoding, the same `&match=` link, and the same pair of
-/// strings, because "watch this fight" is one promise however it was reached.
-/// Written once here, next to [matchShareUrl], so that promise cannot drift
-/// into two slightly different ones.
+/// Three surfaces send a match — a card in the scoreboard list, the wall board
+/// while it is on screen, and a card in the organizer's own home feed — and
+/// what they send has to be the same thing: the same npub encoding, the same
+/// `&match=` link, and the same pair of strings, because "watch this fight" is
+/// one promise however it was reached. Written once here, next to
+/// [matchShareUrl], so that promise cannot drift into three slightly different
+/// ones.
 ///
-/// [watchedHex] is the organizer's key, not the recipient's: an id names
-/// nothing on its own, and it is encoded to an npub here rather than by each
-/// caller. [logTag] is the only thing the two surfaces differ by, and it names
-/// which one in the debug line [shareLink] writes.
+/// The key named is the *organizer's*, never the recipient's — an id names
+/// nothing on its own — and it arrives in whichever form the caller already
+/// holds. Pass [watchedHex] when watching somebody else's board, which is what
+/// the scoreboard has; pass [npub] when it is the app's own identity, which is
+/// what home has (`npubProvider` keeps it encoded). Exactly one of the two.
+/// Requiring hex everywhere would put a decode-then-re-encode on the caller
+/// that already holds the finished thing.
+///
+/// [logTag] is the only other thing the surfaces differ by, and it names which
+/// one in the debug line [shareLink] writes.
 Future<void> shareMatchLink(
   BuildContext context,
   WidgetRef ref, {
-  required String watchedHex,
+  String? watchedHex,
+  String? npub,
   required String matchId,
   required String logTag,
 }) {
+  assert(
+    (watchedHex == null) != (npub == null),
+    'name the organizer once: watchedHex or npub, not both and not neither',
+  );
+
   final l10n = AppLocalizations.of(context);
-  final npub = ref.read(nostrCryptoProvider).npubEncode(watchedHex);
+  final encoded = npub ?? ref.read(nostrCryptoProvider).npubEncode(watchedHex!);
 
   return shareLink(
     context,
     message: l10n.scoreboardShareMatchMessage,
-    url: matchShareUrl(npub, matchId),
+    url: matchShareUrl(encoded, matchId),
     subject: l10n.scoreboardShareMatch,
     logTag: logTag,
   );
