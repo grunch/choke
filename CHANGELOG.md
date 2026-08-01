@@ -1,5 +1,53 @@
 # Changelog
 
+## [v2.0.1] - 2026-08-01
+
+### Added
+- feat: the organizer's own board, as a code for the room (27ff7f0)
+- feat: share a match from the feed you already have open (89f7b0e)
+- feat: give a spectator a way to send one fight (3ccaf87)
+- feat: let a match link wait before it gives up (febd25f)
+- feat: read a link that names one match, not just a board (f727e74)
+- feat: credit bjjscore.live along the bottom of the wall board (33470ef)
+- feat: let a watched board be handed on, by link or by QR (d561214)
+
+### Fixed
+- fix: cover the truncation itself, and stop the error naming a format (5e3386a)
+- fix: name the organizer wrong and hear about it in release too (e6b6c9e)
+- fix: a probe that cannot run is unreachable, not an exception (7fa725f)
+- fix: set the match request before the pubkey that rebuilds the feed (8dbec65)
+- fix: stop blaming the pubkey for a link the match id broke (f9cda65)
+- fix: let the credit wrap instead of cutting its own call to action (fa8f454)
+- fix: stop truncating the link under its own QR code (ad21e64)
+- fix: point the license notice at the license instead of a missing copy (e3adc55)
+
+### Documentation
+- docs: describe what shipped, and name the gap it left (c403d25)
+- docs: the relay-networking rule has no exceptions left (df963ed)
+- docs: settle the backstop note, and drop a controller nobody writes to (7eece2e)
+- docs: point the relay-networking rule at its own known deviation (f8140ba)
+- docs: make watching an opened PR part of the git workflow (9ea1ad0)
+- docs: point the known-deviation note at PR #158 (65047b5)
+- docs: state the Rust boundary as a binding rule in AGENTS.md (82158a8)
+- docs: settle how a match value is parsed, and what a lookup is keyed by (a2acd1e)
+- docs: correct the spec against what the two readers actually do (06cab4b)
+- docs: close the gaps CodeRabbit found in the match-link spec (9fc62b0)
+- docs: mark the spec agreed, and say what to build first (0502d74)
+- docs: settle where a match gets shared from (da4868c)
+- docs: specify links to one particular match (d7ae208)
+
+### Changed
+- refactor: npub is what people are handed, so it is what they are shown (8853aeb)
+- refactor: one match-share path, and a tap target that is what it looks like (6ca5180)
+- refactor: move the Settings relay probe into the Rust crate (59be438)
+- refactor: open the share sheet in one place instead of three (6391426)
+- refactor: read a shared link's key from npub, and only npub (9ff35d0)
+- refactor: give the board credit the shape of a place to go (97388d9)
+- chore: stop handing a write token to jobs that only build (ce6c810)
+- chore: move CI actions off the deprecated Node 20 runtime (040b4d6)
+- chore: update changelog and version for v2.0.0 (dbdbb07)
+
+
 ## [v2.0.0] - 2026-07-27
 
 ### Added
