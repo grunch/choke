@@ -246,6 +246,36 @@ void main() {
     });
   });
 
+  group('warnings', () {
+    test('an expiry past the freshness window is called out, not refused', () {
+      // Arrange — valid, and the sender is wrong about how long it lasts:
+      // readers drop anything older than the window whatever the expiry says
+      final draft = AnnouncementDraft.fromJson(
+        _draft(expiresAt: _nowSeconds + (kAnnouncementMaxAgeDays + 10) * 86400),
+      );
+
+      // Act
+      final event = draft.toUnsignedEvent(now: _now);
+
+      // Assert
+      expect(appAccepts(event), isTrue);
+      expect(draft.warnings, contains(contains('freshness window')));
+    });
+
+    test('an expiry inside the window warns about nothing', () {
+      // Arrange
+      final draft = AnnouncementDraft.fromJson(
+        _draft(expiresAt: _nowSeconds + 86400),
+      );
+
+      // Act
+      draft.toUnsignedEvent(now: _now);
+
+      // Assert
+      expect(draft.warnings, isEmpty);
+    });
+  });
+
   group('the validator it shares with the reader', () {
     test('what the tool emits is what the app parses', () {
       // Arrange — the point of §8 step 5: one validator, not two

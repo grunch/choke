@@ -22,5 +22,11 @@ const int kAnnouncementSchemaVersion = 1;
 /// out (§2.2). Pinned to `AppLocalizations.supportedLocales` by test.
 const Set<String> kAnnouncementLocales = {'en', 'es', 'ja', 'pt'};
 
+/// Nothing older than this is news, however long a relay has been serving it
+/// (§3.3). Shared with the publisher tool because it is the one rule a sender
+/// can silently work against: an expiry beyond this window does not extend
+/// anything, it just ends somewhere the sender did not choose.
+const int kAnnouncementMaxAgeDays = 30;
+
 const int kAnnouncementTitleMaxLength = 80;
 const int kAnnouncementBodyMaxLength = 500;

@@ -47,7 +47,7 @@ class AnnouncementDraft {
   final String? minVersion;
   final String? maxVersion;
 
-  const AnnouncementDraft({
+  AnnouncementDraft({
     required this.id,
     required this.expiration,
     required this.locales,
@@ -148,6 +148,11 @@ class AnnouncementDraft {
     return null;
   }
 
+  /// Things that are not wrong but are probably not what the sender meant.
+  ///
+  /// Filled by [toUnsignedEvent]; empty until it has run.
+  final List<String> warnings = [];
+
   /// The unsigned event, once every obligation of §6 checks out.
   ///
   /// Throws [DraftErrors] otherwise. The returned map carries no `pubkey`,
@@ -171,6 +176,21 @@ class AnnouncementDraft {
           'and does it silently',
         );
       }
+    }
+
+    // Not an error: the event is valid, and the sender is simply wrong about
+    // how long it lasts. Readers drop anything whose created_at is older than
+    // the freshness window, so an expiry past it ends the announcement
+    // somewhere the sender did not choose (§3.3).
+    warnings.clear();
+    final freshUntil = nowSeconds + kAnnouncementMaxAgeDays * 86400;
+    if (expiration > freshUntil) {
+      warnings.add(
+        'expires_at is beyond the $kAnnouncementMaxAgeDays-day freshness '
+        'window, so readers will stop showing this after '
+        '$kAnnouncementMaxAgeDays days regardless — the expiry does not '
+        'extend it',
+      );
     }
 
     final min = _bound(minVersion, 'min_version', errors);
@@ -248,6 +268,14 @@ class AnnouncementDraft {
     return numbers;
   }
 
+  /// Major, minor, patch — and nothing else.
+  ///
+  /// A pre-release suffix parses (the app accepts one in a bound) but does not
+  /// affect this comparison, so `2.1.0-beta` and `2.1.0` compare equal here
+  /// while the app orders the pre-release first. The one place it shows is the
+  /// inverted-range check, and the verdict is the same either way: no build of
+  /// this app ever reports a pre-release version, so a range bounded by one
+  /// holds nobody regardless of which end it is on.
   static int _compare(List<int> a, List<int> b) {
     for (var i = 0; i < 3; i++) {
       if (a[i] != b[i]) return a[i].compareTo(b[i]);

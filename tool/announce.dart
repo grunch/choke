@@ -70,11 +70,21 @@ Future<void> main(List<String> args) async {
   try {
     final draft = AnnouncementDraft.fromJson(parsed);
     final event = draft.toUnsignedEvent(now: DateTime.now());
-    await _emit(const JsonEncoder.withIndent('  ').convert(event), out);
-    stderr.writeln(
-      'Valid. Sign it, publish it, and check that it arrives — nothing '
-      'downstream will tell you if it does not.',
+    final written = await _emit(
+      const JsonEncoder.withIndent('  ').convert(event),
+      out,
     );
+    for (final warning in draft.warnings) {
+      stderr.writeln('Warning: $warning');
+    }
+    // Only once the event is somewhere the sender can reach: a draft that
+    // validated and then failed to land is not something to call done.
+    if (written) {
+      stderr.writeln(
+        'Valid. Sign it, publish it, and check that it arrives — nothing '
+        'downstream will tell you if it does not.',
+      );
+    }
   } on DraftErrors catch (errors) {
     stderr.writeln('This announcement would be dropped by the app:');
     stderr.writeln(errors);
@@ -82,14 +92,24 @@ Future<void> main(List<String> args) async {
   }
 }
 
-/// Where the JSON goes: a file if one was named, stdout otherwise.
-Future<void> _emit(String content, String? out) async {
+/// Where the JSON goes: a file if one was named, stdout otherwise. False if
+/// the caller should not go on to claim success.
+Future<bool> _emit(String content, String? out) async {
   if (out == null) {
     stdout.writeln(content);
-    return;
+    return true;
   }
-  await File(out).writeAsString('$content\n');
-  stderr.writeln('Wrote $out');
+  try {
+    await File(out).writeAsString('$content\n');
+    stderr.writeln('Wrote $out');
+    return true;
+  } on FileSystemException catch (e) {
+    // A missing directory or a read-only path is a thing a person typed, not
+    // a bug worth a stack trace.
+    stderr.writeln('Could not write $out: ${e.osError?.message ?? e.message}');
+    exitCode = 73; // EX_CANTCREAT
+    return false;
+  }
 }
 
 /// The value after a `--flag`, or null.
