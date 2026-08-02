@@ -64,7 +64,17 @@ class AppVersion implements Comparable<AppVersion> {
       }
     }
 
-    int at(int index) => index < numbers.length ? int.parse(numbers[index]) : 0;
+    // Digits alone are not a number: a component too long for a 64-bit int
+    // parses as a match here and throws in int.parse. The input is a tag a
+    // relay handed us, so it has to fail as "not a version" rather than as an
+    // exception thrown out of the middle of parsing.
+    final components = <int>[];
+    for (final part in numbers) {
+      final value = int.tryParse(part);
+      if (value == null) return null;
+      components.add(value);
+    }
+    int at(int index) => index < components.length ? components[index] : 0;
 
     return AppVersion._(at(0), at(1), at(2), List.unmodifiable(preRelease));
   }
@@ -99,10 +109,23 @@ class AppVersion implements Comparable<AppVersion> {
   static int _compareIdentifiers(String a, String b) {
     final aNumeric = _numeric.hasMatch(a);
     final bNumeric = _numeric.hasMatch(b);
-    if (aNumeric && bNumeric) return int.parse(a).compareTo(int.parse(b));
+    if (aNumeric && bNumeric) return _compareNumeric(a, b);
     if (aNumeric) return -1;
     if (bNumeric) return 1;
     return a.compareTo(b);
+  }
+
+  /// Two runs of digits, compared as numbers, without parsing either.
+  ///
+  /// Semver puts no ceiling on a numeric pre-release identifier, so `int.parse`
+  /// is a crash waiting for a long enough one — and the string it would be
+  /// parsing came off a relay. Stripping leading zeros makes the comparison
+  /// exact: longer wins, and equal lengths compare digit by digit.
+  static int _compareNumeric(String a, String b) {
+    final x = a.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+    final y = b.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+    if (x.length != y.length) return x.length.compareTo(y.length);
+    return x.compareTo(y);
   }
 
   bool operator <(AppVersion other) => compareTo(other) < 0;

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:choke/features/announcements/models/announcement.dart';
 import 'package:choke/features/announcements/models/app_version.dart';
+import 'package:choke/l10n/generated/app_localizations.dart';
 import 'package:choke/services/nostr/nostr_service.dart';
 
 const Object _unset = Object();
@@ -287,6 +288,16 @@ void main() {
       expect(Announcement.tryParse(_event(maxVersion: '2.1.0+454')), isNull);
     });
 
+    test('a bound no int could hold is rejected, not thrown', () {
+      // Arrange — a hostile relay writes digits until int.parse gives up
+      final event = _event(minVersion: '99999999999999999999999.0.0');
+
+      // Assert — parsing an event must never throw at its caller: every
+      // failure of this feature is silent (§4.4)
+      expect(() => Announcement.tryParse(event), returnsNormally);
+      expect(Announcement.tryParse(event), isNull);
+    });
+
     test('parses both bounds when they are readable', () {
       // Arrange
       final event = _event(minVersion: '2.0.0', maxVersion: '2.1');
@@ -397,10 +408,16 @@ void main() {
   });
 
   group('the locale set', () {
-    test('matches the locales the app itself ships', () {
-      // Assert — §2.2 pins the schema to AppLocalizations.supportedLocales;
-      // if a locale is ever added, this fails until the schema follows
-      expect(kAnnouncementLocales, {'en', 'es', 'ja', 'pt'});
+    test('is exactly the set of locales the app itself ships', () {
+      // Arrange — §2.2 pins the schema to the app's own locales, so this has
+      // to read them rather than repeat them: a fifth locale added to the app
+      // must fail here until the schema follows it
+      final shipped = AppLocalizations.supportedLocales
+          .map((locale) => locale.languageCode)
+          .toSet();
+
+      // Assert
+      expect(kAnnouncementLocales, shipped);
     });
   });
 }

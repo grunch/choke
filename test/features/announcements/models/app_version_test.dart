@@ -57,6 +57,14 @@ void main() {
       expect(AppVersion.tryParse('2.1.0-beta..1'), isNull);
     });
 
+    test('rejects a component too large to be a number', () {
+      // Assert — digits alone are not a number: this is a tag off a relay, so
+      // it has to fail as "not a version", never as an exception thrown out of
+      // the middle of parsing
+      expect(AppVersion.tryParse('99999999999999999999999.0.0'), isNull);
+      expect(AppVersion.tryParse('1.99999999999999999999999.0'), isNull);
+    });
+
     test('tolerates surrounding whitespace', () {
       // Arrange + Act
       final version = AppVersion.tryParse('  2.0.1  ');
@@ -112,6 +120,27 @@ void main() {
 
       // Assert
       expect(shuffled, ordered);
+    });
+
+    test('orders numeric pre-release identifiers no int could hold', () {
+      // Arrange — semver puts no ceiling on a numeric identifier, and the
+      // string being compared came off a relay
+      final huge = AppVersion.tryParse('2.1.0-99999999999999999999999')!;
+      final small = AppVersion.tryParse('2.1.0-1')!;
+
+      // Act + Assert
+      expect(huge.compareTo(small), greaterThan(0));
+      expect(small.compareTo(huge), lessThan(0));
+    });
+
+    test('ignores leading zeros when comparing numeric identifiers', () {
+      // Arrange
+      final padded = AppVersion.tryParse('2.1.0-007')!;
+      final plain = AppVersion.tryParse('2.1.0-7')!;
+
+      // Assert
+      expect(padded.compareTo(plain), 0);
+      expect(padded.compareTo(AppVersion.tryParse('2.1.0-8')!), lessThan(0));
     });
 
     test('equal versions compare equal and hash alike', () {
