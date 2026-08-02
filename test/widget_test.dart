@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:choke/features/announcements/announcement_providers.dart';
+import 'package:choke/features/announcements/models/app_version.dart';
 import 'package:choke/main.dart';
 import 'package:choke/services/key_management/key_manager.dart';
 import 'package:choke/services/nostr/crypto/nostr_crypto.dart';
@@ -20,6 +22,11 @@ List<Override> _fakeNostrStack() {
     nostrServiceProvider.overrideWithValue(
       NostrService(keyManager, crypto: crypto, backend: FakeRelayBackend()),
     ),
+    // The announcement channel targets by app version, which is a plugin read
+    // in main() and not something a widget test has. Any version will do here:
+    // the allowlist these tests run with is empty, so nothing is subscribed to
+    // and nothing is targeted.
+    appVersionProvider.overrideWithValue(AppVersion.tryParse('2.0.1')!),
   ];
 }
 
