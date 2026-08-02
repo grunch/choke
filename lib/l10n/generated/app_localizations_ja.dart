@@ -611,6 +611,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsMatchSoundOff => 'タイマーは無音で進みます';
 
   @override
+  String get settingsAnnouncements => 'お知らせ';
+
+  @override
+  String get settingsAnnouncementsOn => 'プロジェクトからの不定期のお知らせ — リリース、障害、イベント';
+
+  @override
+  String get settingsAnnouncementsOff => 'アプリは何も要求せず、何も受け取りません';
+
+  @override
   String get submissionsAdd => 'サブミッションを追加';
 
   @override

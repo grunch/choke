@@ -1278,6 +1278,24 @@ abstract class AppLocalizations {
   /// **'The clock runs silently'**
   String get settingsMatchSoundOff;
 
+  /// Settings: announcement channel toggle title
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements'**
+  String get settingsAnnouncements;
+
+  /// Settings: announcement channel toggle subtitle when on
+  ///
+  /// In en, this message translates to:
+  /// **'Occasional news from the project — releases, outages, events'**
+  String get settingsAnnouncementsOn;
+
+  /// Settings: announcement channel toggle subtitle when off
+  ///
+  /// In en, this message translates to:
+  /// **'The app asks for nothing and receives nothing'**
+  String get settingsAnnouncementsOff;
+
   /// Submissions editor: add button
   ///
   /// In en, this message translates to:

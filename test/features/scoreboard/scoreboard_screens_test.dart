@@ -544,7 +544,8 @@ void main() {
           reason: 'the card, by contrast, is meant to be seen through');
       expect(BoardPalette.dark.bannerOutlined, isFalse,
           reason: 'the dark banner never had a border or a shadow');
-      expect(BoardPalette.light.bannerOutlined, isTrue, reason: '3A asks for both');
+      expect(BoardPalette.light.bannerOutlined, isTrue,
+          reason: '3A asks for both');
     });
 
     test('preserves the dark surfaces it started from', () {

@@ -202,7 +202,8 @@ void main() {
       expect(toggle.calls, [true, false]);
     });
 
-    test("a dying screen's release cannot cancel another screen's hold", () async {
+    test("a dying screen's release cannot cancel another screen's hold",
+        () async {
       // The route-transition overlap: Flutter disposes a popped route after its
       // exit animation, so the arriving screen holds before the departing one
       // releases. With a shared boolean the stale release won — and if the

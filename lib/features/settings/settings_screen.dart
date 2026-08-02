@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
+import '../announcements/announcements_enabled_provider.dart';
 import '../../shared/providers/locale_provider.dart';
 import '../../shared/providers/theme_provider.dart';
 import '../../shared/providers/match_duration_provider.dart';
@@ -130,6 +131,30 @@ class SettingsScreen extends ConsumerWidget {
                   MaterialPageRoute(
                     builder: (context) => const RelayManagementScreen(),
                   ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            // The announcement channel is a relay subscription, so it belongs
+            // beside the relays rather than beside the match settings: off
+            // means the app opens no subscription at all (§5).
+            Consumer(
+              builder: (context, ref, _) {
+                final enabled = ref.watch(announcementsEnabledProvider);
+                return _buildSwitchRow(
+                  context: context,
+                  tk: tk,
+                  icon: enabled
+                      ? Icons.campaign_outlined
+                      : Icons.notifications_off_outlined,
+                  title: l10n.settingsAnnouncements,
+                  subtitle: enabled
+                      ? l10n.settingsAnnouncementsOn
+                      : l10n.settingsAnnouncementsOff,
+                  value: enabled,
+                  onChanged: (value) => ref
+                      .read(announcementsEnabledProvider.notifier)
+                      .setEnabled(value),
                 );
               },
             ),
