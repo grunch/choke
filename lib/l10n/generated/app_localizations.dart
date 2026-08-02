@@ -1308,6 +1308,12 @@ abstract class AppLocalizations {
   /// **'Dismiss'**
   String get announcementsDismiss;
 
+  /// Announcements screen: screen-reader label for the unread marker
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get announcementsUnread;
+
   /// Home screen: tooltip on the bell that opens announcements
   ///
   /// In en, this message translates to:

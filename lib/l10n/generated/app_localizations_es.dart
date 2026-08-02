@@ -653,6 +653,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get announcementsDismiss => 'Descartar';
 
   @override
+  String get announcementsUnread => 'Sin leer';
+
+  @override
   String get announcementsBell => 'Anuncios';
 
   @override

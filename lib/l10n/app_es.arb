@@ -201,6 +201,7 @@
   "announcementsEmptyDetail": "Acá el proyecto publica versiones, caídas y eventos. Nada más, y nada sobre vos.",
   "announcementsOpen": "Abrir enlace",
   "announcementsDismiss": "Descartar",
+  "announcementsUnread": "Sin leer",
   "announcementsBell": "Anuncios",
   "announcementsWhenNow": "Recién",
   "announcementsWhenHours": "{count, plural, =1{Hace 1 hora} other{Hace {count} horas}}",

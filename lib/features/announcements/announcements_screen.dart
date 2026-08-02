@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -92,6 +91,21 @@ class _AnnouncementCard extends ConsumerWidget {
     final text = entry.announcement.textFor(locale);
     final inbox = ref.read(announcementInboxProvider.notifier);
 
+    return Semantics(
+      // Swiping is the only way to dismiss, and a swipe is not something
+      // every user can perform. This exposes the same action to assistive
+      // technology, which otherwise has no route to it at all.
+      onDismiss: () => inbox.dismiss(entry.address),
+      child: _dismissible(context, l10n, text, inbox),
+    );
+  }
+
+  Widget _dismissible(
+    BuildContext context,
+    AppLocalizations l10n,
+    AnnouncementText text,
+    AnnouncementInbox inbox,
+  ) {
     return Dismissible(
       key: ValueKey(entry.address),
       direction: DismissDirection.endToStart,
@@ -134,7 +148,13 @@ class _AnnouncementCard extends ConsumerWidget {
                   if (!entry.isRead) ...[
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
-                      child: _UnreadDot(color: tk.accent),
+                      // Labelled, because a coloured dot says nothing to a
+                      // screen reader — and unread is the only state this
+                      // screen actually tracks.
+                      child: Semantics(
+                        label: l10n.announcementsUnread,
+                        child: _UnreadDot(color: tk.accent),
+                      ),
                     ),
                     const SizedBox(width: 8),
                   ],

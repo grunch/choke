@@ -201,6 +201,7 @@
   "announcementsEmptyDetail": "ここにはリリース、障害、イベントのお知らせが届きます。それ以外は何も、あなたに関することも何もありません。",
   "announcementsOpen": "リンクを開く",
   "announcementsDismiss": "非表示にする",
+  "announcementsUnread": "未読",
   "announcementsBell": "お知らせ",
   "announcementsWhenNow": "たった今",
   "announcementsWhenHours": "{count, plural, other{{count}時間前}}",

@@ -627,6 +627,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get announcementsDismiss => '非表示にする';
 
   @override
+  String get announcementsUnread => '未読';
+
+  @override
   String get announcementsBell => 'お知らせ';
 
   @override

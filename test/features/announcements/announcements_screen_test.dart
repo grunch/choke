@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -253,6 +254,55 @@ void main() {
       expect(restarted.state.entries, hasLength(1));
       expect(restarted.state.entries.single.isRead, isTrue);
       expect(restarted.state.hasUnread, isFalse);
+    });
+  });
+
+  group('reachable without a gesture', () {
+    testWidgets('assistive technology can dismiss what a swipe dismisses',
+        (tester) async {
+      // Arrange — a swipe is not something every user can perform, and it is
+      // otherwise the only route to dismissing
+      final handle = tester.ensureSemantics();
+      await pumpScreen(tester);
+      await deliver(_event(), tester);
+
+      // Act
+      final node = tester.getSemantics(find.text('Version 2.1 is out'));
+      tester.binding.pipelineOwner.semanticsOwner!.performAction(
+        node.id,
+        SemanticsAction.dismiss,
+      );
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(inbox.state.entries, isEmpty);
+      handle.dispose();
+    });
+
+    testWidgets('the unread marker is labelled, not just coloured',
+        (tester) async {
+      // Arrange — a coloured dot says nothing to a screen reader
+      final handle = tester.ensureSemantics();
+      await pumpScreen(tester);
+      await deliver(_event(), tester);
+
+      // Assert — the label is merged into the card's node, so match on the
+      // node that carries it rather than on an exact whole-label equality
+      expect(
+        find.bySemanticsLabel(RegExp(l10n.announcementsUnread)),
+        findsAtLeastNWidgets(1),
+      );
+
+      // Act
+      await tester.tap(find.text('Version 2.1 is out'));
+      await tester.pumpAndSettle();
+
+      // Assert — and it goes away with the state it describes
+      expect(
+        find.bySemanticsLabel(RegExp(l10n.announcementsUnread)),
+        findsNothing,
+      );
+      handle.dispose();
     });
   });
 

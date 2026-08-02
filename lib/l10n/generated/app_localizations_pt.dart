@@ -653,6 +653,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get announcementsDismiss => 'Dispensar';
 
   @override
+  String get announcementsUnread => 'Não lida';
+
+  @override
   String get announcementsBell => 'Anúncios';
 
   @override

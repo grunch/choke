@@ -805,6 +805,10 @@
   "@announcementsDismiss": {
     "description": "Announcements screen: swipe-to-dismiss label"
   },
+  "announcementsUnread": "Unread",
+  "@announcementsUnread": {
+    "description": "Announcements screen: screen-reader label for the unread marker"
+  },
   "announcementsBell": "Announcements",
   "@announcementsBell": {
     "description": "Home screen: tooltip on the bell that opens announcements"
