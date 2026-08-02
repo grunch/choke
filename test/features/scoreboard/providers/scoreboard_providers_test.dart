@@ -25,9 +25,8 @@ class _SpyNostrService extends NostrService {
   final cached = <NostrEvent>[];
 
   @override
-  List<NostrEvent> cachedEventsOf(int kind, String pubkey) => cached
-      .where((e) => e.kind == kind && e.pubkey == pubkey)
-      .toList();
+  List<NostrEvent> cachedEventsOf(int kind, String pubkey) =>
+      cached.where((e) => e.kind == kind && e.pubkey == pubkey).toList();
 
   @override
   Stream<NostrEvent> get eventStream => controller.stream;
@@ -71,7 +70,8 @@ NostrEvent _eventOf(Match match,
 }
 
 void main() {
-  const watched = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+  const watched =
+      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
   group('parsePubkey', () {
     final crypto = FakeNostrCrypto();
@@ -413,8 +413,8 @@ void main() {
     test('a live event still supersedes the cached one', () async {
       // Arrange
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      nostr.cached
-          .add(_eventOf(_match(f1Pt2: 1), pubkey: watched, createdAt: now - 60));
+      nostr.cached.add(
+          _eventOf(_match(f1Pt2: 1), pubkey: watched, createdAt: now - 60));
       final feed = ScoreboardFeedNotifier(nostr, watched);
       addTearDown(feed.dispose);
 

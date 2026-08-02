@@ -241,11 +241,16 @@ void main() {
       final scheme = _event(url: 'javascript:alert(1)');
       final garbage = _event(url: ':::');
 
-      // Assert — §7: ignored while the announcement still renders
-      expect(Announcement.tryParse(insecure)?.url, isNull);
-      expect(Announcement.tryParse(scheme)?.url, isNull);
-      expect(Announcement.tryParse(garbage)?.url, isNull);
-      expect(Announcement.tryParse(insecure), isNotNull);
+      // Assert — §7: ignored while the announcement still renders. The
+      // non-null check is per case on purpose: `tryParse(x)?.url` is null both
+      // when the url was dropped and when the whole event was rejected, so
+      // asserting only the url would pass on a regression that threw the
+      // announcement away with it.
+      for (final event in [insecure, scheme, garbage]) {
+        final announcement = Announcement.tryParse(event);
+        expect(announcement, isNotNull);
+        expect(announcement!.url, isNull);
+      }
     });
 
     test('drops a url that is not a string', () {
@@ -339,6 +344,21 @@ void main() {
       expect(announcement.appliesTo(AppVersion.tryParse('2.1.1')!), isFalse);
     });
 
+    test('a range that holds nobody is refused', () {
+      // Assert — max_version is exclusive, so equal bounds are an empty range
+      // rather than a single-version one. A targeting instruction that reaches
+      // nobody fails the same way an unreadable one does, and the sender gets
+      // no signal either way.
+      expect(
+        Announcement.tryParse(_event(minVersion: '2.1.0', maxVersion: '2.1.0')),
+        isNull,
+      );
+      expect(
+        Announcement.tryParse(_event(minVersion: '3.0.0', maxVersion: '2.0.0')),
+        isNull,
+      );
+    });
+
     test('both bounds together describe a half-open range', () {
       // Arrange
       final announcement = Announcement.tryParse(
@@ -371,6 +391,40 @@ void main() {
         expect(announcement.textFor(code).title, 'title-$code');
         expect(announcement.textFor(code).body, 'body-$code');
       }
+    });
+  });
+
+  group('equality', () {
+    test('a re-parse of the same event equals the first parse', () {
+      // Arrange — a cached announcement and a freshly parsed one are different
+      // objects, and identity equality would call them different for no reason
+      // a caller could see
+      final first = Announcement.tryParse(_event())!;
+      final second = Announcement.tryParse(_event())!;
+
+      // Assert
+      expect(first, second);
+      expect(first.hashCode, second.hashCode);
+      expect({first, second}, hasLength(1));
+    });
+
+    test('a different revision at the same address is a different value', () {
+      // Arrange — the correction, and what it corrects
+      final held = Announcement.tryParse(_event(id: 'e1'))!;
+      final correction =
+          Announcement.tryParse(_event(id: 'e2', createdAt: 1754006401))!;
+
+      // Assert
+      expect(correction, isNot(held));
+    });
+
+    test('the same d from two keys is two different values', () {
+      // Arrange — the address is not the d alone (§3.3)
+      final mine = Announcement.tryParse(_event(pubkey: 'aa11'))!;
+      final theirs = Announcement.tryParse(_event(pubkey: 'bb22'))!;
+
+      // Assert
+      expect(mine, isNot(theirs));
     });
   });
 

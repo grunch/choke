@@ -57,21 +57,35 @@ class AppVersion implements Comparable<AppVersion> {
       // A trailing `-` or an empty identifier (`2.1.0-beta..1`) is malformed,
       // not an empty pre-release.
       if (suffix.isEmpty) return null;
-      preRelease = suffix.split('.');
-      for (final identifier in preRelease) {
+      final identifiers = suffix.split('.');
+      for (final identifier in identifiers) {
         if (identifier.isEmpty) return null;
         if (!_identifier.hasMatch(identifier)) return null;
       }
+      // Numeric identifiers are normalized rather than kept verbatim, so that
+      // `==` agrees with [compareTo]: the comparison reads 007 and 7 as the
+      // same number, and two "equal" versions that a Set keeps both of is the
+      // kind of disagreement nothing downstream would ever explain. Semver
+      // forbids the leading zeros anyway.
+      preRelease = [
+        for (final identifier in identifiers)
+          _numeric.hasMatch(identifier)
+              ? _stripLeadingZeros(identifier)
+              : identifier,
+      ];
     }
 
-    // Digits alone are not a number: a component too long for a 64-bit int
-    // parses as a match here and throws in int.parse. The input is a tag a
-    // relay handed us, so it has to fail as "not a version" rather than as an
-    // exception thrown out of the middle of parsing.
+    // Digits alone are not a number, and the two platforms disagree about how
+    // they are not one: on the VM a component too long for a 64-bit int makes
+    // int.tryParse return null, while on the web an int *is* a double, so the
+    // same digits round to something and parse "successfully". This app builds
+    // for web too, so the round-trip is what decides — digits that do not
+    // survive being printed back were never this number.
     final components = <int>[];
     for (final part in numbers) {
       final value = int.tryParse(part);
       if (value == null) return null;
+      if (value.toString() != _stripLeadingZeros(part)) return null;
       components.add(value);
     }
     int at(int index) => index < components.length ? components[index] : 0;
@@ -115,6 +129,10 @@ class AppVersion implements Comparable<AppVersion> {
     return a.compareTo(b);
   }
 
+  /// `007` → `7`, `000` → `0`. Never an empty string.
+  static String _stripLeadingZeros(String digits) =>
+      digits.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+
   /// Two runs of digits, compared as numbers, without parsing either.
   ///
   /// Semver puts no ceiling on a numeric pre-release identifier, so `int.parse`
@@ -122,8 +140,8 @@ class AppVersion implements Comparable<AppVersion> {
   /// parsing came off a relay. Stripping leading zeros makes the comparison
   /// exact: longer wins, and equal lengths compare digit by digit.
   static int _compareNumeric(String a, String b) {
-    final x = a.replaceFirst(RegExp(r'^0+(?=\d)'), '');
-    final y = b.replaceFirst(RegExp(r'^0+(?=\d)'), '');
+    final x = _stripLeadingZeros(a);
+    final y = _stripLeadingZeros(b);
     if (x.length != y.length) return x.length.compareTo(y.length);
     return x.compareTo(y);
   }
