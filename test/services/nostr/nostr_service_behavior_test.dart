@@ -646,8 +646,10 @@ void main() {
     // behaviour here in a way nothing observed: an equal-timestamp event used
     // to be dropped unconditionally, so it never reached eventStream, and a
     // lower-id one is now forwarded.
-    const lowId = 'aaaa11111111111111111111111111111111111111111111111111111111';
-    const highId = 'ffff11111111111111111111111111111111111111111111111111111111';
+    const lowId =
+        'aaaa11111111111111111111111111111111111111111111111111111111';
+    const highId =
+        'ffff11111111111111111111111111111111111111111111111111111111';
 
     /// Deliver two revisions of one match, stamped the same second, in [ids]
     /// order, and report which ids reached the stream.
@@ -738,8 +740,10 @@ void main() {
     test('works on real 64-character ids, not just short fixtures', () {
       // The short ids elsewhere in this group would pass a rule that broke on
       // the length or shape of an actual event id.
-      const low = 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90';
-      const high = 'f1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90';
+      const low =
+          'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90';
+      const high =
+          'f1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90';
       expect(wins(100, low, 100, high), isTrue);
       expect(wins(100, high, 100, low), isFalse);
     });
