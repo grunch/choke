@@ -122,7 +122,8 @@ void main() {
     expect(wakelock.requests, everyElement(isTrue));
   });
 
-  testWidgets('re-asserts the hold as the clock ticks, so a dropped request '
+  testWidgets(
+      're-asserts the hold as the clock ticks, so a dropped request '
       'gets made again', (tester) async {
     // Arrange
     await pumpScreen(tester, _runningMatch());
