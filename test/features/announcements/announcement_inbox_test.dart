@@ -688,6 +688,40 @@ void main() {
       expect(w.inbox.state.entries, hasLength(1));
     });
 
+    test('disposing tells the relays, not just the stream', () async {
+      // Arrange — cancelling the listener alone leaves a REQ open on every
+      // socket, feeding a stream nobody reads
+      final w = _build();
+      w.inbox.open();
+
+      // Act
+      w.inbox.dispose();
+
+      // Assert
+      expect(w.backend.unsubscribed, [kAnnouncementSubscriptionId]);
+    });
+
+    test('a burst of events leaves storage holding the last state', () async {
+      // Arrange — a relay redelivering on reconnect is a burst, and two
+      // unordered writes can land newest-first
+      final w = _build();
+      w.inbox.open();
+
+      // Act — no awaiting between them, which is how they actually arrive
+      for (var i = 0; i < 10; i++) {
+        w.backend.eventsController.add(
+          _event(id: 'e$i', d: 'a$i', createdAt: _nowSeconds - i * 60),
+        );
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Assert — storage agrees with the screen rather than with some state
+      // the app was in several events ago
+      final stored = await const AnnouncementStore().load();
+      expect(w.inbox.state.entries, hasLength(10));
+      expect(stored.events, hasLength(10));
+    });
+
     test('forgetting everything empties the screen and the storage', () async {
       // Arrange
       final w = _build();

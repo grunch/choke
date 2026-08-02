@@ -217,7 +217,9 @@ class AnnouncementInbox extends StateNotifier<AnnouncementInboxState> {
     _read.clear();
     _dismissed.clear();
     _publish();
-    await _store.clear();
+    // Behind the same chain as every other write: a save from an event that
+    // arrived a moment ago must not land after this and put it all back.
+    await _enqueueWrite(_store.clear);
   }
 
   void _onEvent(NostrEvent event) {
@@ -353,21 +355,37 @@ class AnnouncementInbox extends StateNotifier<AnnouncementInboxState> {
     );
   }
 
+  /// The tail of the write chain. Every write to storage queues behind it.
+  ///
+  /// A burst of events is one relay redelivering on reconnect, so overlapping
+  /// writes are the ordinary case rather than the exotic one — and two
+  /// unordered `setString` calls can land newest-first, leaving storage a
+  /// state the app was in two events ago. The snapshot is taken here, when the
+  /// caller asks, so the chain replays the states in the order they happened.
+  Future<void> _writes = Future.value();
+
+  Future<void> _enqueueWrite(Future<void> Function() write) {
+    final next = _writes.then((_) => write());
+    // The chain must survive one failed write, or a single storage error
+    // would wedge every write after it. The store logs its own failures.
+    _writes = next.catchError((_) {});
+    return next;
+  }
+
   Future<void> _persist() {
-    return _store.save(
-      AnnouncementCache(
-        events: _held.values.map((held) => held.event).toList(),
-        read: Map.of(_read),
-        dismissed: Map.of(_dismissed),
-      ),
+    final snapshot = AnnouncementCache(
+      events: _held.values.map((held) => held.event).toList(),
+      read: Map.of(_read),
+      dismissed: Map.of(_dismissed),
     );
+    return _enqueueWrite(() => _store.save(snapshot));
   }
 
   @override
   void dispose() {
-    _events?.cancel();
-    _events = null;
-    _isOpen = false;
+    // Through close(), so the relays are told: cancelling the listener alone
+    // leaves a REQ open on every socket, feeding a stream nobody reads.
+    close();
     super.dispose();
   }
 }
