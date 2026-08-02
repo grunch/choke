@@ -4,23 +4,12 @@ import 'package:flutter/foundation.dart';
 
 import '../../../services/nostr/nostr_service.dart'
     show NostrEvent, addressableSupersedes;
+import 'announcement_schema.dart';
 import 'app_version.dart';
 
-/// The announcement kind: addressable, adjacent to the match kind 31415.
-const int kAnnouncementKind = 31416;
-
-/// The only content schema version this build understands. An event with any
-/// other `v` is ignored rather than rendered best-effort (§2.2).
-const int kAnnouncementSchemaVersion = 1;
-
-/// Exactly the locales the app ships. An announcement must carry all four and
-/// no others: there is no fallback, because a fallback is a bug that ships
-/// quietly — the reader gets a language they did not choose and nobody finds
-/// out (§2.2). Pinned to `AppLocalizations.supportedLocales` by test.
-const Set<String> kAnnouncementLocales = {'en', 'es', 'ja', 'pt'};
-
-const int kAnnouncementTitleMaxLength = 80;
-const int kAnnouncementBodyMaxLength = 500;
+// The constants live in a Flutter-free file so the publisher tool can share
+// them, and are re-exported here so every reader keeps one import.
+export 'announcement_schema.dart';
 
 /// One locale's copy.
 @immutable
