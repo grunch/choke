@@ -117,17 +117,28 @@ class AnnouncementInbox extends StateNotifier<AnnouncementInboxState> {
       _admit(event);
     }
 
-    // Read and dismissed state only survives for an address that survived.
-    _read.addEntries(
-      cache.read.entries.where((entry) => _held.containsKey(entry.key)),
-    );
-    _dismissed.addEntries(
-      cache.dismissed.entries.where((entry) => _held.containsKey(entry.key)),
-    );
+    // Read and dismissed state survives only for an address that survived,
+    // **at the revision it was recorded against**.
+    //
+    // The revision check is also what makes this safe to run in any order
+    // relative to the live subscription. On a slow cold start the app can be
+    // resumed before the post-frame callback that calls this, so open() may
+    // already have admitted a newer revision at a known address — and applying
+    // a read mark recorded against the revision it replaced would show a
+    // correction as something the user had already read. That is the one case
+    // the correction was published for (§3.3).
+    _read.addEntries(cache.read.entries.where(_isRevisionStillHeld));
+    _dismissed.addEntries(cache.dismissed.entries.where(_isRevisionStillHeld));
 
     _publish();
     // Whatever the clock or the allowlist just rejected is gone from disk too.
     await _persist();
+  }
+
+  /// Whether the announcement at this address is still the revision the entry
+  /// was recorded against.
+  bool _isRevisionStillHeld(MapEntry<String, AnnouncementRevision> entry) {
+    return _held[entry.key]?.announcement.revision == entry.value;
   }
 
   /// Open the channel: subscribe, and start listening.
@@ -365,11 +376,26 @@ class AnnouncementInbox extends StateNotifier<AnnouncementInboxState> {
   /// caller asks, so the chain replays the states in the order they happened.
   Future<void> _writes = Future.value();
 
+  /// The write chain, for a test that needs to read storage back.
+  ///
+  /// Persistence is deliberately fire-and-forget — nothing on screen waits for
+  /// a disk write — which leaves a test with no synchronization point and a
+  /// choice between guessing a delay and this.
+  @visibleForTesting
+  Future<void> get pendingWrites => _writes;
+
   Future<void> _enqueueWrite(Future<void> Function() write) {
-    final next = _writes.then((_) => write());
-    // The chain must survive one failed write, or a single storage error
-    // would wedge every write after it. The store logs its own failures.
-    _writes = next.catchError((_) {});
+    // Guarded twice, and both are load-bearing. The chain must survive one
+    // failed write, or a single storage error wedges every write after it —
+    // and the *returned* future must not carry the error either: half its
+    // callers are `unawaited`, where a rejection is an unhandled async error,
+    // and the other half are UI callbacks that have nothing to do with one.
+    // AnnouncementStore swallows its own failures today, but `store` is
+    // injectable and the next implementation is under no such obligation.
+    final next = _writes.then((_) => write()).catchError((Object e) {
+      debugPrint('Announcements: a write to storage failed: $e');
+    });
+    _writes = next;
     return next;
   }
 

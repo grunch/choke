@@ -76,6 +76,7 @@ NostrEvent _event({
   List<String> publishers = const [_publisher],
   String appVersion = '2.0.1',
   DateTime? clock,
+  AnnouncementStore store = const AnnouncementStore(),
 }) {
   final backend = RecordingRelayBackend();
   final crypto = _Verifier();
@@ -89,15 +90,62 @@ NostrEvent _event({
     crypto: crypto,
     appVersion: AppVersion.tryParse(appVersion)!,
     publishers: publishers,
+    store: store,
     now: () => clock ?? _now,
   );
   return (inbox: inbox, backend: backend, service: service, crypto: crypto);
 }
 
 /// Push an event through the relay and let the stream turn.
+///
+/// Reading storage back needs [_stored], not a delay: the inbox persists
+/// fire-and-forget — nothing on screen waits for a disk write — and guessing a
+/// duration is a flake waiting for a loaded CI box.
 Future<void> _deliver(RecordingRelayBackend backend, NostrEvent event) async {
   backend.eventsController.add(event);
   await Future<void>.delayed(Duration.zero);
+}
+
+/// A store that always hands back the same cache, whatever is written to it.
+///
+/// The ordering this exists to test — a live event admitted before the cache
+/// is read back — is not reachable through the real store: the live event's
+/// own write lands first and overwrites the very cache the test is about.
+class _SeededStore implements AnnouncementStore {
+  const _SeededStore(this.seed);
+
+  final AnnouncementCache seed;
+
+  @override
+  Future<AnnouncementCache> load() async => seed;
+
+  @override
+  Future<void> save(AnnouncementCache cache) async {}
+
+  @override
+  Future<void> clear() async {}
+}
+
+/// A store that fails every way it can. Nothing in the app supplies one; the
+/// point is that the inbox does not assume nothing does.
+class _FailingStore implements AnnouncementStore {
+  const _FailingStore();
+
+  @override
+  Future<AnnouncementCache> load() async => throw StateError('disk is gone');
+
+  @override
+  Future<void> save(AnnouncementCache cache) async =>
+      throw StateError('disk is gone');
+
+  @override
+  Future<void> clear() async => throw StateError('disk is gone');
+}
+
+/// What is on disk, once the inbox has finished putting it there.
+Future<AnnouncementCache> _stored(AnnouncementInbox inbox) async {
+  await inbox.pendingWrites;
+  return const AnnouncementStore().load();
 }
 
 void main() {
@@ -471,7 +519,7 @@ void main() {
 
       // Assert
       expect(w.inbox.state.hasUnread, isFalse);
-      final cache = await const AnnouncementStore().load();
+      final cache = await _stored(w.inbox);
       expect(cache.read.keys, ['$kAnnouncementKind:$_publisher:release-2-1']);
     });
 
@@ -531,7 +579,7 @@ void main() {
 
       // Assert — and it is gone from disk, not merely hidden
       expect(restarted.inbox.state.entries, isEmpty);
-      expect((await const AnnouncementStore().load()).events, isEmpty);
+      expect((await _stored(restarted.inbox)).events, isEmpty);
     });
 
     test(
@@ -541,7 +589,7 @@ void main() {
       final w = _build();
       w.inbox.open();
       await _deliver(w.backend, _event(d: 'stale'));
-      expect((await const AnnouncementStore().load()).events, hasLength(1));
+      expect((await _stored(w.inbox)).events, hasLength(1));
 
       // Act
       final later = _build(clock: _now.add(const Duration(days: 31)));
@@ -549,7 +597,7 @@ void main() {
 
       // Assert — gone from both the screen and storage
       expect(later.inbox.state.entries, isEmpty);
-      expect((await const AnnouncementStore().load()).events, isEmpty);
+      expect((await _stored(later.inbox)).events, isEmpty);
     });
 
     test('a cached announcement that expires while offline is swept', () async {
@@ -559,7 +607,7 @@ void main() {
       final w = _build();
       w.inbox.open();
       await _deliver(w.backend, _event(expiration: _nowSeconds + 86400));
-      expect((await const AnnouncementStore().load()).events, hasLength(1));
+      expect((await _stored(w.inbox)).events, hasLength(1));
 
       // Act — two days later, still offline
       final later = _build(clock: _now.add(const Duration(days: 2)));
@@ -567,7 +615,7 @@ void main() {
 
       // Assert
       expect(later.inbox.state.entries, isEmpty);
-      expect((await const AnnouncementStore().load()).events, isEmpty);
+      expect((await _stored(later.inbox)).events, isEmpty);
     });
 
     test('a valid neighbour survives the sweep', () async {
@@ -582,7 +630,7 @@ void main() {
         w.backend,
         _event(id: 'e2', d: 'lasting', expiration: _nowSeconds + 8640000),
       );
-      expect((await const AnnouncementStore().load()).events, hasLength(2));
+      expect((await _stored(w.inbox)).events, hasLength(2));
 
       // Act
       final later = _build(clock: _now.add(const Duration(days: 2)));
@@ -621,7 +669,82 @@ void main() {
 
       // Assert
       expect(inbox.state.entries, isEmpty);
-      expect((await const AnnouncementStore().load()).events, isEmpty);
+      expect((await _stored(inbox)).events, isEmpty);
+    });
+
+    test('a restore after a correction has arrived does not mark it read',
+        () async {
+      // Arrange — what a previous run cached: the announcement, and a read
+      // mark stamped with the revision that was read
+      final cached = _event(title: 'Sunday at 9');
+      final store = _SeededStore(
+        AnnouncementCache(
+          events: [cached],
+          read: {
+            '$kAnnouncementKind:$_publisher:release-2-1': AnnouncementRevision(
+                createdAt: cached.createdAt, eventId: 'e1'),
+          },
+        ),
+      );
+
+      // Act — the lifecycle order the app cannot guarantee: on a slow cold
+      // start the OS can resume before the post-frame callback runs, so the
+      // subscription opens and admits the correction *before* the cache is
+      // read back
+      final w = _build(store: store);
+      w.inbox.open();
+      await _deliver(
+        w.backend,
+        _event(id: 'e2', createdAt: _nowSeconds - 30, title: 'Sunday at 10'),
+      );
+      await w.inbox.restore();
+
+      // Assert — the read mark belongs to the revision it was taken against,
+      // and this is not that revision
+      expect(w.inbox.state.entries, hasLength(1));
+      expect(
+        w.inbox.state.entries.single.announcement.textFor('en').title,
+        'Sunday at 10',
+      );
+      expect(w.inbox.state.hasUnread, isTrue);
+    });
+
+    test('a restore in the ordinary order still restores the read mark',
+        () async {
+      // Arrange — the same cache, read back before anything arrives
+      final cached = _event();
+      final store = _SeededStore(
+        AnnouncementCache(
+          events: [cached],
+          read: {
+            '$kAnnouncementKind:$_publisher:release-2-1': AnnouncementRevision(
+                createdAt: cached.createdAt, eventId: 'e1'),
+          },
+        ),
+      );
+
+      // Act
+      final w = _build(store: store);
+      await w.inbox.restore();
+
+      // Assert
+      expect(w.inbox.state.entries, hasLength(1));
+      expect(w.inbox.state.hasUnread, isFalse);
+    });
+
+    test('a store that throws does not take the caller down with it', () async {
+      // Arrange — AnnouncementStore swallows its own failures, but the store
+      // is injectable and the next implementation owes nothing
+      final w = _build(store: const _FailingStore());
+      w.inbox.open();
+
+      // Act + Assert — an awaited write, and a fire-and-forget one
+      await _deliver(w.backend, _event());
+      await expectLater(
+        w.inbox.markRead(w.inbox.state.entries.single.address),
+        completes,
+      );
+      await expectLater(w.inbox.pendingWrites, completes);
     });
 
     test('a restore with nothing stored leaves an empty inbox', () async {
@@ -713,11 +836,12 @@ void main() {
           _event(id: 'e$i', d: 'a$i', createdAt: _nowSeconds - i * 60),
         );
       }
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(Duration.zero);
+      await w.inbox.pendingWrites;
 
       // Assert — storage agrees with the screen rather than with some state
       // the app was in several events ago
-      final stored = await const AnnouncementStore().load();
+      final stored = await _stored(w.inbox);
       expect(w.inbox.state.entries, hasLength(10));
       expect(stored.events, hasLength(10));
     });
@@ -733,7 +857,7 @@ void main() {
 
       // Assert
       expect(w.inbox.state.entries, isEmpty);
-      expect((await const AnnouncementStore().load()).isEmpty, isTrue);
+      expect((await _stored(w.inbox)).isEmpty, isTrue);
     });
   });
 }
