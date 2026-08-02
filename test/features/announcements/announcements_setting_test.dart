@@ -210,6 +210,29 @@ void main() {
       expect((await const AnnouncementStore().load()).isEmpty, isTrue);
     });
 
+    testWidgets('flicking it on and straight back off opens nothing',
+        (tester) async {
+      // Arrange — turning it on reads the cache off disk first, and the user
+      // can flick the switch again while that read is in flight
+      final container = await pumpApp(tester, enabled: false);
+      final setting = container.read(announcementsEnabledProvider.notifier);
+
+      // Act — both taps before anything is awaited
+      final on = setting.setEnabled(true);
+      final off = setting.setEnabled(false);
+      await Future.wait([on, off]);
+      await tester.pumpAndSettle();
+
+      // Assert — the switch says off, so nothing may be subscribed
+      expect(
+        container.read(announcementInboxProvider.notifier).isOpen,
+        isFalse,
+      );
+      backend.eventsController.add(_event());
+      await tester.pumpAndSettle();
+      expect(container.read(announcementInboxProvider).entries, isEmpty);
+    });
+
     testWidgets('switching it back on resumes delivery', (tester) async {
       // Arrange
       final container = await pumpApp(tester, enabled: false);

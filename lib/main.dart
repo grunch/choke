@@ -204,6 +204,11 @@ class _ChokeAppState extends ConsumerState<ChokeApp>
       if (enabled) {
         await inbox.restore();
         if (!mounted) return;
+        // Read the switch again, never the `enabled` this fired with: the
+        // restore above is a disk read, and a user who flicked it back off
+        // while that was in flight would otherwise get a subscription opened
+        // underneath a switch that says off.
+        if (!ref.read(announcementsEnabledProvider)) return;
         inbox.open();
       } else {
         inbox.close();
