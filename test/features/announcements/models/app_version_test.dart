@@ -65,6 +65,53 @@ void main() {
       expect(AppVersion.tryParse('1.99999999999999999999999.0'), isNull);
     });
 
+    test('never returns a version that is not the one it was handed', () {
+      // Arrange — where a component is rejected differs by platform: the VM
+      // fails anything past 64 bits, the web fails anything past 2^53 because
+      // an int there is a double. What must not differ is the *shape* of the
+      // failure — a rounded number silently standing in for the one written.
+      const inputs = [
+        '9007199254740991.0.0', // exactly representable everywhere
+        '9007199254740993.0.0', // a real int on the VM, rounds on the web
+        '18446744073709551617.0.0', // past 64 bits
+        '99999999999999999999999.0.0',
+      ];
+
+      for (final input in inputs) {
+        // Act
+        final version = AppVersion.tryParse(input);
+
+        // Assert — accepted or refused, never quietly altered
+        if (version != null) {
+          expect(version.toString(), input, reason: input);
+        }
+      }
+    });
+
+    test('keeps the largest component that is exactly representable', () {
+      // Assert — the guard rejects what rounds, not what is merely large
+      final version = AppVersion.tryParse('9007199254740991.0.0');
+      expect(version, isNotNull);
+      expect(version!.major, 9007199254740991);
+    });
+
+    test('normalizes leading zeros in a numeric pre-release identifier', () {
+      // Arrange — semver forbids them, and keeping them verbatim would make
+      // `==` disagree with compareTo
+      final padded = AppVersion.tryParse('2.1.0-007')!;
+
+      // Assert
+      expect(padded.preRelease, ['7']);
+      expect(padded, AppVersion.tryParse('2.1.0-7'));
+      expect(padded.hashCode, AppVersion.tryParse('2.1.0-7')!.hashCode);
+      expect({padded, AppVersion.tryParse('2.1.0-7')!}, hasLength(1));
+    });
+
+    test('leaves an alphanumeric identifier alone', () {
+      // Assert — only numeric identifiers are numbers
+      expect(AppVersion.tryParse('2.1.0-007a')!.preRelease, ['007a']);
+    });
+
     test('tolerates surrounding whitespace', () {
       // Arrange + Act
       final version = AppVersion.tryParse('  2.0.1  ');

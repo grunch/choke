@@ -132,6 +132,30 @@ class Announcement {
 
   int get createdAt => revision.createdAt;
 
+  /// Two announcements are the same one when they are the same revision at the
+  /// same address.
+  ///
+  /// Not a field-by-field comparison, and it does not need to be: everything
+  /// else here is derived from one signed event, and the event id inside
+  /// [revision] commits to that event's contents. Two values that agree on
+  /// address and revision cannot disagree on anything else without the
+  /// signature having been broken first.
+  ///
+  /// Defined at all because a cached announcement and a freshly parsed one are
+  /// different objects, and identity equality would report the two as
+  /// different for no reason a caller could see.
+  @override
+  bool operator ==(Object other) =>
+      other is Announcement &&
+      other.address == address &&
+      other.revision == revision;
+
+  @override
+  int get hashCode => Object.hash(address, revision);
+
+  @override
+  String toString() => 'Announcement($address, ${revision.eventId})';
+
   /// The announcement in [languageCode].
   ///
   /// Always resolves for a code the app can render: [tryParse] rejects any
@@ -211,6 +235,21 @@ class Announcement {
       if (maxVersion == null) {
         return _reject(event, 'unparseable max_version "$maxTag"');
       }
+    }
+
+    // A range that holds nobody is the same class of failure as a bound
+    // nobody can read: the targeting instruction did not work, and the sender
+    // gets no signal either way because nothing is ever shown. The boundary is
+    // `>=` because max_version is exclusive — min and max at the same version
+    // is an empty range, not a single-version one. The publisher tool refuses
+    // this before signing, and refusing it here too is what keeps the two ends
+    // agreeing on what a range means.
+    if (minVersion != null && maxVersion != null && minVersion >= maxVersion) {
+      return _reject(
+        event,
+        'min_version "$minTag" is not below max_version "$maxTag", '
+        'so this announcement targets nobody',
+      );
     }
 
     return Announcement(
