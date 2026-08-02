@@ -75,13 +75,28 @@ costs no new code.
 |---|---|---|
 | `d` | yes | announcement id |
 | `expiration` | yes | unix seconds; NIP-40 |
-| `min_version` | no | show only to app versions ≥ this, semver |
-| `max_version` | no | show only to app versions ≤ this, semver |
+| `min_version` | no | show only to app versions ≥ this — inclusive lower bound |
+| `max_version` | no | show only to app versions < this — **exclusive** upper bound |
 
 `min_version` / `max_version` exist for the announcement that is *about* the app
 — "2.1 is out, it fixes X" should not be shown to someone who is already on 2.1.
+That is why the upper bound is exclusive: the sender writes the version the
+announcement is *about* (`max_version: 2.1`) and everyone below it sees it,
+which is the only reading that makes a release announcement work without asking
+the sender to name the previous version. The lower bound is inclusive, for the
+mirror case: "2.1 changed how X works" is for people who actually have 2.1.
+
 The app's own version comes from `package_info_plus`, which is already a
-dependency.
+dependency. `PackageInfo.version` is the pubspec version *without* the build
+number, so the comparison always runs against `2.0.1`, never `2.0.1+454`. What a
+bound may contain:
+
+| Form | Accepted | Note |
+|---|---|---|
+| `MAJOR.MINOR.PATCH` | yes | the only form the app's own version ever takes |
+| Fewer components (`2`, `2.1`) | yes | missing components are `0` |
+| Pre-release (`2.1.0-beta.1`) | yes | orders before `2.1.0`, per semver. The app's own version never carries one, so this only ever appears in a bound |
+| Build metadata (`2.1.0+454`) | no | rejected. Build metadata is excluded from precedence in semver, so accepting it would mean silently ignoring part of what the sender wrote |
 
 An unparseable version bound makes the announcement **invalid**, not unbounded:
 a bound nobody can read is a targeting instruction that failed, and showing the
@@ -94,7 +109,9 @@ message to everyone is the wrong way to fail it.
   "v": 1,
   "locales": {
     "en": { "title": "…", "body": "…" },
-    "es": { "title": "…", "body": "…" }
+    "es": { "title": "…", "body": "…" },
+    "ja": { "title": "…", "body": "…" },
+    "pt": { "title": "…", "body": "…" }
   },
   "url": "https://bjjscore.live/…"
 }
@@ -103,15 +120,31 @@ message to everyone is the wrong way to fail it.
 | Field | Required | Rule |
 |---|---|---|
 | `v` | yes | schema version; `1` today. An event with an unknown `v` is **ignored**, not rendered best-effort. |
-| `locales` | yes | map of locale code → `{title, body}`. Must contain `en`. |
+| `locales` | yes | map of locale code → `{title, body}`. Must contain **exactly** `en`, `es`, `ja`, `pt` — the app's four locales. A missing one or an unknown extra one makes the announcement **invalid**. |
 | `locales[x].title` | yes | ≤ 80 characters after trimming |
 | `locales[x].body` | yes | ≤ 500 characters after trimming |
 | `url` | no | exactly one action link, `https` scheme only |
 
-`en` is required because it is the fallback: the app has four locales and an
-announcement that ships in three of them must still say *something* to the
-fourth. Selection is the app's current locale, then `en`, then the announcement
-is invalid.
+All four are required, and that is deliberately stricter than "must contain
+`en`". A fallback to `en` is a bug that ships quietly: the Japanese-speaking user
+gets English, nothing is logged, and the sender has no way to find out. Since
+every announcement is written once, by hand, by the maintainer, "translate all
+four before publishing" is a cost of minutes paid at publish time by someone who
+can see the problem — and §6's validator makes it a hard stop rather than a
+habit. There is no locale fallback at render time because there is nothing to
+fall back *from*.
+
+An unknown extra key is rejected for the same reason rather than out of
+tidiness: it is the shape a fifth locale takes, and an app that quietly ignored
+it would leave the sender believing they had reached a language the app cannot
+render. Failing loudly at publish time is how the sender finds out that the
+locale they wrote for is not one the installed app has. When the app gains a
+locale, this list and `AppLocalizations.supportedLocales` change in the same
+release.
+
+The four keys must match `AppLocalizations.supportedLocales`
+(`lib/l10n/app_{en,es,ja,pt}.arb`). Selection is the app's current locale, and
+it always resolves.
 
 Both strings are plain text. No markup is parsed, no link is auto-detected
 inside `body`, and `url` is the only thing that is ever tappable — the sender is
@@ -179,11 +212,37 @@ history would take last quarter's announcement as news. So:
 |---|---|
 | Too old | `created_at` older than 30 days → ignored |
 | Future-dated | `created_at` more than 5 minutes ahead of now → ignored |
-| Already seen | `d` in the seen set → not re-announced |
-| Superseded | same `d`, newer `created_at` → replaces, and is re-announced |
+| Already seen | the address is in the seen set at the same revision or newer → not re-announced |
+| Superseded | same address, newer revision → replaces, is re-announced, and its read and dismissed state is cleared |
 
 The 5-minute window is clock skew, not tolerance for post-dating: an
 announcement dated next week must not sit at the top of every inbox until then.
+
+**The address is `(kind, pubkey, d)`, never `d` alone.** `d` is chosen by the
+sender and the allowlist of §3.1 is a list, so two keys can pick the same `d` —
+at which point a `d`-keyed seen set lets a successor key's announcement be
+swallowed as "already seen", or worse, lets one key's read state mark another's
+message read. `NostrService` already keys its cache `'${kind}:${pubkey}:${d}'`
+and this feature uses the same string, for the same reason and with no second
+implementation of it.
+
+**The revision is `(created_at, event.id)`.** `created_at` alone does not order
+two events: a correction republished within the same second is an ordinary
+outcome of fixing a typo and hitting publish, and with a bare timestamp the
+winner is whichever relay answered first — two phones, two different texts of
+the same announcement. This is settled: `addressableSupersedes` in
+`lib/services/nostr/nostr_service.dart` is the one rule (strictly newer
+`created_at`, and on a tie the **lowest** id wins, compared case-insensitively),
+and this feature calls it rather than restating it.
+
+Both halves of the revision are stored, because the comparison needs the held
+id, not just the held timestamp.
+
+**A re-announced correction is unread again.** Read and dismissed state is keyed
+by address and stamped with the revision that was read; when a newer revision
+arrives at that address, both are cleared. The alternative loses the correction
+in exactly the case it was published for — the user read the wrong time for the
+event, dismissed it, and the fix arrives already dismissed.
 
 The subscription therefore carries `since = now - 30 days` and `limit = 20`, so
 the freshness rule is enforced at the relay as well as locally. `Filter` already
@@ -216,12 +275,31 @@ when it leaves. There is no background work of any kind — see §9.
 
 `shared_preferences`, following `relay_config_provider` and its neighbours:
 
-- the announcements themselves, capped at the **20 most recent** by `created_at`
-- the set of `d` ids already read
-- the set of `d` ids dismissed
+- the announcements themselves, capped at the **20 most recent** by `created_at`,
+  each stored with its address and revision (§3.3)
+- the addresses already read, each with the revision that was read
+- the addresses dismissed, each with the revision that was dismissed
 
 Cached announcements are shown offline. They are, after all, the last thing the
 project said, and that stays true whether or not a relay answers today.
+
+**But the cache is re-checked against the clock, not against the network.** On
+every restore from `shared_preferences` and on every foreground, each cached
+announcement is re-run through the freshness and expiry rules of §3.3–§3.4 using
+the current time. An entry whose `created_at` is now older than 30 days, or
+whose `expiration` has now passed, is dropped from the list *and deleted from
+`shared_preferences`* in the same pass; the rest are kept and shown.
+
+This is the offline case specifically. The rules of §3.3–§3.4 are otherwise
+enforced on arrival, and an event that arrives is an event a relay answered —
+but a phone in a gym basement for five weeks never receives anything, and
+without this pass "we are down for maintenance tonight" survives its own
+`expiration` indefinitely precisely because nothing came in to displace it. The
+expiry rule is a promise to the sender that nothing they publish becomes
+permanent, and a promise that only holds while online is not one.
+
+Dropping the announcement drops its read and dismissed entries with it. Nothing
+should reference an address that is no longer in the cache.
 
 ### 4.3 Surface
 
@@ -256,6 +334,27 @@ Off means the subscription is never opened, not that arriving events are hidden.
 The relay must not be able to distinguish a user who opted out from a user who
 closed the app.
 
+**Switching it off takes effect at the moment of the tap.** The subscription is
+closed, its listener is cancelled, and any event already queued behind it is
+discarded rather than processed. Nothing waits for the next background
+transition: a user who turns the channel off and stays on the Settings screen —
+which is exactly what a user who just turned it off does — would otherwise keep
+an open subscription for as long as they keep the app open, which is the one
+thing this switch says does not happen. Deferred cleanup also makes the
+observable difference the paragraph above forbids: the relay sees a subscription
+that stays open past the opt-out.
+
+Turning it back on reopens the subscription and resumes delivery normally. The
+gap in between is not backfilled beyond what §4.1's filter asks for on the next
+open — the `since = now - 30 days` window is the same one a fresh install gets,
+so an announcement published while the switch was off is picked up if it is
+still fresh, and is not if it is not.
+
+In implementation terms this reuses the same subscription handle, listener
+subscription, and pending-event queue that §4.1's foreground open and background
+close already manage — the toggle is another caller of that path, not a second
+one beside it.
+
 Default-on is a judgement call and worth stating plainly: the channel is
 low-frequency and product-related, and nothing here posts a system notification,
 so nothing here escapes the app the user just opened. The day it does post one,
@@ -280,10 +379,16 @@ key of §3.1, sent with any Nostr client or a small script in `tool/`.
 
 What the sender owes:
 
-1. A `d` that has never been used, unless deliberately correcting a live one.
+1. A `d` that has never been used, unless deliberately correcting a live one —
+   and a correction is a republish under the same `d` **from the same key**,
+   since the address is `(kind, pubkey, d)` (§3.3). Republishing a correction
+   from a different allowlisted key creates a second announcement, not a fix.
 2. An `expiration` that is actually in the future.
-3. `en` present in `locales`, plus whatever translations exist.
+3. All four locales — `en`, `es`, `ja`, `pt` — and no others. There is no
+   partial publish and no fallback to cover one that is missing (§2.2).
 4. A `url` that is `https`, if any.
+5. Version bounds, if any, that parse: no build metadata, and `max_version` is
+   the version the announcement is *about*, exclusive (§2.1).
 
 A `tool/` script that validates all four before signing is worth writing at the
 same time as the reader, because the reader's failure mode is silence — publish
@@ -297,11 +402,13 @@ a malformed announcement and nothing tells you, on either end.
 |---|---|
 | Allowlist | event from an allowed key accepted; from any other key ignored; one undecodable entry does not disable the rest |
 | Verification | tampered content, tampered tags, wrong signature — all dropped |
-| Freshness | 31 days old ignored; dated 10 minutes ahead ignored; same `d` with newer `created_at` replaces and re-announces; same `d` re-delivered does not re-announce |
+| Freshness | 31 days old ignored; dated 10 minutes ahead ignored; same address with newer `created_at` replaces and re-announces; same address re-delivered does not re-announce; same address and same `created_at` with a lower id replaces, with a higher id does not; same `d` from two allowlisted keys are two announcements, and neither marks the other read |
 | Expiry | expired on arrival dropped; expiring while cached swept |
-| Content | unknown `v` ignored; missing `en` ignored; over-length title or body ignored; non-`https` `url` ignored while the announcement still renders; version bounds in range, out of range, and unparseable |
-| Locale | current locale wins; missing locale falls back to `en`; all four locales resolve |
-| Consent | switch off ⇒ no subscription is opened |
+| Offline ageing | an announcement cached fresh, then restored after the app is offline past its 30-day window, is not rendered **and** is gone from `shared_preferences`; same for one that passes its `expiration` while offline; a still-valid neighbour in the same cache survives both sweeps |
+| Re-announcement | a newer revision at a read-and-dismissed address clears both, and the correction appears unread |
+| Content | unknown `v` ignored; a missing locale ignored; an unknown fifth locale ignored; over-length title or body ignored; non-`https` `url` ignored while the announcement still renders; version bounds in range, out of range, at the exclusive `max_version` boundary, with build metadata, and unparseable |
+| Locale | each of the four locales renders its own copy; no fallback path is reachable |
+| Consent | switch off ⇒ no subscription is opened; switching off while subscribed closes it and cancels its listener at the tap, and a queued event arriving after that is discarded; switching back on resumes delivery |
 | Widget | dot appears only when unread; read and dismiss persist across a restart; empty state |
 
 Signature cases are tagged `rust` — they need the native library, per AGENTS.md.
