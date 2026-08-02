@@ -264,6 +264,17 @@ class NostrService {
   static String _shortKey(String pubkey) =>
       pubkey.length <= 16 ? pubkey : pubkey.substring(0, 16);
 
+  /// Subscribe with a filter the caller built itself.
+  ///
+  /// The match subscriptions above are shaped alike — one kind, one author —
+  /// and the announcement channel is not: a fixed kind, a fixed *list* of
+  /// authors, `since` and `limit` (§4.1 of the announcement spec). Rather than
+  /// grow a second nearly-identical helper per filter shape, a caller whose
+  /// filter is its own business passes it. The pairing [unsubscribe] is
+  /// already general in exactly the same way.
+  void subscribeWithFilter(String subscriptionId, Filter filter) =>
+      _backend.subscribe(subscriptionId, filter);
+
   /// Unsubscribe from a subscription
   void unsubscribe(String subscriptionId) =>
       _backend.unsubscribe(subscriptionId);

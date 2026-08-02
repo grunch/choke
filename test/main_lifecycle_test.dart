@@ -1,6 +1,7 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:choke/features/announcements/announcement_providers.dart';
+import 'package:choke/features/announcements/models/app_version.dart';
 import 'package:choke/main.dart';
 import 'package:choke/services/key_management/key_manager.dart';
 import 'package:choke/services/nostr/crypto/nostr_crypto.dart';
@@ -46,6 +47,10 @@ void main() {
           nostrCryptoProvider.overrideWithValue(crypto),
           keyManagerProvider.overrideWithValue(keyManager),
           nostrServiceProvider.overrideWithValue(service),
+          // Version targeting for the announcement channel. main() reads this
+          // from package_info_plus; a widget test says what it wants instead,
+          // the same way it does for the Nostr stack.
+          appVersionProvider.overrideWithValue(AppVersion.tryParse('2.0.1')!),
         ],
         child: const ChokeApp(),
       ),

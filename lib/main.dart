@@ -2,6 +2,7 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import 'shared/theme/app_theme.dart';
 import 'shared/providers/locale_provider.dart';
@@ -16,6 +17,8 @@ import 'services/deep_links/share_link.dart';
 import 'shared/providers/navigation_provider.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/match/providers/submissions_provider.dart';
+import 'features/announcements/announcement_providers.dart';
+import 'features/announcements/models/app_version.dart';
 import 'features/settings/providers/relay_config_provider.dart';
 import 'services/key_management/key_manager.dart';
 import 'services/nostr/crypto/nostr_crypto.dart';
@@ -83,6 +86,20 @@ void main() async {
     debugPrint('NostrService initialization failed: $e\n$st');
   }
 
+  // The version that version targeting compares against (§2.1 of the
+  // announcement spec). PackageInfo.version is the pubspec version without the
+  // build number — 2.0.1, never 2.0.1+454 — which is exactly the form a bound
+  // is written in. A version that will not parse falls back to 0.0.0: that
+  // hides any announcement carrying a lower bound, which is the safe direction
+  // to fail in for something nobody asked for.
+  var appVersion = AppVersion.tryParse('0.0.0')!;
+  try {
+    final packageInfo = await PackageInfo.fromPlatform();
+    appVersion = AppVersion.tryParse(packageInfo.version) ?? appVersion;
+  } catch (e, st) {
+    debugPrint('App version lookup failed: $e\n$st');
+  }
+
   // Load saved preferences before first frame to avoid flash
   final savedThemeMode = await ThemeModeNotifier.loadSavedThemeMode();
   final savedLocale = await LocaleNotifier.loadSavedLocale();
@@ -102,6 +119,7 @@ void main() async {
     ProviderScope(
       overrides: [
         nostrCryptoProvider.overrideWithValue(crypto),
+        appVersionProvider.overrideWithValue(appVersion),
         keyManagerProvider.overrideWithValue(keyManager),
         nostrServiceProvider.overrideWithValue(nostrService),
         relayConfigServiceProvider.overrideWithValue(relayConfigService),
@@ -140,6 +158,23 @@ class _ChokeAppState extends ConsumerState<ChokeApp>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _handleLaunchLink();
+    _startAnnouncements();
+  }
+
+  /// Read the cached announcements, then open the channel.
+  ///
+  /// After the first frame, because both touch providers. Restore comes first
+  /// so what the project last said is on screen before any relay answers —
+  /// and so an arriving revision has something to supersede rather than
+  /// landing beside a copy of itself.
+  void _startAnnouncements() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final inbox = ref.read(announcementInboxProvider.notifier);
+      await inbox.restore();
+      if (!mounted) return;
+      inbox.open();
+    });
   }
 
   @override
@@ -152,6 +187,17 @@ class _ChokeAppState extends ConsumerState<ChokeApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       ref.read(nostrServiceProvider).reconnectAll();
+
+      // The clock moved while we were away, and nothing arrived to displace
+      // what is cached — an announcement can have aged past its window or its
+      // expiration with the app closed (§4.2). Re-check before reopening, so
+      // the channel never renders something it would now reject.
+      final inbox = ref.read(announcementInboxProvider.notifier);
+      inbox.revalidate();
+      inbox.open();
+    } else if (state == AppLifecycleState.paused) {
+      // No background work of any kind (§4.1, §9).
+      ref.read(announcementInboxProvider.notifier).close();
     }
   }
 
