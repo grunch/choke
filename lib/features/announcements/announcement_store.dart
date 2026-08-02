@@ -42,9 +42,13 @@ class AnnouncementCache {
 /// what it stored. Deciding what is still an announcement is
 /// `AnnouncementInbox`'s job, on the way out.
 class AnnouncementStore {
-  static const String eventsKey = 'choke:announcements:events';
-  static const String readKey = 'choke:announcements:read';
-  static const String dismissedKey = 'choke:announcements:dismissed';
+  /// One key, holding the whole cache.
+  ///
+  /// Three keys would have been the obvious shape and the wrong one:
+  /// `shared_preferences` has no transaction across keys, so a write that
+  /// stopped between them would leave a new event list beside an old read map,
+  /// and nothing would say so. One value lands or it does not.
+  static const String cacheKey = 'choke:announcements';
 
   const AnnouncementStore();
 
@@ -57,10 +61,16 @@ class AnnouncementStore {
   Future<AnnouncementCache> load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(cacheKey);
+      if (raw == null || raw.isEmpty) return const AnnouncementCache();
+
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return const AnnouncementCache();
+
       return AnnouncementCache(
-        events: _decodeEvents(prefs.getString(eventsKey)),
-        read: _decodeRevisions(prefs.getString(readKey)),
-        dismissed: _decodeRevisions(prefs.getString(dismissedKey)),
+        events: _decodeEvents(decoded['events']),
+        read: _decodeRevisions(decoded['read']),
+        dismissed: _decodeRevisions(decoded['dismissed']),
       );
     } catch (e) {
       debugPrint('AnnouncementStore: load failed: $e');
@@ -70,18 +80,20 @@ class AnnouncementStore {
 
   /// Replace everything stored with [cache].
   ///
-  /// A whole-cache write rather than three independent ones: the read map
-  /// points at addresses in the event list, and a partial write is how they
-  /// would come to disagree.
+  /// One `setString`, so the three pieces cannot disagree: the read map points
+  /// at addresses in the event list, and there is no moment at which half of
+  /// this has landed.
   Future<void> save(AnnouncementCache cache) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
-        eventsKey,
-        jsonEncode(cache.events.map((e) => e.toJson()).toList()),
+        cacheKey,
+        jsonEncode({
+          'events': cache.events.map((e) => e.toJson()).toList(),
+          'read': _encodeRevisions(cache.read),
+          'dismissed': _encodeRevisions(cache.dismissed),
+        }),
       );
-      await prefs.setString(readKey, _encodeRevisions(cache.read));
-      await prefs.setString(dismissedKey, _encodeRevisions(cache.dismissed));
     } catch (e) {
       debugPrint('AnnouncementStore: save failed: $e');
     }
@@ -91,21 +103,17 @@ class AnnouncementStore {
   Future<void> clear() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(eventsKey);
-      await prefs.remove(readKey);
-      await prefs.remove(dismissedKey);
+      await prefs.remove(cacheKey);
     } catch (e) {
       debugPrint('AnnouncementStore: clear failed: $e');
     }
   }
 
-  static List<NostrEvent> _decodeEvents(String? raw) {
-    if (raw == null || raw.isEmpty) return const [];
-    final decoded = jsonDecode(raw);
-    if (decoded is! List) return const [];
+  static List<NostrEvent> _decodeEvents(Object? raw) {
+    if (raw is! List) return const [];
 
     final events = <NostrEvent>[];
-    for (final entry in decoded) {
+    for (final entry in raw) {
       try {
         events.add(NostrEvent.fromJson(entry as Map<String, dynamic>));
       } catch (e) {
@@ -117,13 +125,11 @@ class AnnouncementStore {
     return events;
   }
 
-  static Map<String, AnnouncementRevision> _decodeRevisions(String? raw) {
-    if (raw == null || raw.isEmpty) return const {};
-    final decoded = jsonDecode(raw);
-    if (decoded is! Map<String, dynamic>) return const {};
+  static Map<String, AnnouncementRevision> _decodeRevisions(Object? raw) {
+    if (raw is! Map<String, dynamic>) return const {};
 
     final revisions = <String, AnnouncementRevision>{};
-    decoded.forEach((address, value) {
+    raw.forEach((address, value) {
       if (value is! Map<String, dynamic>) return;
       final createdAt = value['created_at'];
       final id = value['id'];
@@ -134,13 +140,15 @@ class AnnouncementStore {
     return revisions;
   }
 
-  static String _encodeRevisions(Map<String, AnnouncementRevision> revisions) {
-    return jsonEncode({
+  static Map<String, dynamic> _encodeRevisions(
+    Map<String, AnnouncementRevision> revisions,
+  ) {
+    return {
       for (final entry in revisions.entries)
         entry.key: {
           'created_at': entry.value.createdAt,
           'id': entry.value.eventId,
         },
-    });
+    };
   }
 }
