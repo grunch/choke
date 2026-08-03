@@ -644,7 +644,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get announcementsEmptyDetail =>
-      'Acá el proyecto publica versiones, caídas y eventos. Nada más, y nada sobre vos.';
+      'Acá el proyecto publica versiones, caídas y eventos. Nada más, y nada sobre ti.';
 
   @override
   String get announcementsOpen => 'Abrir enlace';
@@ -728,11 +728,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get scoreboardInvalidPubkey => 'Esa clave pública no es válida';
 
   @override
-  String get scoreboardWelcomeTitle => 'Mirá los tatamis de otros';
+  String get scoreboardWelcomeTitle => 'Mira los tatamis de otros';
 
   @override
   String get scoreboardWelcomeBody =>
-      'Pegá la clave pública que compartió un organizador y sus luchas aparecen acá en vivo.';
+      'Pega la clave pública que compartió un organizador y sus luchas aparecen acá en vivo.';
 
   @override
   String get scoreboardEmptyTitle => 'Todavía no hay luchas';
@@ -769,7 +769,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get scoreboardBrokenLinkBody =>
-      'Apuntaba a algo en particular, pero no se pudo leer una parte. Pedile a quien te lo compartió que te lo mande de nuevo.';
+      'Apuntaba a algo en particular, pero no se pudo leer una parte. Pídele a quien te lo compartió que te lo mande de nuevo.';
 
   @override
   String get scoreboardBrokenLinkDismiss => 'Ver mi tablero';
@@ -779,21 +779,21 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get scoreboardShareBoardMessage =>
-      'Seguí estas luchas de BJJ en vivo en bjjscore.live:';
+      'Sigue estas luchas de BJJ en vivo en bjjscore.live:';
 
   @override
   String get scoreboardShareMatch => 'Compartir esta lucha';
 
   @override
   String get scoreboardShareMatchMessage =>
-      'Mirá esta lucha de BJJ en vivo en bjjscore.live:';
+      'Mira esta lucha de BJJ en vivo en bjjscore.live:';
 
   @override
-  String get scoreboardQrTitle => 'Escaneá para ver en vivo';
+  String get scoreboardQrTitle => 'Escanea para ver en vivo';
 
   @override
   String get scoreboardQrHint =>
-      'Apuntá la cámara del teléfono a este código para abrir el tablero en vivo';
+      'Apunta la cámara del teléfono a este código para abrir el tablero en vivo';
 
   @override
   String get link => 'Enlace';
@@ -811,5 +811,5 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get scoreboardMatchUnresolvedBody =>
-      'Puede que haya terminado hace rato: un link de lucha dura alrededor de un día. Pedile uno nuevo a quien te lo compartió.';
+      'Puede que haya terminado hace rato: un link de lucha dura alrededor de un día. Pídele uno nuevo a quien te lo compartió.';
 }
