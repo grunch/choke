@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -197,6 +198,67 @@ void main() {
       // Assert
       expect(find.text('Version 2.1 is out'), findsOneWidget);
       expect(find.text(l10n.announcementsOpen), findsNothing);
+    });
+  });
+
+  group('the link', () {
+    /// Answers the url_launcher channel with [opened], and reports what it was
+    /// asked to launch.
+    List<MethodCall> mockLauncher(WidgetTester tester, {required bool opened}) {
+      const channel = MethodChannel('plugins.flutter.io/url_launcher');
+      final calls = <MethodCall>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        (call) async {
+          calls.add(call);
+          if (call.method == 'canLaunch') return true;
+          return opened;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null),
+      );
+      return calls;
+    }
+
+    testWidgets('opening the link marks the announcement read', (tester) async {
+      // Arrange
+      final calls = mockLauncher(tester, opened: true);
+      await pumpScreen(tester);
+      await deliver(_event(url: 'https://bjjscore.live/notes'), tester);
+
+      // Act
+      await tester.tap(find.text(l10n.announcementsOpen));
+      await tester.pumpAndSettle();
+
+      // Assert — tapping through is reading it
+      expect(calls.map((c) => c.method), contains('launch'));
+      expect(inbox.state.hasUnread, isFalse);
+    });
+
+    testWidgets('a device that opens nothing is logged, not swallowed',
+        (tester) async {
+      // Arrange — launchUrl reports a refusal by returning false rather than
+      // throwing, which would otherwise be the one failure here with no trace
+      mockLauncher(tester, opened: false);
+      await pumpScreen(tester);
+      await deliver(_event(url: 'https://bjjscore.live/notes'), tester);
+
+      // Act — the redirect is undone before the assertions, because the test
+      // framework checks that no foundation debug variable outlives the body
+      final logged = <String>[];
+      final original = debugPrint;
+      debugPrint = (message, {wrapWidth}) => logged.add(message ?? '');
+      await tester.tap(find.text(l10n.announcementsOpen));
+      await tester.pumpAndSettle();
+      debugPrint = original;
+
+      // Assert
+      expect(
+        logged,
+        contains(contains('nothing on this device opened')),
+      );
     });
   });
 
