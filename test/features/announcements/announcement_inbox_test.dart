@@ -16,7 +16,16 @@ const String _publisher = 'aa11';
 const String _stranger = 'ff99';
 
 /// Wall clock every test shares, so "31 days old" is a fixed number.
-final DateTime _now = DateTime.utc(2026, 8, 2, 12);
+///
+/// Read from the real clock rather than written down as a date. Every offset
+/// here is relative to this, so the arithmetic is the same either way — but
+/// `NostrService` applies NIP-40 expiration against `DateTime.now()` on the way
+/// in, and that is the one clock in this file nothing can inject. A fixed
+/// anchor puts the default expiry (`_nowSeconds + 86400`) in the real past a
+/// day after it is written, and from then on every event is dropped at the door
+/// for a reason no assertion here is about. Same convention as the other
+/// announcement tests.
+final DateTime _now = DateTime.now().toUtc();
 int get _nowSeconds => _now.millisecondsSinceEpoch ~/ 1000;
 
 /// Verifies everything except the events a test names as tampered with.

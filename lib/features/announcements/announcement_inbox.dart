@@ -11,7 +11,8 @@ import 'models/announcement.dart';
 import 'models/app_version.dart';
 
 /// Nothing older than this is news, however long a relay has been serving it.
-const Duration kAnnouncementMaxAge = Duration(days: 30);
+/// The number itself lives in the schema, which the publisher tool shares.
+const Duration kAnnouncementMaxAge = Duration(days: kAnnouncementMaxAgeDays);
 
 /// Clock skew, not tolerance for post-dating: an announcement dated next week
 /// must not sit at the top of every inbox until then (§3.3).
