@@ -1542,6 +1542,12 @@ abstract class AppLocalizations {
   /// **'Point a phone camera at this code to open the live board'**
   String get scoreboardQrHint;
 
+  /// What was copied, used as the {label} of copiedToClipboard when the user taps the link spelled out under a QR code
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get link;
+
   /// Title shown after a shared link named one match and before the relays have answered. Never says the match is missing: at this point nothing is known either way, and saying so is the failure the pending state exists to prevent
   ///
   /// In en, this message translates to:

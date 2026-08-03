@@ -198,6 +198,7 @@ class HomeScreen extends ConsumerWidget {
       title: l10n.scoreboardQrTitle,
       data: liveBoardShareUrl(npub),
       caption: l10n.scoreboardQrHint,
+      copyLabel: l10n.link,
     );
   }
 

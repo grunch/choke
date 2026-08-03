@@ -185,6 +185,7 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
       title: l10n.scoreboardQrTitle,
       data: _boardUrl(watchedHex),
       caption: l10n.scoreboardQrHint,
+      copyLabel: l10n.link,
     );
   }
 

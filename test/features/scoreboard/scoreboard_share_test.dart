@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -169,6 +170,37 @@ void main() {
 
       // Assert
       expect(find.byType(QrImageView), findsNothing);
+    });
+
+    testWidgets('copies the link under the code when it is tapped',
+        (tester) async {
+      // Arrange — the other way a link leaves this screen when the camera in
+      // the room will not scan
+      final copied = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add((call.arguments as Map)['text'] as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null);
+      });
+      await _pumpWatching(tester);
+      await tester.tap(find.byTooltip(l10n.showQr));
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text(_sharedUrl));
+      await tester.pumpAndSettle();
+
+      // Assert — the same link the code carries, and the user was told
+      expect(copied, [_sharedUrl]);
+      expect(find.text(l10n.copiedToClipboard(l10n.link)), findsOneWidget);
     });
 
     testWidgets('offers nothing to share behind a broken link', (tester) async {

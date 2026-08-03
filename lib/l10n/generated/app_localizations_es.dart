@@ -796,6 +796,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Apuntá la cámara del teléfono a este código para abrir el tablero en vivo';
 
   @override
+  String get link => 'Enlace';
+
+  @override
   String get scoreboardMatchPendingTitle => 'Buscando esa lucha…';
 
   @override
