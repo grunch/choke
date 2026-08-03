@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
+import 'package:choke/features/announcements/announcements_enabled_provider.dart';
 import 'package:choke/features/settings/screens/relay_management_screen.dart';
 import 'package:choke/features/settings/screens/submissions_screen.dart';
 import 'package:choke/features/settings/settings_screen.dart';
@@ -113,6 +114,20 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
+  }
+
+  /// The switch belonging to one row.
+  ///
+  /// Scoped rather than `find.byType(Switch)`: this screen has more than one
+  /// switch on it — the match cues and the announcement channel — and a bare
+  /// type finder would mean "whichever the layout happens to put first".
+  Finder switchIn(String title) {
+    return find.descendant(
+      of: find
+          .ancestor(of: find.text(title), matching: find.byType(InkWell))
+          .first,
+      matching: find.byType(Switch),
+    );
   }
 
   ProviderContainer containerOf(WidgetTester tester) {
@@ -305,7 +320,10 @@ void main() {
       await pumpScreen(tester);
       await scrollTo(tester, find.text(l10n.settingsMatchSound));
       expect(find.text(l10n.settingsMatchSoundOn), findsOneWidget);
-      expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+      expect(
+        tester.widget<Switch>(switchIn(l10n.settingsMatchSound)).value,
+        isTrue,
+      );
 
       // Act — tap the row, not the switch: the whole row is the target
       await tester.tap(find.text(l10n.settingsMatchSound));
@@ -326,10 +344,13 @@ void main() {
             .overrideWith((_) => MatchSoundEnabledNotifier()..hydrate(false)),
       ]);
       await scrollTo(tester, find.text(l10n.settingsMatchSound));
-      expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+      expect(
+        tester.widget<Switch>(switchIn(l10n.settingsMatchSound)).value,
+        isFalse,
+      );
 
       // Act — this time via the switch itself
-      await tester.tap(find.byType(Switch));
+      await tester.tap(switchIn(l10n.settingsMatchSound));
       await tester.pumpAndSettle();
 
       // Assert
@@ -337,6 +358,47 @@ void main() {
       expect(find.text(l10n.settingsMatchSoundOn), findsOneWidget);
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getBool('choke:match-sound-enabled'), isTrue);
+    });
+  });
+
+  group('announcements tile', () {
+    testWidgets('starts on and turns the channel off', (tester) async {
+      // Arrange — default-on is argued in §5 of the announcement spec
+      await pumpScreen(tester);
+      await scrollTo(tester, find.text(l10n.settingsAnnouncements));
+      expect(find.text(l10n.settingsAnnouncementsOn), findsOneWidget);
+      expect(
+        tester.widget<Switch>(switchIn(l10n.settingsAnnouncements)).value,
+        isTrue,
+      );
+
+      // Act
+      await tester.tap(find.text(l10n.settingsAnnouncements));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(containerOf(tester).read(announcementsEnabledProvider), isFalse);
+      expect(find.text(l10n.settingsAnnouncementsOff), findsOneWidget);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('choke:announcements-enabled'), isFalse);
+    });
+
+    testWidgets('turns the channel back on', (tester) async {
+      // Arrange — switched off in a previous session
+      await pumpScreen(tester, overrides: [
+        announcementsEnabledProvider.overrideWith(
+          (_) => AnnouncementsEnabledNotifier()..hydrate(false),
+        ),
+      ]);
+      await scrollTo(tester, find.text(l10n.settingsAnnouncements));
+
+      // Act
+      await tester.tap(switchIn(l10n.settingsAnnouncements));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(containerOf(tester).read(announcementsEnabledProvider), isTrue);
+      expect(find.text(l10n.settingsAnnouncementsOn), findsOneWidget);
     });
   });
 

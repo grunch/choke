@@ -18,6 +18,7 @@ import 'shared/providers/navigation_provider.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/match/providers/submissions_provider.dart';
 import 'features/announcements/announcement_providers.dart';
+import 'features/announcements/announcements_enabled_provider.dart';
 import 'features/announcements/models/app_version.dart';
 import 'features/settings/providers/relay_config_provider.dart';
 import 'services/key_management/key_manager.dart';
@@ -106,6 +107,7 @@ void main() async {
   final savedDuration = await MatchDurationNotifier.loadSavedDuration();
   final savedSubmissions = await SubmissionsNotifier.loadSaved();
   final savedMatchSound = await MatchSoundEnabledNotifier.loadSaved();
+  final savedAnnouncements = await AnnouncementsEnabledNotifier.loadSaved();
 
   // Create notifiers with hydrated values (no flash on startup)
   final themeNotifier = ThemeModeNotifier()..hydrate(savedThemeMode);
@@ -114,6 +116,8 @@ void main() async {
   final submissionsNotifier = SubmissionsNotifier()..hydrate(savedSubmissions);
   final matchSoundNotifier = MatchSoundEnabledNotifier()
     ..hydrate(savedMatchSound);
+  final announcementsNotifier = AnnouncementsEnabledNotifier()
+    ..hydrate(savedAnnouncements);
 
   runApp(
     ProviderScope(
@@ -128,6 +132,7 @@ void main() async {
         matchDurationProvider.overrideWith((_) => durationNotifier),
         submissionsProvider.overrideWith((_) => submissionsNotifier),
         matchSoundEnabledProvider.overrideWith((_) => matchSoundNotifier),
+        announcementsEnabledProvider.overrideWith((_) => announcementsNotifier),
       ],
       child: const ChokeApp(),
     ),
@@ -170,10 +175,45 @@ class _ChokeAppState extends ConsumerState<ChokeApp>
   void _startAnnouncements() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+      if (!ref.read(announcementsEnabledProvider)) return;
+
       final inbox = ref.read(announcementInboxProvider.notifier);
       await inbox.restore();
       if (!mounted) return;
+      if (!ref.read(announcementsEnabledProvider)) return;
       inbox.open();
+    });
+  }
+
+  /// The switch of §5, acting at the tap.
+  ///
+  /// Off closes the subscription and cancels its listener immediately rather
+  /// than waiting for the app to be backgrounded — a user who turns the
+  /// channel off and stays on the Settings screen, which is exactly what a
+  /// user who just turned it off does, would otherwise keep an open
+  /// subscription for as long as they keep the app open. The relay would see
+  /// the difference too, and it must not.
+  ///
+  /// The cache goes with it. Nothing in the spec demands that, and it is the
+  /// choice worth arguing with: re-enabling refetches whatever is still inside
+  /// the 30-day window, so what is lost is the read and dismissed state, and
+  /// what is gained is that "off" leaves nothing of the channel on the device.
+  void _watchAnnouncementSetting() {
+    ref.listen<bool>(announcementsEnabledProvider, (_, enabled) async {
+      final inbox = ref.read(announcementInboxProvider.notifier);
+      if (enabled) {
+        await inbox.restore();
+        if (!mounted) return;
+        // Read the switch again, never the `enabled` this fired with: the
+        // restore above is a disk read, and a user who flicked it back off
+        // while that was in flight would otherwise get a subscription opened
+        // underneath a switch that says off.
+        if (!ref.read(announcementsEnabledProvider)) return;
+        inbox.open();
+      } else {
+        inbox.close();
+        await inbox.forgetEverything();
+      }
     });
   }
 
@@ -194,7 +234,7 @@ class _ChokeAppState extends ConsumerState<ChokeApp>
       // the channel never renders something it would now reject.
       final inbox = ref.read(announcementInboxProvider.notifier);
       inbox.revalidate();
-      inbox.open();
+      if (ref.read(announcementsEnabledProvider)) inbox.open();
     } else if (state == AppLifecycleState.paused) {
       // No background work of any kind (§4.1, §9).
       ref.read(announcementInboxProvider.notifier).close();
@@ -230,6 +270,8 @@ class _ChokeAppState extends ConsumerState<ChokeApp>
 
   @override
   Widget build(BuildContext context) {
+    _watchAnnouncementSetting();
+
     final locale = ref.watch(localeProvider);
     final themeMode = ref.watch(themeModeProvider);
 

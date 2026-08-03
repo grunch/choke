@@ -637,6 +637,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsMatchSoundOff => 'El reloj corre en silencio';
 
   @override
+  String get settingsAnnouncements => 'Anuncios';
+
+  @override
+  String get settingsAnnouncementsOn =>
+      'Novedades ocasionales del proyecto: versiones, caídas, eventos';
+
+  @override
+  String get settingsAnnouncementsOff => 'La app no pide nada y no recibe nada';
+
+  @override
   String get submissionsAdd => 'Agregar sumisión';
 
   @override

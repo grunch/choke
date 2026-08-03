@@ -99,6 +99,10 @@ class AnnouncementInbox extends StateNotifier<AnnouncementInboxState> {
   /// at the tap, not at the next background transition (§5).
   bool _isOpen = false;
 
+  /// Bumped whenever the cache is thrown away, so a read already in flight can
+  /// tell that what it loaded no longer exists. See [restore].
+  int _generation = 0;
+
   bool get isOpen => _isOpen;
 
   int get _nowSeconds => _now().millisecondsSinceEpoch ~/ 1000;
@@ -109,7 +113,19 @@ class AnnouncementInbox extends StateNotifier<AnnouncementInboxState> {
   /// allowlist or the app version may have changed since. An entry that no
   /// longer passes is dropped here *and* removed from storage (§4.2).
   Future<void> restore() async {
+    // Which cache this snapshot belongs to. Reading it is a disk round trip,
+    // and the user can turn the channel off during one — at which point
+    // forgetEverything() has emptied both memory and storage, and applying
+    // what was loaded before that would put it all back underneath a switch
+    // that reads off. A snapshot from a cache that no longer exists is
+    // discarded rather than merged (§5).
+    final generation = _generation;
+
     final cache = await _store.load();
+    if (generation != _generation) {
+      debugPrint('Announcements: dropping a cache read that a clear outran');
+      return;
+    }
     if (cache.isEmpty) return;
 
     for (final event in cache.events) {
@@ -224,6 +240,8 @@ class AnnouncementInbox extends StateNotifier<AnnouncementInboxState> {
 
   /// Forget everything, in memory and on disk. For the switch of §5.
   Future<void> forgetEverything() async {
+    // Anything already read off disk belongs to the cache being thrown away.
+    _generation++;
     _held.clear();
     _read.clear();
     _dismissed.clear();

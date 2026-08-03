@@ -785,6 +785,18 @@
   "@settingsMatchSoundOff": {
     "description": "Settings: match sound toggle subtitle when sound is off"
   },
+  "settingsAnnouncements": "Announcements",
+  "@settingsAnnouncements": {
+    "description": "Settings: announcement channel toggle title"
+  },
+  "settingsAnnouncementsOn": "Occasional news from the project — releases, outages, events",
+  "@settingsAnnouncementsOn": {
+    "description": "Settings: announcement channel toggle subtitle when on"
+  },
+  "settingsAnnouncementsOff": "The app asks for nothing and receives nothing",
+  "@settingsAnnouncementsOff": {
+    "description": "Settings: announcement channel toggle subtitle when off"
+  },
   "submissionsAdd": "Add submission",
   "@submissionsAdd": {
     "description": "Submissions editor: add button"
