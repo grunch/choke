@@ -292,7 +292,7 @@ Copyright (C) 2026 ProtoLayer OÜ.
 ## Connect
 
 - GitHub: [@protolayer-io/choke](https://github.com/protolayer-io/choke)
-- Nostr: `npub14e8x7ggcvgy4j0wcsqh6kv4pfmtax7rkryenux9u7ytemjcuce7q9qpjtk`
+- Nostr: `npub1ch0kezdtt0f89pfgaqqyz2n3xee3jk4k7j7hrwmcpl5ua39danqsrs9y9t`
 
 ---
 
