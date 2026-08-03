@@ -29,17 +29,29 @@ Future<void> main(List<String> args) async {
   // assets, so anything meant to be redirected has to be written to a file
   // rather than piped. --out is not a convenience; it is the only way to get
   // clean JSON out of this.
-  final out = _valueOf(args, '--out');
+  final outIndex = args.indexOf('--out');
+  // A trailing `--out` names no file. Falling back to stdout there would put
+  // the JSON exactly where the flag exists to keep it out of.
+  if (outIndex != -1 && outIndex + 1 >= args.length) {
+    stderr.writeln(_usage);
+    exitCode = 64; // EX_USAGE
+    return;
+  }
+  final out = outIndex == -1 ? null : args[outIndex + 1];
 
   if (args.contains('--template')) {
     await _emit(_template, out);
     return;
   }
 
-  final paths = args
-      .where((arg) => !arg.startsWith('-'))
-      .where((arg) => arg != out)
-      .toList();
+  // By position, not by value: `announce.dart draft.json --out draft.json` is a
+  // sender overwriting their own draft, not an argument to drop.
+  final paths = <String>[];
+  for (var i = 0; i < args.length; i++) {
+    if (outIndex != -1 && (i == outIndex || i == outIndex + 1)) continue;
+    if (args[i].startsWith('-')) continue;
+    paths.add(args[i]);
+  }
   if (paths.length != 1) {
     stderr.writeln(_usage);
     exitCode = 64; // EX_USAGE
@@ -112,13 +124,6 @@ Future<bool> _emit(String content, String? out) async {
   }
 }
 
-/// The value after a `--flag`, or null.
-String? _valueOf(List<String> args, String flag) {
-  final index = args.indexOf(flag);
-  if (index == -1 || index + 1 >= args.length) return null;
-  return args[index + 1];
-}
-
 const String _usage = '''
 Validate an announcement draft and print the unsigned event.
 
@@ -148,12 +153,12 @@ const String _template = '''
       "body": "The match clock no longer drifts on long matches."
     },
     "es": {
-      "title": "Ya salio la version 2.1",
+      "title": "Ya salió la versión 2.1",
       "body": "El reloj ya no se desfasa en luchas largas."
     },
     "pt": {
-      "title": "A versao 2.1 chegou",
-      "body": "O relogio nao atrasa mais em lutas longas."
+      "title": "A versão 2.1 chegou",
+      "body": "O relógio não atrasa mais em lutas longas."
     },
     "ja": {
       "title": "Version 2.1",

@@ -42,9 +42,22 @@ class AnnouncementDraft {
   /// a month later, and it means nothing published here is permanent (§3.4).
   final int expiration;
 
+  /// The title and body per locale. All four the app ships, and no others:
+  /// there is no fallback, so a missing locale is a reader who sees nothing
+  /// (§2.2).
   final Map<String, ({String title, String body})> locales;
+
+  /// Where "read more" goes, or null for an announcement that is only text.
+  /// https with a host, since the app drops anything else silently (§2.2).
   final String? url;
+
+  /// The oldest app version this announcement is for, inclusive. Null targets
+  /// every version below [maxVersion] (§2.1).
   final String? minVersion;
+
+  /// The version this announcement stops being for, **exclusive** — a build
+  /// reporting exactly this version does not see it. Null leaves the range open
+  /// at the top (§2.1).
   final String? maxVersion;
 
   AnnouncementDraft({
@@ -247,20 +260,33 @@ class AnnouncementDraft {
     return parsed;
   }
 
+  static final RegExp _numeric = RegExp(r'^\d+$');
+  static final RegExp _identifier = RegExp(r'^[0-9A-Za-z-]+$');
+
   static List<int>? _parseVersion(String raw) {
     final text = raw.trim();
     if (text.isEmpty || text.contains('+')) return null;
 
     final dash = text.indexOf('-');
     final core = dash == -1 ? text : text.substring(0, dash);
-    if (dash != -1 && text.substring(dash + 1).isEmpty) return null;
+    if (dash != -1) {
+      // The suffix does not affect the comparison, but it still has to be a
+      // pre-release: `2.1.0-beta..1` and `2.1.0-beta!` are ones AppVersion
+      // rejects, and a bound the app cannot read is an announcement nobody
+      // receives (§2.1).
+      final suffix = text.substring(dash + 1);
+      if (suffix.isEmpty) return null;
+      for (final identifier in suffix.split('.')) {
+        if (!_identifier.hasMatch(identifier)) return null;
+      }
+    }
 
     final parts = core.split('.');
     if (parts.length > 3) return null;
 
     final numbers = <int>[0, 0, 0];
     for (var i = 0; i < parts.length; i++) {
-      if (!RegExp(r'^\d+$').hasMatch(parts[i])) return null;
+      if (!_numeric.hasMatch(parts[i])) return null;
       final value = int.tryParse(parts[i]);
       if (value == null) return null;
       numbers[i] = value;

@@ -28,5 +28,12 @@ const Set<String> kAnnouncementLocales = {'en', 'es', 'ja', 'pt'};
 /// anything, it just ends somewhere the sender did not choose.
 const int kAnnouncementMaxAgeDays = 30;
 
+/// The longest title this build renders, measured after trimming (§2.2).
+/// Both ends apply it to the trimmed string — `Announcement._text` when
+/// reading, `AnnouncementDraft.fromJson` when writing — so a title that is only
+/// over the limit because of surrounding whitespace is not over it.
 const int kAnnouncementTitleMaxLength = 80;
+
+/// The longest body this build renders, measured after trimming (§2.2). Same
+/// rule as [kAnnouncementTitleMaxLength], applied at both ends.
 const int kAnnouncementBodyMaxLength = 500;
