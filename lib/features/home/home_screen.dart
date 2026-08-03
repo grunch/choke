@@ -301,12 +301,19 @@ class _AnnouncementsBell extends ConsumerWidget {
             Positioned(
               right: -1,
               top: -1,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: tk.accent,
-                  shape: BoxShape.circle,
+              // Labelled like the dot on each item: the tooltip says what the
+              // bell opens, and nothing else here says there is something
+              // unread behind it. A coloured circle says that to exactly one
+              // kind of user.
+              child: Semantics(
+                label: l10n.announcementsUnread,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: tk.accent,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
             ),

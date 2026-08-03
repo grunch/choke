@@ -213,10 +213,17 @@ class _AnnouncementCard extends ConsumerWidget {
 
     await inbox.markRead(announcement.address);
     try {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+      // launchUrl reports a refusal by returning false, not by throwing: a
+      // device with nothing registered for https answers the call and does
+      // nothing at all. Dropping the result would have left that as the one
+      // failure here with no trace of itself anywhere.
+      final opened = await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!opened) {
+        debugPrint('Announcements: nothing on this device opened $url');
+      }
     } catch (e) {
-      // Nothing to say to the user: they tapped a link, no browser took it,
-      // and no message here would help them (§4.4).
+      // Nothing to say to the user either way: they tapped a link, no browser
+      // took it, and no message here would help them (§4.4).
       debugPrint('Announcements: launching $url failed: $e');
     }
   }

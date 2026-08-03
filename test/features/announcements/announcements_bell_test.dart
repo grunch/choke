@@ -11,6 +11,7 @@ import 'package:choke/features/announcements/models/announcement.dart';
 import 'package:choke/features/announcements/models/app_version.dart';
 import 'package:choke/features/home/home_screen.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
+import 'package:choke/l10n/generated/app_localizations_en.dart';
 import 'package:choke/services/key_management/key_manager.dart';
 import 'package:choke/services/nostr/nostr_service.dart';
 import 'package:choke/shared/theme/app_theme.dart';
@@ -118,6 +119,32 @@ void main() {
     // Assert
     expect(find.byIcon(Icons.notifications_none), findsOneWidget);
     expect(inbox.state.hasUnread, isTrue);
+  });
+
+  testWidgets('the dot says "unread" to a screen reader too', (tester) async {
+    // Arrange — the tooltip says what the bell opens; nothing else says there
+    // is something unread behind it, and a coloured circle says it to exactly
+    // one kind of user
+    final handle = tester.ensureSemantics();
+    await pumpHome(tester);
+    await deliver(tester, _event());
+
+    // Assert
+    expect(
+      find.bySemanticsLabel(RegExp(AppLocalizationsEn().announcementsUnread)),
+      findsAtLeastNWidgets(1),
+    );
+
+    // Act
+    await inbox.markRead(inbox.state.entries.single.address);
+    await tester.pumpAndSettle();
+
+    // Assert — and it goes with the state it describes
+    expect(
+      find.bySemanticsLabel(RegExp(AppLocalizationsEn().announcementsUnread)),
+      findsNothing,
+    );
+    handle.dispose();
   });
 
   testWidgets('the dot goes away once everything has been read',
