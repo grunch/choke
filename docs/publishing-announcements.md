@@ -40,8 +40,8 @@ Edit `draft.json`. What the tool will hold you to (§6):
 | `d` | Unique identifier. Reusing one **corrects** the earlier announcement rather than adding a new one — see [Corrections](#corrections). |
 | `locales` | All four — `en`, `es`, `ja`, `pt` — and no others. There is no fallback: a missing locale is a reader who sees nothing. |
 | `expires_at` | An instant in the future, ISO-8601 or unix seconds. Nothing published here is permanent (§3.4). |
-| `title` | 80 characters max, measured after trimming. |
-| `body` | 500 characters max, measured after trimming. |
+| `locales.<code>.title` | 80 characters max, measured after trimming. |
+| `locales.<code>.body` | 500 characters max, measured after trimming. |
 | `url` | Optional. If present, `https` with a host — the app drops anything else silently. |
 | `min_version` | Optional. Oldest app version this is for, inclusive. |
 | `max_version` | Optional. The version this announcement is *about*, **exclusive**. |
@@ -101,7 +101,7 @@ dart run tool/announce.dart draft.json --out event.json
 
 Either it prints
 
-```
+```text
 Valid. Sign it, publish it, and check that it arrives — nothing downstream will
 tell you if it does not.
 ```
