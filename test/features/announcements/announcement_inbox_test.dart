@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -124,6 +125,36 @@ class _SeededStore implements AnnouncementStore {
 
   @override
   Future<void> clear() async {}
+}
+
+/// A store whose read completes only when the test says so.
+///
+/// The window this exists to test is the disk round trip inside `restore()`:
+/// nothing else can hold it open long enough to turn the channel off in the
+/// middle of one.
+class _GatedStore implements AnnouncementStore {
+  _GatedStore(this.seed);
+
+  final AnnouncementCache seed;
+  final Completer<void> gate = Completer<void>();
+  int clears = 0;
+  AnnouncementCache? lastSaved;
+
+  @override
+  Future<AnnouncementCache> load() async {
+    await gate.future;
+    return seed;
+  }
+
+  @override
+  Future<void> save(AnnouncementCache cache) async {
+    lastSaved = cache;
+  }
+
+  @override
+  Future<void> clear() async {
+    clears++;
+  }
 }
 
 /// A store that fails every way it can. Nothing in the app supplies one; the
@@ -844,6 +875,31 @@ void main() {
       final stored = await _stored(w.inbox);
       expect(w.inbox.state.entries, hasLength(10));
       expect(stored.events, hasLength(10));
+    });
+
+    test('a cache read that a clear outran is discarded', () async {
+      // Arrange — turning the channel on starts a disk read; turning it off
+      // again during that read empties everything (§5)
+      final store = _GatedStore(
+        AnnouncementCache(
+          events: [_event()],
+          read: const {},
+          dismissed: const {},
+        ),
+      );
+      final w = _build(store: store);
+
+      // Act — restore is in flight, and the switch goes off underneath it
+      final restoring = w.inbox.restore();
+      await w.inbox.forgetEverything();
+      store.gate.complete();
+      await restoring;
+      await w.inbox.pendingWrites;
+
+      // Assert — nothing came back, on screen or on disk
+      expect(w.inbox.state.entries, isEmpty);
+      expect(store.clears, 1);
+      expect(store.lastSaved?.events ?? const [], isEmpty);
     });
 
     test('forgetting everything empties the screen and the storage', () async {
