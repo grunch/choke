@@ -102,11 +102,14 @@ void main() {
       }
     });
 
-    test('is empty until a dedicated offline key exists', () {
-      // Assert — an empty allowlist is inert by construction: nothing to
-      // decode means no authors, and §4.1 opens no subscription without them.
-      // Delete this test in the commit that adds the real key.
-      expect(kAnnouncementPublishers, isEmpty);
+    test('lists each key once', () {
+      // Assert — decodeAnnouncementPublishers collapses duplicates, so a key
+      // pasted twice does not break the filter; it just means the allowlist
+      // holds one fewer publisher than whoever edited it believed (§3.1).
+      expect(
+        kAnnouncementPublishers.toSet(),
+        hasLength(kAnnouncementPublishers.length),
+      );
     });
   });
 }

@@ -9,7 +9,8 @@ import 'announcement_draft.dart';
 /// dart run tool/announce.dart --template --out draft.json
 /// # edit draft.json — all four locales, an expiry in the future
 /// dart run tool/announce.dart draft.json --out event.json
-/// nak event --sec <the offline key of §3.1> < event.json | nak publish wss://…
+/// # relays are positional arguments to `nak event`; there is no `nak publish`
+/// nak event --sec <the offline key of §3.1> wss://nos.lol < event.json
 /// ```
 ///
 /// It does not sign and does not publish, and that is the point: the key of
