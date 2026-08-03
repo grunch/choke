@@ -1,5 +1,39 @@
 # Changelog
 
+## [v2.0.2] - 2026-08-03
+
+### Added
+- feat: tap the link under a QR code to copy it (9c71569)
+- feat: the announcement allowlist ships with three real keys (db40e42)
+- feat: refuse to publish an announcement the app would drop (0098af1)
+- feat: put the announcements behind a bell that is usually not there (d5c9b92)
+- feat: give the channel an off switch that acts at the tap (65aae36)
+- feat: fetch announcements, and keep only what still holds (7bd3497)
+- feat: read an announcement without trusting anything about it (c95f692)
+
+### Fixed
+- fix: bounds the tool accepts and the app rejects, and an --out that ate a path (50b5772)
+- fix: notice a link that opened nothing, and label the bell's dot (35c689d)
+- fix: discard a cache read that a clear outran (c988bd6)
+- fix: address the review on the fetch phase (275ede7)
+- fix: address the review on the parsing phase (4f61aef)
+- fix: warn about an expiry the freshness window will cut short (81d7d03)
+- fix: make the announcements reachable without a gesture (08e57e1)
+- fix: re-read the switch after the disk, not before it (accc237)
+- fix: order the writes, and tell the relays when the inbox goes away (603b311)
+- fix: fail an oversized version as unreadable, not as an exception (0c3c285)
+
+### Documentation
+- docs: name the nested fields as nested, and label a bare fence (18c3e83)
+- docs: how to publish an announcement, and a nak line that never worked (a265e90)
+- docs: close the gaps a spec can hide behind (306f2c9)
+- docs: specify one authenticated way to speak to the app (83df1f0)
+
+### Changed
+- test: an inbox suite that expired the day after it was written (ea13092)
+- chore: update changelog and version for v2.0.1 (fe07daa)
+
+
 ## [v2.0.1] - 2026-08-01
 
 ### Added
