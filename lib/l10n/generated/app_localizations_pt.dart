@@ -637,6 +637,53 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsMatchSoundOff => 'O relógio corre em silêncio';
 
   @override
+  String get announcementsTitle => 'Anúncios';
+
+  @override
+  String get announcementsEmpty => 'Nada a informar';
+
+  @override
+  String get announcementsEmptyDetail =>
+      'Aqui o projeto publica versões, quedas e eventos. Nada mais, e nada sobre você.';
+
+  @override
+  String get announcementsOpen => 'Abrir link';
+
+  @override
+  String get announcementsDismiss => 'Dispensar';
+
+  @override
+  String get announcementsUnread => 'Não lida';
+
+  @override
+  String get announcementsBell => 'Anúncios';
+
+  @override
+  String get announcementsWhenNow => 'Agora mesmo';
+
+  @override
+  String announcementsWhenHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Há $count horas',
+      one: 'Há 1 hora',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String announcementsWhenDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Há $count dias',
+      one: 'Ontem',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get settingsAnnouncements => 'Anúncios';
 
   @override

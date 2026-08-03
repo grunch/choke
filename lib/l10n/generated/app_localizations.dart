@@ -1278,6 +1278,66 @@ abstract class AppLocalizations {
   /// **'The clock runs silently'**
   String get settingsMatchSoundOff;
 
+  /// Announcements screen: app bar title
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements'**
+  String get announcementsTitle;
+
+  /// Announcements screen: empty state heading
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to report'**
+  String get announcementsEmpty;
+
+  /// Announcements screen: empty state explanation
+  ///
+  /// In en, this message translates to:
+  /// **'This is where the project posts releases, outages and events. Nothing else, and nothing about you.'**
+  String get announcementsEmptyDetail;
+
+  /// Announcements screen: button that opens the announcement url
+  ///
+  /// In en, this message translates to:
+  /// **'Open link'**
+  String get announcementsOpen;
+
+  /// Announcements screen: swipe-to-dismiss label
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get announcementsDismiss;
+
+  /// Announcements screen: screen-reader label for the unread marker
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get announcementsUnread;
+
+  /// Home screen: tooltip on the bell that opens announcements
+  ///
+  /// In en, this message translates to:
+  /// **'Announcements'**
+  String get announcementsBell;
+
+  /// Announcements screen: timestamp under an hour old
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get announcementsWhenNow;
+
+  /// Announcements screen: timestamp in hours
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour ago} other{{count} hours ago}}'**
+  String announcementsWhenHours(int count);
+
+  /// Announcements screen: timestamp in days
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Yesterday} other{{count} days ago}}'**
+  String announcementsWhenDays(int count);
+
   /// Settings: announcement channel toggle title
   ///
   /// In en, this message translates to:

@@ -611,6 +611,52 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsMatchSoundOff => 'タイマーは無音で進みます';
 
   @override
+  String get announcementsTitle => 'お知らせ';
+
+  @override
+  String get announcementsEmpty => 'お知らせはありません';
+
+  @override
+  String get announcementsEmptyDetail =>
+      'ここにはリリース、障害、イベントのお知らせが届きます。それ以外は何も、あなたに関することも何もありません。';
+
+  @override
+  String get announcementsOpen => 'リンクを開く';
+
+  @override
+  String get announcementsDismiss => '非表示にする';
+
+  @override
+  String get announcementsUnread => '未読';
+
+  @override
+  String get announcementsBell => 'お知らせ';
+
+  @override
+  String get announcementsWhenNow => 'たった今';
+
+  @override
+  String announcementsWhenHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count時間前',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String announcementsWhenDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count日前',
+      one: '昨日',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get settingsAnnouncements => 'お知らせ';
 
   @override

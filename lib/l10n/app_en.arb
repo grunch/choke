@@ -785,6 +785,56 @@
   "@settingsMatchSoundOff": {
     "description": "Settings: match sound toggle subtitle when sound is off"
   },
+  "announcementsTitle": "Announcements",
+  "@announcementsTitle": {
+    "description": "Announcements screen: app bar title"
+  },
+  "announcementsEmpty": "Nothing to report",
+  "@announcementsEmpty": {
+    "description": "Announcements screen: empty state heading"
+  },
+  "announcementsEmptyDetail": "This is where the project posts releases, outages and events. Nothing else, and nothing about you.",
+  "@announcementsEmptyDetail": {
+    "description": "Announcements screen: empty state explanation"
+  },
+  "announcementsOpen": "Open link",
+  "@announcementsOpen": {
+    "description": "Announcements screen: button that opens the announcement url"
+  },
+  "announcementsDismiss": "Dismiss",
+  "@announcementsDismiss": {
+    "description": "Announcements screen: swipe-to-dismiss label"
+  },
+  "announcementsUnread": "Unread",
+  "@announcementsUnread": {
+    "description": "Announcements screen: screen-reader label for the unread marker"
+  },
+  "announcementsBell": "Announcements",
+  "@announcementsBell": {
+    "description": "Home screen: tooltip on the bell that opens announcements"
+  },
+  "announcementsWhenNow": "Just now",
+  "@announcementsWhenNow": {
+    "description": "Announcements screen: timestamp under an hour old"
+  },
+  "announcementsWhenHours": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@announcementsWhenHours": {
+    "description": "Announcements screen: timestamp in hours",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "announcementsWhenDays": "{count, plural, =1{Yesterday} other{{count} days ago}}",
+  "@announcementsWhenDays": {
+    "description": "Announcements screen: timestamp in days",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingsAnnouncements": "Announcements",
   "@settingsAnnouncements": {
     "description": "Settings: announcement channel toggle title"

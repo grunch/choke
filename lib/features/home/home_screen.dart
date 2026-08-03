@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
+import '../announcements/announcement_providers.dart';
+import '../announcements/announcements_screen.dart';
 import '../../services/deep_links/share_link.dart';
 import '../../services/key_management/key_manager.dart';
 import '../../shared/theme/app_theme.dart';
@@ -84,6 +86,9 @@ class HomeScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  // Absent unless the project has actually said something —
+                  // see the widget below.
+                  const _AnnouncementsBell(),
                   // The same code the scoreboard offers, for the board on the
                   // other side of it: there it hands over the organizer being
                   // watched, here it hands over this app's own. Same icon,
@@ -260,6 +265,58 @@ class HomeScreen extends ConsumerWidget {
             l10n.createNewOne,
             style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The bell, and only when there is something behind it.
+///
+/// Absent — not greyed out, not badged with a zero — while the inbox is
+/// empty. A permanent bell is a piece of chrome advertising that a channel
+/// exists, which is a claim on the top bar this feature has not earned; the
+/// dot is the whole notification (§4.3).
+class _AnnouncementsBell extends ConsumerWidget {
+  const _AnnouncementsBell();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final tk = ChokeTokens.of(context);
+    final inbox = ref.watch(announcementInboxProvider);
+    if (inbox.entries.isEmpty) return const SizedBox.shrink();
+
+    return IconButton(
+      tooltip: l10n.announcementsBell,
+      color: tk.muted,
+      onPressed: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const AnnouncementsScreen()),
+      ),
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(Icons.notifications_none),
+          if (inbox.hasUnread)
+            Positioned(
+              right: -1,
+              top: -1,
+              // Labelled like the dot on each item: the tooltip says what the
+              // bell opens, and nothing else here says there is something
+              // unread behind it. A coloured circle says that to exactly one
+              // kind of user.
+              child: Semantics(
+                label: l10n.announcementsUnread,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: tk.accent,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

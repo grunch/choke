@@ -9,6 +9,9 @@ import 'package:choke/features/match/create_match_screen.dart';
 import 'package:choke/features/match/match_control_screen.dart';
 import 'package:choke/features/match/models/match.dart';
 import 'package:choke/features/match/providers/match_control_provider.dart';
+import 'package:choke/features/announcements/announcement_inbox.dart';
+import 'package:choke/features/announcements/announcement_providers.dart';
+import 'package:choke/features/announcements/models/app_version.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 import 'package:choke/services/deep_links/share_link.dart';
 import 'package:choke/services/key_management/key_manager.dart';
@@ -74,6 +77,22 @@ Match _match({
   );
 }
 
+/// The home bar carries the announcement bell now, and the bell reads the
+/// channel. These tests are about matches, so the channel is present and
+/// permanently empty: no publishers means nothing to subscribe to and nothing
+/// to show, which is also how the app ships until the key of §3.1 exists.
+Override _emptyAnnouncements(NostrService service) {
+  final crypto = FakeNostrCrypto();
+  return announcementInboxProvider.overrideWith(
+    (ref) => AnnouncementInbox(
+      service: service,
+      crypto: crypto,
+      appVersion: AppVersion.tryParse('2.0.1')!,
+      publishers: const [],
+    ),
+  );
+}
+
 void main() {
   late AppLocalizations l10n;
   late ProviderContainer container;
@@ -103,6 +122,7 @@ void main() {
         // have always looked at. Declared here rather than added later:
         // updateOverrides can change an override, never add one.
         npubProvider.overrideWith((ref) async => null),
+        _emptyAnnouncements(service),
       ],
     );
   });
@@ -327,6 +347,7 @@ void main() {
             (ref) => MatchControlNotifier(match, service),
           ),
           screenWakelockProvider.overrideWithValue(const NoopScreenWakelock()),
+          _emptyAnnouncements(service),
         ],
         child: MaterialApp(
           theme: AppTheme.darkTheme,
@@ -371,6 +392,7 @@ void main() {
         ),
         screenWakelockProvider.overrideWithValue(const NoopScreenWakelock()),
         npubProvider.overrideWith((ref) async => 'npub1fake'),
+        _emptyAnnouncements(service),
       ]);
       await container.read(npubProvider.future);
       await pumpHome(tester);
@@ -404,6 +426,7 @@ void main() {
         ),
         screenWakelockProvider.overrideWithValue(const NoopScreenWakelock()),
         npubProvider.overrideWith((ref) async => 'npub1fake'),
+        _emptyAnnouncements(service),
       ]);
       await container.read(npubProvider.future);
       await pumpHome(tester);
