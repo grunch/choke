@@ -763,6 +763,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scoreboardQrHint => 'スマートフォンのカメラをこのコードに向けると、ライブスコアボードが開きます';
 
   @override
+  String get link => 'リンク';
+
+  @override
   String get scoreboardMatchPendingTitle => 'その試合を探しています…';
 
   @override

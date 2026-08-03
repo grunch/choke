@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -442,6 +443,28 @@ void main() {
       expect(dialog.data, liveBoardShareUrl('npub1fake'));
       expect(find.text(l10n.scoreboardQrTitle), findsOneWidget);
       expect(find.text(l10n.scoreboardQrHint), findsOneWidget);
+
+      // Act — tapping the link under the code copies it
+      final copied = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add((call.arguments as Map)['text'] as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null);
+      });
+      await tester.tap(find.text(liveBoardShareUrl('npub1fake')));
+      await tester.pumpAndSettle();
+
+      // Assert — the same link the code carries, and the user was told
+      expect(copied, [liveBoardShareUrl('npub1fake')]);
+      expect(find.text(l10n.copiedToClipboard(l10n.link)), findsOneWidget);
     });
 
     testWidgets('offers no share icon before an identity exists',

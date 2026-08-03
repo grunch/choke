@@ -247,6 +247,7 @@
   "scoreboardShareMatchMessage": "Mirá esta lucha de BJJ en vivo en bjjscore.live:",
   "scoreboardQrTitle": "Escaneá para ver en vivo",
   "scoreboardQrHint": "Apuntá la cámara del teléfono a este código para abrir el tablero en vivo",
+  "link": "Enlace",
   "scoreboardMatchPendingTitle": "Buscando esa lucha…",
   "scoreboardMatchPendingBody": "El link nombraba una lucha de este tablero. Esperando a que llegue.",
   "scoreboardMatchUnresolvedTitle": "Esa lucha no está en este tablero",

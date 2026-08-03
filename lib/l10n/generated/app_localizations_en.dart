@@ -792,6 +792,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Point a phone camera at this code to open the live board';
 
   @override
+  String get link => 'Link';
+
+  @override
   String get scoreboardMatchPendingTitle => 'Looking for that match…';
 
   @override

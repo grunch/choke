@@ -247,6 +247,7 @@
   "scoreboardShareMatchMessage": "bjjscore.live でこの BJJ の試合をライブで観戦:",
   "scoreboardQrTitle": "スキャンしてライブ観戦",
   "scoreboardQrHint": "スマートフォンのカメラをこのコードに向けると、ライブスコアボードが開きます",
+  "link": "リンク",
   "scoreboardMatchPendingTitle": "その試合を探しています…",
   "scoreboardMatchPendingBody": "リンクはこのスコアボードの試合を指しています。届くのを待っています。",
   "scoreboardMatchUnresolvedTitle": "その試合はこのスコアボードにありません",

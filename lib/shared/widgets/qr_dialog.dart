@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:choke/l10n/generated/app_localizations.dart';
 
@@ -17,6 +18,7 @@ class QrDialog extends StatelessWidget {
     required this.title,
     required this.data,
     required this.caption,
+    this.copyLabel,
   });
 
   /// What this code is, in the reader's language.
@@ -27,6 +29,36 @@ class QrDialog extends StatelessWidget {
 
   /// What to do with it — "scan this to…".
   final String caption;
+
+  /// What [data] is called in the confirmation — "Link copied to clipboard".
+  ///
+  /// Null leaves the text inert, which is what the account screen wants: its
+  /// code carries a public key and the screen already offers a labelled copy
+  /// control for it. A second, invisible one hiding under the code would be a
+  /// tap target nothing announces.
+  final String? copyLabel;
+
+  /// Put [data] on the clipboard and say so.
+  ///
+  /// The dialog stays open on purpose. Copying the link is not being finished
+  /// with the code — the person across the room is still pointing a camera at
+  /// it, and closing here would take the code away from them.
+  Future<void> _copy(BuildContext context, String label) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final color = Theme.of(context).colorScheme.primary;
+
+    await Clipboard.setData(ClipboardData(text: data));
+
+    // A copy that says nothing is indistinguishable from a tap that missed.
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(l10n.copiedToClipboard(label)),
+        backgroundColor: color,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,15 +103,40 @@ class QrDialog extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            data,
-            style: TextStyle(
-              color: theme.textTheme.bodyMedium?.color,
-              fontSize: 11,
-              fontFamily: 'monospace',
+          // Coloured and underlined when it can be copied, because nothing else
+          // on a line of monospace text says it is a tap target.
+          if (copyLabel case final label?)
+            InkWell(
+              onTap: () => _copy(context, label),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                child: Text(
+                  data,
+                  style: TextStyle(
+                    color: colors.primary,
+                    decoration: TextDecoration.underline,
+                    decorationColor: colors.primary,
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            )
+          else
+            Text(
+              data,
+              style: TextStyle(
+                color: theme.textTheme.bodyMedium?.color,
+                fontSize: 11,
+                fontFamily: 'monospace',
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
           const SizedBox(height: 8),
           Text(
             caption,
@@ -104,9 +161,15 @@ Future<void> showQrDialog(
   required String title,
   required String data,
   required String caption,
+  String? copyLabel,
 }) {
   return showDialog<void>(
     context: context,
-    builder: (_) => QrDialog(title: title, data: data, caption: caption),
+    builder: (_) => QrDialog(
+      title: title,
+      data: data,
+      caption: caption,
+      copyLabel: copyLabel,
+    ),
   );
 }
