@@ -6,6 +6,17 @@
 
 A modern decentralized BJJ match scoring and publishing app via Nostr.
 
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=io.protolayer.choke">
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+         height="60" alt="Get it on Google Play" />
+  </a>
+</p>
+
+## Demo
+
+https://github.com/user-attachments/assets/ce7a8c10-4f1a-4bc7-ab7f-55c1a14e954f
+
 ## What is Choke?
 
 Choke lets you create, score, and publish Brazilian Jiu-Jitsu matches in real time using the Nostr protocol. Every scoring action is broadcast as a Nostr event, making match data open, verifiable, and accessible from any compatible dashboard.
