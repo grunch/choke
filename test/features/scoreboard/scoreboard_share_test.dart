@@ -121,7 +121,11 @@ void main() {
       final calls = mockShareChannel(tester);
       await _pumpWatching(tester);
 
-      // Act
+      // Act — through the code's dialog, which is the only way in. Watching a
+      // board is what this screen is for; passing one on is occasional, so it
+      // does not hold a slot in the header beside the button that opens this.
+      await tester.tap(find.byTooltip(l10n.showQr));
+      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip(l10n.scoreboardShareBoard));
       await tester.pumpAndSettle();
 
@@ -140,10 +144,13 @@ void main() {
       await _pumpWatching(tester);
 
       // Act
+      await tester.tap(find.byTooltip(l10n.showQr));
+      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip(l10n.scoreboardShareBoard));
       await tester.pumpAndSettle();
 
-      // Assert
+      // Assert — the snackbar has to reach past the open dialog, or the failure
+      // is invisible to the one person who needs to know about it
       expect(find.text(l10n.shareFailed), findsOneWidget);
     });
 
@@ -172,34 +179,20 @@ void main() {
       expect(find.byType(QrImageView), findsNothing);
     });
 
-    testWidgets('sends the same link onward from under the code',
-        (tester) async {
-      // Arrange — somebody who opened this to project it usually also has one
-      // person to text. Without this they would close the dialog, taking the
-      // code away from the room, to reach the header's share button.
-      final calls = mockShareChannel(tester);
+    testWidgets('leaves the code up after sharing, for whoever is still '
+        'scanning it', (tester) async {
+      // Arrange — sharing the link is not being finished with the code: the
+      // people in the room are still pointing cameras at it.
+      mockShareChannel(tester);
       await _pumpWatching(tester);
 
       // Act
       await tester.tap(find.byTooltip(l10n.showQr));
       await tester.pumpAndSettle();
-      // Scoped to the dialog: the header behind it shares the same board with
-      // the same label, so an unscoped finder would be ambiguous.
-      await tester.tap(
-        find.descendant(
-          of: find.byType(QrDialog),
-          matching: find.byTooltip(l10n.scoreboardShareBoard),
-        ),
-      );
+      await tester.tap(find.byTooltip(l10n.scoreboardShareBoard));
       await tester.pumpAndSettle();
 
-      // Assert — the header's link and wording, not a second version of them
-      expect(calls, hasLength(1));
-      final sharedText = calls.single['text'] as String;
-      expect(sharedText, contains(_sharedUrl));
-      expect(sharedText, contains(l10n.scoreboardShareBoardMessage));
-
-      // Assert — the code is still up for whoever is still scanning it
+      // Assert
       expect(find.byType(QrImageView), findsOneWidget);
     });
 

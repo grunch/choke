@@ -493,15 +493,7 @@ void main() {
       // Act
       await tester.tap(find.byIcon(Icons.qr_code_2));
       await tester.pumpAndSettle();
-      // Scoped to the dialog: the screen behind it carries a share control with
-      // the same label — same action, so the same words — and an unscoped
-      // finder would be ambiguous about which one this test drove.
-      await tester.tap(
-        find.descendant(
-          of: find.byType(QrDialog),
-          matching: find.byTooltip(l10n.shareLiveBoard),
-        ),
-      );
+      await tester.tap(find.byTooltip(l10n.shareLiveBoard));
       await tester.pumpAndSettle();
 
       // Assert — the link the code carries, not a re-derived one, and the

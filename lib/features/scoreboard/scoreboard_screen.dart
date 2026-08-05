@@ -180,10 +180,12 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
   /// it, with nothing typed and no key exchanged.
   ///
   /// The share control is here because the room is not always the whole
-  /// audience. Somebody who opened this to project it often also has one person
-  /// to text, and without it that means closing the dialog to reach the
-  /// header's share button. It reuses [_shareBoard], so a link sent from under
-  /// the code and one sent from the header are the same link, worded the same.
+  /// audience: whoever opened this to project it often also has one person to
+  /// text. It lives in here rather than in the header because on this screen
+  /// you are a spectator — passing the board on is occasional, and a permanent
+  /// header slot next to the button that opens this dialog offered the same
+  /// action twice, an inch apart. Home reaches its board the same way, and the
+  /// two screens are neighbours in the nav.
   void _showQr(String watchedHex) {
     final l10n = AppLocalizations.of(context);
     showQrDialog(
@@ -291,20 +293,19 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
                   // the board underneath is not the one that was asked for —
                   // passing it on would spread the substitution the broken-link
                   // state exists to stop.
-                  if (watched != null && !brokenLink) ...[
+                  // One control, not two. Sharing lives inside the code's
+                  // dialog rather than beside the button that opens it: on this
+                  // screen you are a spectator, and passing the board on is
+                  // occasional enough that it does not earn a permanent slot in
+                  // the header — while home reaches its board the same way, and
+                  // the two screens sit next to each other in the nav.
+                  if (watched != null && !brokenLink)
                     IconButton(
                       onPressed: () => _showQr(watched),
                       tooltip: l10n.showQr,
                       color: tk.muted,
                       icon: const Icon(Icons.qr_code_2),
                     ),
-                    IconButton(
-                      onPressed: () => _shareBoard(watched),
-                      tooltip: l10n.scoreboardShareBoard,
-                      color: tk.muted,
-                      icon: const Icon(Icons.ios_share),
-                    ),
-                  ],
                 ],
               ),
             ),
