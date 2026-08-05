@@ -1,5 +1,22 @@
 # Changelog
 
+## [v2.1.0] - 2026-08-05
+
+### Added
+- feat: send the board link from under its own QR code (bb97d67)
+- feat: reach Chromebooks (8b810d6)
+
+### Fixed
+- fix: stop shrinking the share button's tap target (68ca796)
+- fix: reject a -PchokeAbis that names no ABI (513d4a1)
+- fix: ship the 32-bit ARM devices Play was hiding the app from (8cb8b04)
+- fix: one Spanish, and it is tuteo (fb50743)
+
+### Changed
+- refactor: one share control per screen, in the same place on both (be559d1)
+- chore: update changelog and version for v2.0.2 (072e3b1)
+
+
 ## [v2.0.2] - 2026-08-03
 
 ### Added
