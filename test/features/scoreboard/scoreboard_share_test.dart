@@ -121,7 +121,11 @@ void main() {
       final calls = mockShareChannel(tester);
       await _pumpWatching(tester);
 
-      // Act
+      // Act — through the code's dialog, which is the only way in. Watching a
+      // board is what this screen is for; passing one on is occasional, so it
+      // does not hold a slot in the header beside the button that opens this.
+      await tester.tap(find.byTooltip(l10n.showQr));
+      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip(l10n.scoreboardShareBoard));
       await tester.pumpAndSettle();
 
@@ -140,10 +144,13 @@ void main() {
       await _pumpWatching(tester);
 
       // Act
+      await tester.tap(find.byTooltip(l10n.showQr));
+      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip(l10n.scoreboardShareBoard));
       await tester.pumpAndSettle();
 
-      // Assert
+      // Assert — the snackbar has to reach past the open dialog, or the failure
+      // is invisible to the one person who needs to know about it
       expect(find.text(l10n.shareFailed), findsOneWidget);
     });
 
@@ -170,6 +177,23 @@ void main() {
 
       // Assert
       expect(find.byType(QrImageView), findsNothing);
+    });
+
+    testWidgets('leaves the code up after sharing, for whoever is still '
+        'scanning it', (tester) async {
+      // Arrange — sharing the link is not being finished with the code: the
+      // people in the room are still pointing cameras at it.
+      mockShareChannel(tester);
+      await _pumpWatching(tester);
+
+      // Act
+      await tester.tap(find.byTooltip(l10n.showQr));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(l10n.scoreboardShareBoard));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.byType(QrImageView), findsOneWidget);
     });
 
     testWidgets('copies the link under the code when it is tapped',

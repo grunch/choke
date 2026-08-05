@@ -217,14 +217,22 @@ void main() {
 
     testWidgets('sends a different link than sharing the board does',
         (tester) async {
-      // Arrange — the two actions sit inches apart, and a user who cannot tell
-      // them apart sends the wrong one.
+      // Arrange — "share the board" and "share this match" produce different
+      // links, and a user who cannot tell them apart sends the wrong one. They
+      // no longer sit inches apart — the board's lives inside the QR dialog —
+      // but what they send still has to stay distinguishable.
       final calls = mockShareChannel(tester);
       await _pumpList(tester);
 
-      // Act
+      // Act — the board, from inside the code's dialog, then out of it
+      await tester.tap(find.byTooltip(l10n.showQr));
+      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip(l10n.scoreboardShareBoard));
-      await tester.pump();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.close));
+      await tester.pumpAndSettle();
+
+      // Act — and the match, from its card
       await tester.tap(find.byTooltip(l10n.scoreboardShareMatch));
       await tester.pump();
 

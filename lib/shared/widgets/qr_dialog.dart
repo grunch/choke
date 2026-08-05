@@ -19,6 +19,7 @@ class QrDialog extends StatelessWidget {
     required this.data,
     required this.caption,
     this.copyLabel,
+    this.share,
   });
 
   /// What this code is, in the reader's language.
@@ -37,6 +38,23 @@ class QrDialog extends StatelessWidget {
   /// control for it. A second, invisible one hiding under the code would be a
   /// tap target nothing announces.
   final String? copyLabel;
+
+  /// Send [data] somewhere the room is not — the platform share sheet.
+  ///
+  /// A code carries a link across a room; a share sheet carries it to everyone
+  /// who is not in one. Both are ways off this screen, which is why the control
+  /// sits beside the link rather than in the actions row.
+  ///
+  /// [onTap] is the caller's, not this widget's: what a shared link SAYS
+  /// belongs to the screen sending it — its message, its subject line, its log
+  /// tag — and a dialog that guessed at those would put the scoreboard's
+  /// wording on the account screen's link. [label] names the action for a
+  /// screen reader and a long-press tooltip, which an icon on its own does not.
+  ///
+  /// Null means no control at all, which is what the account screen wants: its
+  /// code carries a raw public key rather than a link, and handing that to a
+  /// share sheet is a different act from sharing a board.
+  final ({String label, VoidCallback onTap})? share;
 
   /// Put [data] on the clipboard and say so.
   ///
@@ -57,6 +75,45 @@ class QrDialog extends StatelessWidget {
         backgroundColor: color,
         duration: const Duration(seconds: 2),
       ),
+    );
+  }
+
+  /// [data] as text: a tap target when it can be copied, inert when it cannot.
+  ///
+  /// Coloured and underlined in the copyable case, because nothing else on a
+  /// line of monospace text says it is a tap target.
+  Widget _buildLink(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (copyLabel case final label?) {
+      return InkWell(
+        onTap: () => _copy(context, label),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Text(
+            data,
+            style: TextStyle(
+              color: theme.colorScheme.primary,
+              decoration: TextDecoration.underline,
+              decorationColor: theme.colorScheme.primary,
+              fontSize: 11,
+              fontFamily: 'monospace',
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    return Text(
+      data,
+      style: TextStyle(
+        color: theme.textTheme.bodyMedium?.color,
+        fontSize: 11,
+        fontFamily: 'monospace',
+      ),
+      textAlign: TextAlign.center,
     );
   }
 
@@ -103,40 +160,38 @@ class QrDialog extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          // Coloured and underlined when it can be copied, because nothing else
-          // on a line of monospace text says it is a tap target.
-          if (copyLabel case final label?)
-            InkWell(
-              onTap: () => _copy(context, label),
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
+          // The link and the two things you can do with it, on one line. Both
+          // move it off the screen — one to this phone's clipboard, one to
+          // somebody else's — so neither belongs down in the actions row, away
+          // from the thing it acts on.
+          //
+          // Flexible, not Expanded: a short link should not stretch, but a long
+          // one has to wrap rather than overflow the dialog.
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(child: _buildLink(context)),
+              // Deliberately an icon and nothing more. The account screen's
+              // share control is a filled, full-width, labelled CTA because
+              // sharing the board is what that screen is FOR; here the code is
+              // the point and this is a way out of it, so it gets the weight of
+              // a hint rather than of an instruction.
+              if (share case final action?)
+                IconButton(
+                  onPressed: action.onTap,
+                  icon: const Icon(Icons.ios_share, size: 18),
+                  color: colors.primary,
+                  tooltip: action.label,
+                  // The GLYPH is what stays small — 18px, so it reads as a hint
+                  // beside the link. The tap target is left at IconButton's
+                  // default 48x48, which is the documented minimum a thumb
+                  // needs and what the platform accessibility checks measure.
+                  // Shrinking the box to match the icon was making the one way
+                  // to send this link a target that misses.
+                  padding: EdgeInsets.zero,
                 ),
-                child: Text(
-                  data,
-                  style: TextStyle(
-                    color: colors.primary,
-                    decoration: TextDecoration.underline,
-                    decorationColor: colors.primary,
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            )
-          else
-            Text(
-              data,
-              style: TextStyle(
-                color: theme.textTheme.bodyMedium?.color,
-                fontSize: 11,
-                fontFamily: 'monospace',
-              ),
-              textAlign: TextAlign.center,
-            ),
+            ],
+          ),
           const SizedBox(height: 8),
           Text(
             caption,
@@ -162,6 +217,7 @@ Future<void> showQrDialog(
   required String data,
   required String caption,
   String? copyLabel,
+  ({String label, VoidCallback onTap})? share,
 }) {
   return showDialog<void>(
     context: context,
@@ -170,6 +226,7 @@ Future<void> showQrDialog(
       data: data,
       caption: caption,
       copyLabel: copyLabel,
+      share: share,
     ),
   );
 }

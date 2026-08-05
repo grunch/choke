@@ -467,6 +467,48 @@ void main() {
       expect(find.text(l10n.copiedToClipboard(l10n.link)), findsOneWidget);
     });
 
+    testWidgets('sends that same board link onward, from under the code',
+        (tester) async {
+      // Arrange — the code reaches the room; this reaches the parent who could
+      // not come. Both start from the same dialog, so nobody has to close it
+      // and hunt for another control.
+      final calls = mockShareChannel(tester);
+      // The same five overrides the sibling test installs, in the same order:
+      // updateOverrides asserts the count matches the container's original.
+      container.updateOverrides([
+        nostrServiceProvider.overrideWithValue(service),
+        matchControlProvider.overrideWith(
+          (ref) => MatchControlNotifier(
+            _match(id: 'aaaa', status: MatchStatus.inProgress),
+            service,
+          ),
+        ),
+        screenWakelockProvider.overrideWithValue(const NoopScreenWakelock()),
+        npubProvider.overrideWith((ref) async => 'npub1fake'),
+        _emptyAnnouncements(service),
+      ]);
+      await container.read(npubProvider.future);
+      await pumpHome(tester);
+
+      // Act
+      await tester.tap(find.byIcon(Icons.qr_code_2));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(l10n.shareLiveBoard));
+      await tester.pumpAndSettle();
+
+      // Assert — the link the code carries, not a re-derived one, and the
+      // account screen's wording, because it is the same board
+      expect(calls, hasLength(1));
+      expect(
+        calls.single['text'],
+        '${l10n.shareLiveBoardMessage}\n${liveBoardShareUrl('npub1fake')}',
+      );
+      expect(calls.single['subject'], l10n.shareLiveBoard);
+
+      // Assert — the code is still up: somebody may still be scanning it
+      expect(find.byType(QrDialog), findsOneWidget);
+    });
+
     testWidgets('offers no share icon before an identity exists',
         (tester) async {
       // Arrange — no key generated yet, so there is no organizer to name and a
