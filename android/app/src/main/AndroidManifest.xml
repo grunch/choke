@@ -1,4 +1,21 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The camera is optional, and Google Play must be told so explicitly.
+
+         mobile_scanner (the QR reader on Account and the scoreboard) declares
+         android.permission.CAMERA, and a CAMERA permission IMPLIES
+         android.hardware.camera AND android.hardware.camera.autofocus as
+         REQUIRED features unless something overrides them. Play then hides the
+         app from every device missing either — which on the entry-level range
+         means fixed-focus cameras, exactly the phones this project cares about
+         reaching.
+
+         mobile_scanner already relaxes android.hardware.camera itself; the
+         autofocus one it does not, so it is set here. Nothing breaks on a phone
+         without one: scanning a QR is a shortcut, and every code it reads can
+         also be pasted or opened as a link. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+
     <application
         android:label="choke"
         android:name="${applicationName}"

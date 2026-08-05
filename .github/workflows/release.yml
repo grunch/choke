@@ -423,16 +423,24 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "storeFile=choke-upload-key.jks" >> android/key.properties
 
-      # arm64 only. A plain `flutter build apk` packs native code for three ABIs
-      # into one file — and since the Nostr stack became a Rust library, that is
-      # three copies of it. Every 64-bit Android phone made in the last decade
-      # runs arm64-v8a; armeabi-v7a and x86_64 were costing ~40 MB to serve
-      # 32-bit hardware nobody referees on, and emulators.
+      # arm64 only, and this is the ONLY build that narrows itself. A plain
+      # `flutter build apk` packs native code for three ABIs into one file — and
+      # since the Nostr stack became a Rust library, that is three copies of it,
+      # ~40 MB. A sideload APK is a single artifact every downloader pays for in
+      # full, and anyone installing one off GitHub Releases is on arm64.
+      #
+      # `-PchokeAbis` is what actually narrows it: `--target-platform` only
+      # trims Flutter's own libraries, not Cargokit's output or a plugin AAR's
+      # prebuilt .so files. See android/app/build.gradle.kts. The AAB below must
+      # NOT inherit this flag.
       #
       # Deliberately NOT --split-per-abi: that renames the output to
       # app-arm64-v8a-release.apk and would break the step below.
       - name: Build APK
-        run: flutter build apk --release --target-platform android-arm64
+        run: >-
+          flutter build apk --release
+          --target-platform android-arm64
+          -PchokeAbis=arm64-v8a
 
       - name: Rename APK
         env:
@@ -440,10 +448,19 @@ jobs:
         run: cp build/app/outputs/flutter-apk/app-release.apk "choke-${FULL_TAG}.apk"
 
       # The Android App Bundle for Google Play. Unlike the sideload APK above,
-      # this deliberately keeps ALL ABIs (the default): Play generates optimized
-      # per-device APKs from the bundle, so every user still downloads only their
-      # own architecture — including all ABIs here costs nothing at install time
-      # and is what lets Play serve arm64, armeabi-v7a, and x86_64 devices.
+      # this passes NO -PchokeAbis, so it gets the default set from
+      # android/app/build.gradle.kts: arm64-v8a AND armeabi-v7a. Play splits the
+      # bundle per device, so the 32-bit libraries cost an arm64 user nothing at
+      # install time — while leaving them out costs every 32-bit user the app.
+      #
+      # That is the bug this replaces. The abiFilters lived on the `release`
+      # buildType, which `bundleRelease` uses too, so the bundle uploaded to Play
+      # was arm64-only no matter what this comment claimed. Play filters its
+      # device catalog by ABI, so every armeabi-v7a phone got "your device isn't
+      # compatible" — including the Galaxy A13 4G, which has a 64-bit SoC but a
+      # 32-bit Android userspace and is one of the best-selling phones in the
+      # region Choke is refereed in.
+      #
       # It is signed with the same upload key as the APK via android/key.properties.
       - name: Build App Bundle (AAB for Google Play)
         run: flutter build appbundle --release
