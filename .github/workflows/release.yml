@@ -449,9 +449,11 @@ jobs:
 
       # The Android App Bundle for Google Play. Unlike the sideload APK above,
       # this passes NO -PchokeAbis, so it gets the default set from
-      # android/app/build.gradle.kts: arm64-v8a AND armeabi-v7a. Play splits the
-      # bundle per device, so the 32-bit libraries cost an arm64 user nothing at
-      # install time — while leaving them out costs every 32-bit user the app.
+      # android/app/build.gradle.kts: arm64-v8a, armeabi-v7a AND x86_64. Play
+      # splits the bundle per device, so an ABI a given phone cannot use costs
+      # its owner nothing at install time — while leaving one out costs every
+      # device on that architecture the app entirely (32-bit ARM phones, and
+      # ChromeOS for x86_64).
       #
       # That is the bug this replaces. The abiFilters lived on the `release`
       # buildType, which `bundleRelease` uses too, so the bundle uploaded to Play
