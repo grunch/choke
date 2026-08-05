@@ -182,14 +182,12 @@ class QrDialog extends StatelessWidget {
                   icon: const Icon(Icons.ios_share, size: 18),
                   color: colors.primary,
                   tooltip: action.label,
-                  visualDensity: VisualDensity.compact,
-                  // A 40px box: smaller reads as decoration and misses the
-                  // 48dp-ish target a thumb needs, larger starts competing
-                  // with the link for the eye.
-                  constraints: const BoxConstraints(
-                    minWidth: 40,
-                    minHeight: 40,
-                  ),
+                  // The GLYPH is what stays small — 18px, so it reads as a hint
+                  // beside the link. The tap target is left at IconButton's
+                  // default 48x48, which is the documented minimum a thumb
+                  // needs and what the platform accessibility checks measure.
+                  // Shrinking the box to match the icon was making the one way
+                  // to send this link a target that misses.
                   padding: EdgeInsets.zero,
                 ),
             ],

@@ -192,6 +192,39 @@ void main() {
       );
     });
 
+    testWidgets('is big enough to hit, however small it looks', (tester) async {
+      // Arrange — the icon is deliberately 18px so it reads as a hint beside
+      // the link, and it would be easy to shrink the box to match. The box is
+      // not the icon: this is the only way to send the link onward, and a
+      // target under the platform minimum is one that misses.
+      await pumpDialog(
+        tester,
+        copyLabel: 'Link',
+        share: (label: 'Share live board', onTap: () {}),
+      );
+
+      // Act — none
+
+      // Assert — that the button carries no size overrides, so IconButton's own
+      // padded tap target applies.
+      //
+      // Not a measurement: getSize on the button reports Material 3's inner
+      // 40x40 box, while the tappable area Flutter adds around it via
+      // MaterialTapTargetSize.padded is the 48 that matters and is not what
+      // that finder returns. And not meetsGuideline either — it walks the whole
+      // tree and trips on the link above, a 24px-tall target that predates this
+      // button, which would say nothing about whether this one regressed.
+      final button = tester.widget<IconButton>(
+        find.ancestor(
+          of: find.byIcon(Icons.ios_share),
+          matching: find.byType(IconButton),
+        ),
+      );
+      expect(button.constraints, isNull);
+      expect(button.visualDensity, isNull);
+      expect((button.icon as Icon).size, 18);
+    });
+
     testWidgets('leaves the dialog open, so the code can still be scanned',
         (tester) async {
       // Arrange — same reason copying does: sharing the link does not finish
