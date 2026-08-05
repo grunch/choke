@@ -16,6 +16,16 @@
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
 
+    <!-- A touchscreen is optional, which is what makes the app reach
+         Chromebooks. Play treats android.hardware.touchscreen as REQUIRED
+         unless an app says otherwise, and a large share of Chromebooks have no
+         touch panel — they would be filtered out of the catalog while running
+         the app perfectly well with a trackpad.
+
+         Nothing here needs touch specifically: every control is a button or a
+         tap target that a mouse click drives just as well. -->
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
+
     <application
         android:label="choke"
         android:name="${applicationName}"

@@ -48,9 +48,17 @@ val ALL_ABIS = listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
 /// That build passes `-PchokeAbis=arm64-v8a` explicitly — see the release
 /// workflow. Anyone refereeing off a sideloaded APK is on arm64.
 ///
-/// x86_64 stays out of the default: it means Chromebooks and emulators, and an
-/// emulator runs debug builds, which are never filtered.
-val DEFAULT_RELEASE_ABIS = listOf("arm64-v8a", "armeabi-v7a")
+/// x86_64 is in the default for ChromeOS. Chromebooks run Android apps and are
+/// listed in Play's device catalog like any phone; the Intel and AMD ones can
+/// usually translate ARM code, but "usually" is doing real work in that sentence
+/// — it is per-model and Google's own guidance is to ship x86_64 rather than
+/// rely on it. The ARM Chromebooks were already covered by arm64-v8a above.
+/// Emulators are the other x86_64 consumer, and they run debug builds, which
+/// this never filters.
+///
+/// 32-bit x86 is deliberately absent: no Chromebook ships it, and the only
+/// devices that did were Android tablets that stopped being made a decade ago.
+val DEFAULT_RELEASE_ABIS = listOf("arm64-v8a", "armeabi-v7a", "x86_64")
 
 val releaseAbis = (project.findProperty("chokeAbis") as String?)
     ?.split(",")
