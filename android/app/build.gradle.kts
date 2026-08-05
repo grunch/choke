@@ -26,6 +26,47 @@ val hasReleaseKeystore = releaseKeystoreFile?.exists() == true
 val debugSignRelease = (project.findProperty("debugSignRelease") as String?)
     ?.let { it.isEmpty() || it.toBoolean() } == true
 
+/// Every Android ABI the toolchain can produce, in the order Gradle names them.
+val ALL_ABIS = listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+
+/// The ABIs a release build packages. Override with `-PchokeAbis=arm64-v8a`
+/// (comma-separated) for a single-architecture build.
+///
+/// The DEFAULT includes 32-bit ARM, and that default is the one Google Play
+/// gets. Play splits an App Bundle per device, so an extra ABI in the bundle
+/// costs a user on arm64 exactly nothing at install time — while leaving it out
+/// costs every 32-bit user the app entirely. That is not a hypothetical: the
+/// Galaxy A13 4G (SM-A135F/M, SM-A137F) — one of the best-selling phones in
+/// Latin America — has a 64-bit SoC but ships a 32-bit Android userspace, so
+/// Play served it "your device isn't compatible" for as long as the bundle was
+/// arm64-only. The same is true of much of the entry-level Galaxy A and
+/// Android Go range.
+///
+/// The sideload APK on GitHub Releases is the case that DOES pay per ABI: it is
+/// one file containing all of them, and since the Nostr stack became a Rust
+/// library that is a full copy of the crate each time (~40 MB across three).
+/// That build passes `-PchokeAbis=arm64-v8a` explicitly — see the release
+/// workflow. Anyone refereeing off a sideloaded APK is on arm64.
+///
+/// x86_64 stays out of the default: it means Chromebooks and emulators, and an
+/// emulator runs debug builds, which are never filtered.
+val releaseAbis = (project.findProperty("chokeAbis") as String?)
+    ?.split(",")
+    ?.map { it.trim() }
+    ?.filter { it.isNotEmpty() }
+    ?: listOf("arm64-v8a", "armeabi-v7a")
+
+// A typo here is invisible until a device is missing from Play weeks later:
+// `abiFilters += "arm64"` silently matches nothing and packages no native code
+// at all. Fail the build instead.
+val unknownAbis = releaseAbis - ALL_ABIS.toSet()
+if (unknownAbis.isNotEmpty()) {
+    throw GradleException(
+        "Unknown ABI(s) in -PchokeAbis: ${unknownAbis.joinToString(", ")}.\n" +
+            "Valid values are: ${ALL_ABIS.joinToString(", ")}"
+    )
+}
+
 // Refuse to BUILD a release we cannot sign properly — and refuse it here, when
 // the task graph is known, rather than while configuring: a check in the
 // `release {}` block runs for every build in the project, so it would break
@@ -157,7 +198,7 @@ android {
                 "proguard-rules.pro"
             )
 
-            // Release ships one architecture. `flutter build apk
+            // Narrow the release to `releaseAbis`. `flutter build apk
             // --target-platform android-arm64` only narrows Flutter's own
             // libraries — it does not stop Cargokit from building the Rust
             // crate for every Android ABI. This does.
@@ -166,7 +207,7 @@ android {
             // x86_64 emulator at runtime, with an UnsatisfiedLinkError and no
             // hint as to why.
             ndk {
-                abiFilters += "arm64-v8a"
+                abiFilters += releaseAbis
             }
         }
     }
@@ -174,8 +215,10 @@ android {
 
 // `abiFilters` above does not reach native code that arrives *prebuilt* inside
 // a plugin's AAR: ML Kit's barcode scanner (the QR reader on the Account
-// screen) was still shipping 8.8 MB of x86_64 and armeabi-v7a libraries in
-// every release. Nothing on an arm64 phone will ever load them.
+// screen) was still shipping 8.8 MB of x86_64 and armeabi-v7a libraries into
+// arm64-only releases. This drops whatever `releaseAbis` did not ask for, so
+// the two mechanisms cannot disagree — an AAR ABI that outlives the filter is
+// exactly how the bundle ends up carrying architectures the app cannot run.
 //
 // Scoped to the release variant, not to the Gradle invocation. Keying off the
 // task names would flip this on for debug too the moment anything built both in
@@ -183,11 +226,8 @@ android {
 // build output would never explain.
 androidComponents {
     onVariants(selector().withBuildType("release")) { variant ->
-        variant.packaging.jniLibs.excludes.addAll(
-            "**/x86/**",
-            "**/x86_64/**",
-            "**/armeabi-v7a/**",
-        )
+        val excluded = ALL_ABIS - releaseAbis.toSet()
+        variant.packaging.jniLibs.excludes.addAll(excluded.map { "**/$it/**" })
     }
 }
 
