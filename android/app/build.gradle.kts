@@ -50,11 +50,26 @@ val ALL_ABIS = listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
 ///
 /// x86_64 stays out of the default: it means Chromebooks and emulators, and an
 /// emulator runs debug builds, which are never filtered.
+val DEFAULT_RELEASE_ABIS = listOf("arm64-v8a", "armeabi-v7a")
+
 val releaseAbis = (project.findProperty("chokeAbis") as String?)
     ?.split(",")
     ?.map { it.trim() }
     ?.filter { it.isNotEmpty() }
-    ?: listOf("arm64-v8a", "armeabi-v7a")
+    ?: DEFAULT_RELEASE_ABIS
+
+// An empty list is NOT the default — the elvis above only catches an unset
+// property, so `-PchokeAbis=` or a stray `-PchokeAbis=,` lands here instead.
+// Left alone it produces a release that looks built and is not: `abiFilters`
+// with nothing in it filters nothing, while the jniLibs rule below subtracts
+// from ALL_ABIS and so strips every prebuilt .so a plugin AAR shipped. Fail.
+if (releaseAbis.isEmpty()) {
+    throw GradleException(
+        "-PchokeAbis was set but named no ABI. Pass a comma-separated list " +
+            "(e.g. -PchokeAbis=arm64-v8a), or omit the property entirely to " +
+            "get the default: ${DEFAULT_RELEASE_ABIS.joinToString(", ")}."
+    )
+}
 
 // A typo here is invisible until a device is missing from Play weeks later:
 // `abiFilters += "arm64"` silently matches nothing and packages no native code
