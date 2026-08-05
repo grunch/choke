@@ -294,6 +294,18 @@ wording or add your own language? See the
 [Translations & i18n guide](docs/translations.md) — no Dart experience needed to
 translate.
 
+## Origins
+
+Choke officially started at [btc++ Floripa 2026](https://btcpp.dev/floripa26),
+built by a two-person hackathon team: this mobile scoring app on one side, and a
+live scoreboard by [@gotcha](https://github.com/gotcha) on the other —
+[bjj-scoreboard-floripa26](https://github.com/gotcha/bjj-scoreboard-floripa26).
+
+The scoreboard Choke uses today,
+[choke-scoreboard](https://github.com/protolayer-io/choke-scoreboard), is a
+rewrite, but it exists because gotcha built the first one during that hackathon.
+Credit where it's due. 🙏
+
 ## License
 
 GNU General Public License v3.0 — see the [LICENSE](LICENSE) file for details.
