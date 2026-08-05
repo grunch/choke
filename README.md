@@ -297,14 +297,15 @@ translate.
 ## Origins
 
 Choke officially started at [btc++ Floripa 2026](https://btcpp.dev/floripa26),
-built by a two-person hackathon team: this mobile scoring app on one side, and a
-live scoreboard by [@gotcha](https://github.com/gotcha) on the other —
+where it was built by a two-person team. [@gotcha](https://github.com/gotcha)
+joined the project there and we split the work: the mobile scoring app on one
+side, and the live scoreboard on the other, which gotcha implemented to spec —
 [bjj-scoreboard-floripa26](https://github.com/gotcha/bjj-scoreboard-floripa26).
 
 The scoreboard Choke uses today,
 [choke-scoreboard](https://github.com/protolayer-io/choke-scoreboard), is a
-rewrite, but it exists because gotcha built the first one during that hackathon.
-Credit where it's due. 🙏
+rewrite, but gotcha wrote the first working one at that hackathon and deserves
+the credit for it. 🙏
 
 ## License
 
