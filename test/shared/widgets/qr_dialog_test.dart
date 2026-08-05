@@ -33,7 +33,11 @@ void main() {
   }
 
   /// The dialog on screen, over a Scaffold so a SnackBar has somewhere to go.
-  Future<void> pumpDialog(WidgetTester tester, {String? copyLabel}) async {
+  Future<void> pumpDialog(
+    WidgetTester tester, {
+    String? copyLabel,
+    ({String label, VoidCallback onTap})? share,
+  }) async {
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -50,6 +54,7 @@ void main() {
                     data: url,
                     caption: 'Point a camera at this',
                     copyLabel: copyLabel,
+                    share: share,
                   ),
                   child: const Text('open'),
                 ),
@@ -117,6 +122,88 @@ void main() {
 
       // Act
       await tester.tap(find.text(url));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.byType(QrDialog), findsOneWidget);
+    });
+  });
+
+  /// A code reaches the room; the share sheet reaches everyone who is not in
+  /// it. Both are ways off this screen, so both live next to the link.
+  group('the share control', () {
+    testWidgets('hands the caller the tap, rather than acting on its own',
+        (tester) async {
+      // Arrange — the dialog knows nothing about what sharing a link means;
+      // each screen owns its own message, subject and log tag
+      var taps = 0;
+      await pumpDialog(
+        tester,
+        copyLabel: 'Link',
+        share: (label: 'Share live board', onTap: () => taps++),
+      );
+
+      // Act
+      await tester.tap(find.byTooltip('Share live board'));
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(taps, 1);
+    });
+
+    testWidgets('is absent when no share was offered', (tester) async {
+      // Arrange — the account screen's code carries a raw public key, not a
+      // link, and handing that to a share sheet is a different act entirely
+      await pumpDialog(tester, copyLabel: 'Link');
+
+      // Act — nothing; the absence IS the behaviour
+
+      // Assert
+      expect(find.byIcon(Icons.ios_share), findsNothing);
+    });
+
+    testWidgets('is reachable without sight, which an icon alone is not',
+        (tester) async {
+      // Arrange — an unlabelled icon button announces nothing to a screen
+      // reader, and this one is the only way to send the link onward
+      await pumpDialog(
+        tester,
+        copyLabel: 'Link',
+        share: (label: 'Share live board', onTap: () {}),
+      );
+
+      // Act — none
+
+      // Assert
+      // The name rides on the semantics `tooltip` field rather than `label` —
+      // that is where IconButton puts it, and what TalkBack and VoiceOver read
+      // out for a button carrying no text.
+      expect(
+        tester.getSemantics(find.byTooltip('Share live board')),
+        matchesSemantics(
+          tooltip: 'Share live board',
+          isButton: true,
+          isEnabled: true,
+          isFocusable: true,
+          hasEnabledState: true,
+          hasTapAction: true,
+          hasFocusAction: true,
+        ),
+      );
+    });
+
+    testWidgets('leaves the dialog open, so the code can still be scanned',
+        (tester) async {
+      // Arrange — same reason copying does: sharing the link does not finish
+      // the person across the room who is still pointing a camera at the code
+      await pumpDialog(
+        tester,
+        copyLabel: 'Link',
+        share: (label: 'Share live board', onTap: () {}),
+      );
+
+      // Act
+      await tester.tap(find.byTooltip('Share live board'));
       await tester.pumpAndSettle();
 
       // Assert

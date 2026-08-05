@@ -178,6 +178,12 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
   /// This is how a board reaches people who are physically present: the
   /// organizer holds up or projects the code and the crowd points a camera at
   /// it, with nothing typed and no key exchanged.
+  ///
+  /// The share control is here because the room is not always the whole
+  /// audience. Somebody who opened this to project it often also has one person
+  /// to text, and without it that means closing the dialog to reach the
+  /// header's share button. It reuses [_shareBoard], so a link sent from under
+  /// the code and one sent from the header are the same link, worded the same.
   void _showQr(String watchedHex) {
     final l10n = AppLocalizations.of(context);
     showQrDialog(
@@ -186,6 +192,10 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
       data: _boardUrl(watchedHex),
       caption: l10n.scoreboardQrHint,
       copyLabel: l10n.link,
+      share: (
+        label: l10n.scoreboardShareBoard,
+        onTap: () => _shareBoard(watchedHex),
+      ),
     );
   }
 

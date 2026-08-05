@@ -5,6 +5,7 @@ import '../announcements/announcement_providers.dart';
 import '../announcements/announcements_screen.dart';
 import '../../services/deep_links/share_link.dart';
 import '../../services/key_management/key_manager.dart';
+import '../../shared/share_sheet.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/match_card.dart';
 import '../../shared/widgets/qr_dialog.dart';
@@ -191,6 +192,23 @@ class HomeScreen extends ConsumerWidget {
   /// rather than new copy: it is the same board link, and the only difference
   /// is whose. Not the account screen's QR, which carries the raw public key
   /// for importing an identity — a different thing that happens to be square.
+  /// The same board, to the people who are not in the room.
+  ///
+  /// The code covers everyone who can see the screen; this covers the rest —
+  /// the parent who could not come, the teammate on another mat. Same wording
+  /// as the account screen's share, because it is the same link: this app's own
+  /// live board.
+  Future<void> _shareLiveBoard(BuildContext context, String npub) async {
+    final l10n = AppLocalizations.of(context);
+    await shareLink(
+      context,
+      message: l10n.shareLiveBoardMessage,
+      url: liveBoardShareUrl(npub),
+      subject: l10n.shareLiveBoard,
+      logTag: 'HomeScreen',
+    );
+  }
+
   void _showQr(BuildContext context, String npub) {
     final l10n = AppLocalizations.of(context);
     showQrDialog(
@@ -199,6 +217,10 @@ class HomeScreen extends ConsumerWidget {
       data: liveBoardShareUrl(npub),
       caption: l10n.scoreboardQrHint,
       copyLabel: l10n.link,
+      share: (
+        label: l10n.shareLiveBoard,
+        onTap: () => _shareLiveBoard(context, npub),
+      ),
     );
   }
 
