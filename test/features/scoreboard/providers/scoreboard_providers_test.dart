@@ -376,6 +376,28 @@ void main() {
       expect(matches.map((m) => m.id), ['eee5'],
           reason: 'fff6 is a day and a minute old');
     });
+
+    test('drops a match that ages out with no further events', () async {
+      // The window is derived from the clock at build time, and this provider
+      // only rebuilds when the feed changes. An organizer who posts a card and
+      // then goes quiet used to leave it on the board forever: nothing was ever
+      // going to arrive and re-run the comparison that would drop it.
+      //
+      // Arrange — fresh when first read, one second short of the limit
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      await push(_match(id: 'abc7'), now - scoreboardMaxAgeSeconds + 1);
+      expect(
+        container.read(scoreboardMatchesProvider).map((m) => m.id),
+        ['abc7'],
+        reason: 'it has to start on the board for ageing out to mean anything',
+      );
+
+      // Act — cross the boundary without the organizer publishing anything
+      await Future<void>.delayed(const Duration(seconds: 2));
+
+      // Assert
+      expect(container.read(scoreboardMatchesProvider), isEmpty);
+    });
   });
 
   group('ScoreboardFeedNotifier hydration', () {
@@ -629,6 +651,26 @@ void main() {
       // Assert — the chips are a display choice; the event is still running
       expect(container.read(scoreboardFilteredMatchesProvider), isEmpty);
       expect(container.read(scoreboardIsLiveProvider), isTrue);
+    });
+
+    test('goes quiet when the board ages out under the viewer', () async {
+      // The case the hold exists to bound. A spectator sitting on a board whose
+      // organizer stopped publishing must not keep the display pinned once that
+      // board is a day old — and nothing is going to arrive to make it notice.
+      //
+      // Arrange — live when first read, one second short of the limit
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      await push(
+        _match().copyWith(status: MatchStatus.waiting),
+        createdAt: now - scoreboardMaxAgeSeconds + 1,
+      );
+      expect(container.read(scoreboardIsLiveProvider), isTrue);
+
+      // Act
+      await Future<void>.delayed(const Duration(seconds: 2));
+
+      // Assert
+      expect(container.read(scoreboardIsLiveProvider), isFalse);
     });
 
     test('goes quiet when the only waiting fight ages out', () async {

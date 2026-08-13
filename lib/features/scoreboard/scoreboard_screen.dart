@@ -94,11 +94,15 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
   ///
   /// Deliberately not re-asserted on a timer, unlike the match screens. Their
   /// once-a-second re-vote exists to retry a request the platform dropped, and
-  /// they have a ticker to hang it on already; adding one here would mean
-  /// running a timer on a list screen for a retry that has no trigger to miss —
-  /// by the time a board is live and selected, the activity is long since
-  /// foreground. A vote that does get dropped is retried on the next feed
-  /// update, which during a live event is never far away.
+  /// they have a ticker to hang it on already.
+  ///
+  /// The quiet stretch this screen exists for is not exposed to that. Repeating
+  /// a vote the service has already applied costs nothing and reaches nothing:
+  /// what it holds already matches what is asked, so no platform call is made
+  /// and there is none to drop. The only call that can fail is the one that
+  /// *establishes* the hold, when a board first becomes live and selected — and
+  /// that is a moment surrounded by feed traffic, every update of which votes
+  /// again. A timer here would be a retry for a window that closes on its own.
   void _syncWakelock() {
     final live = ref.read(scoreboardIsLiveProvider);
     final looking = ref.read(selectedTabProvider) == AppTab.scoreboard;
