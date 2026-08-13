@@ -253,6 +253,34 @@ final scoreboardMatchesProvider = Provider<List<Match>>((ref) {
   return fresh;
 });
 
+/// Whether the watched board still has something coming.
+///
+/// True while any match on it is waiting or in progress — the two statuses that
+/// mean the mat is not done with the viewer yet. `finished` and `canceled` are
+/// both over: nothing about them will change again.
+///
+/// This is what holds the phone awake on the board. A spectator casting the
+/// scoreboard to a screen sits through the gaps between fights without touching
+/// anything, and a phone that locks in one of them drops the cast and makes them
+/// re-share it from Google Home. That gap is exactly the moment this stays true
+/// and the individual match screens do not: the fight that was running has
+/// finished, and the next one has not started.
+///
+/// Derived from [scoreboardMatchesProvider] rather than
+/// [scoreboardFilteredMatchesProvider] on purpose. The status chips are a
+/// display choice — a spectator reading through today's results has not stopped
+/// attending a live event — and hiding the running fight from the list must not
+/// put their phone to sleep.
+///
+/// Bounded by the same `scoreboardMaxAgeSeconds` window as the list it reads, so
+/// a card whose organizer never closed it stops counting as live once it ages
+/// out.
+final scoreboardIsLiveProvider = Provider<bool>((ref) {
+  final matches = ref.watch(scoreboardMatchesProvider);
+  return matches.any((m) =>
+      m.status == MatchStatus.waiting || m.status == MatchStatus.inProgress);
+});
+
 /// Which statuses the scoreboard shows.
 ///
 /// Its own, not the home feed's: hiding finished matches while watching

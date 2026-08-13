@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,8 @@ import 'package:choke/l10n/generated/app_localizations.dart';
 
 import '../../services/deep_links/share_link.dart';
 import '../../services/nostr/crypto/nostr_crypto.dart';
+import '../../services/wakelock/screen_wakelock.dart';
+import '../../shared/providers/navigation_provider.dart';
 import '../../shared/share_sheet.dart';
 import '../../shared/theme/app_theme.dart';
 import '../../shared/widgets/match_card.dart';
@@ -42,9 +46,17 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
   /// a tab change, a new event, a keystroke — would push the same match again.
   String? _openedRequest;
 
+  /// Held onto from [initState] because [dispose] runs once `ref` is no longer
+  /// usable, and releasing the screen is the one thing that must still happen.
+  late final ScreenWakelockLease _wakelock;
+
   @override
   void initState() {
     super.initState();
+
+    _wakelock = ref.read(screenWakelockProvider).lease();
+    _syncWakelock();
+
     // A link the app was *launched* by is read after the first frame, which can
     // land either side of this listener being registered. Reading the current
     // value once covers the side that would otherwise be missed; the guard in
@@ -59,7 +71,38 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
   @override
   void dispose() {
     _controller.dispose();
+    unawaited(_wakelock.release());
     super.dispose();
+  }
+
+  /// Vote to hold the screen while a live board is actually being looked at.
+  ///
+  /// Two conditions, and both are load-bearing.
+  ///
+  /// [scoreboardIsLiveProvider] is the event: a board with a fight running or
+  /// one still queued is a board whose next update is coming, and the gaps in
+  /// between are precisely when nobody touches the phone. Holding only on the
+  /// individual match screens left this list — where a spectator waits between
+  /// fights — free to lock, which drops a cast board and sends them back to
+  /// Google Home to share the screen again.
+  ///
+  /// The selected tab is the looking. This screen lives in an [IndexedStack]
+  /// that builds every tab and keeps them alive, so it goes on voting from
+  /// behind Home, Account and Settings. Without this check a live board would
+  /// pin the display for a user who has moved on to something else — the
+  /// battery cost of an app-wide hold, with none of the benefit.
+  ///
+  /// Deliberately not re-asserted on a timer, unlike the match screens. Their
+  /// once-a-second re-vote exists to retry a request the platform dropped, and
+  /// they have a ticker to hang it on already; adding one here would mean
+  /// running a timer on a list screen for a retry that has no trigger to miss —
+  /// by the time a board is live and selected, the activity is long since
+  /// foreground. A vote that does get dropped is retried on the next feed
+  /// update, which during a live event is never far away.
+  void _syncWakelock() {
+    final live = ref.read(scoreboardIsLiveProvider);
+    final looking = ref.read(selectedTabProvider) == AppTab.scoreboard;
+    unawaited(_wakelock.keepAwake(live && looking));
   }
 
   /// Put the match a link named on screen.
@@ -219,6 +262,11 @@ class _ScoreboardScreenState extends ConsumerState<ScoreboardScreen> {
     ref.listen<String?>(requestedMatchProvider, (_, requested) {
       if (requested != null) _openRequestedMatch(requested);
     });
+    // Both halves of the hold, listened to rather than watched: neither one
+    // changes a pixel of this screen, and the tab in particular would rebuild
+    // the whole board every time the user touched the nav bar.
+    ref.listen<bool>(scoreboardIsLiveProvider, (_, __) => _syncWakelock());
+    ref.listen<AppTab>(selectedTabProvider, (_, __) => _syncWakelock());
 
     final brokenLink = ref.watch(brokenShareLinkProvider);
     final watched = ref.watch(watchedPubkeyProvider);
