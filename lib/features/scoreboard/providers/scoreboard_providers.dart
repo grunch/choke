@@ -250,7 +250,72 @@ final scoreboardMatchesProvider = Provider<List<Match>>((ref) {
     return bAt.compareTo(aAt);
   });
 
+  _expireOldest(ref, feed, fresh, now);
+
   return fresh;
+});
+
+/// Rebuild [scoreboardMatchesProvider] when the oldest match on it ages out.
+///
+/// The window above is measured against the clock at build time, and that
+/// provider only rebuilds when the feed changes. Without this an organizer who
+/// posts a card and then goes quiet leaves it on the board indefinitely: nothing
+/// is ever going to arrive and re-run the comparison that would drop it. That is
+/// not just a stale list — this window is what bounds [scoreboardIsLiveProvider],
+/// and so what stops a day-old board from pinning a spectator's display.
+///
+/// Scheduled for the *oldest* match, because that is the next one to go, and one
+/// second past its boundary so the rebuild is certain to find it stale. Each
+/// firing therefore drops at least one match, which is what keeps this from
+/// rescheduling itself forever.
+void _expireOldest(
+  Ref ref,
+  ScoreboardFeedNotifier feed,
+  List<Match> fresh,
+  int now,
+) {
+  int? oldest;
+  for (final match in fresh) {
+    final createdAt = feed.createdAtOf(match.id);
+    // A match the feed holds no event for is not ageing towards anything.
+    if (createdAt == null) continue;
+    if (oldest == null || createdAt < oldest) oldest = createdAt;
+  }
+  if (oldest == null) return;
+
+  final timer = Timer(
+    Duration(seconds: oldest + scoreboardMaxAgeSeconds - now + 1),
+    ref.invalidateSelf,
+  );
+  ref.onDispose(timer.cancel);
+}
+
+/// Whether the watched board still has something coming.
+///
+/// True while any match on it is waiting or in progress — the two statuses that
+/// mean the mat is not done with the viewer yet. `finished` and `canceled` are
+/// both over: nothing about them will change again.
+///
+/// This is what holds the phone awake on the board. A spectator casting the
+/// scoreboard to a screen sits through the gaps between fights without touching
+/// anything, and a phone that locks in one of them drops the cast and makes them
+/// re-share it from Google Home. That gap is exactly the moment this stays true
+/// and the individual match screens do not: the fight that was running has
+/// finished, and the next one has not started.
+///
+/// Derived from [scoreboardMatchesProvider] rather than
+/// [scoreboardFilteredMatchesProvider] on purpose. The status chips are a
+/// display choice — a spectator reading through today's results has not stopped
+/// attending a live event — and hiding the running fight from the list must not
+/// put their phone to sleep.
+///
+/// Bounded by the same `scoreboardMaxAgeSeconds` window as the list it reads, so
+/// a card whose organizer never closed it stops counting as live once it ages
+/// out.
+final scoreboardIsLiveProvider = Provider<bool>((ref) {
+  final matches = ref.watch(scoreboardMatchesProvider);
+  return matches.any((m) =>
+      m.status == MatchStatus.waiting || m.status == MatchStatus.inProgress);
 });
 
 /// Which statuses the scoreboard shows.

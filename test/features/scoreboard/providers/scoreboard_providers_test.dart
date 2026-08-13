@@ -376,6 +376,28 @@ void main() {
       expect(matches.map((m) => m.id), ['eee5'],
           reason: 'fff6 is a day and a minute old');
     });
+
+    test('drops a match that ages out with no further events', () async {
+      // The window is derived from the clock at build time, and this provider
+      // only rebuilds when the feed changes. An organizer who posts a card and
+      // then goes quiet used to leave it on the board forever: nothing was ever
+      // going to arrive and re-run the comparison that would drop it.
+      //
+      // Arrange — fresh when first read, one second short of the limit
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      await push(_match(id: 'abc7'), now - scoreboardMaxAgeSeconds + 1);
+      expect(
+        container.read(scoreboardMatchesProvider).map((m) => m.id),
+        ['abc7'],
+        reason: 'it has to start on the board for ageing out to mean anything',
+      );
+
+      // Act — cross the boundary without the organizer publishing anything
+      await Future<void>.delayed(const Duration(seconds: 2));
+
+      // Assert
+      expect(container.read(scoreboardMatchesProvider), isEmpty);
+    });
   });
 
   group('ScoreboardFeedNotifier hydration', () {
@@ -506,6 +528,164 @@ void main() {
 
       // Assert
       expect(feed.state.single.f1Pt2, 4);
+    });
+  });
+
+  group('scoreboardIsLiveProvider', () {
+    late _SpyNostrService nostr;
+    late ProviderContainer container;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      nostr = _SpyNostrService();
+      container = ProviderContainer(overrides: [
+        nostrServiceProvider.overrideWithValue(nostr),
+      ]);
+      await container.read(watchedPubkeyProvider.notifier).watch(watched);
+      container.read(scoreboardFeedProvider);
+    });
+
+    tearDown(() async {
+      container.dispose();
+      await nostr.controller.close();
+    });
+
+    /// Deliver [match] to the feed.
+    ///
+    /// [eventId] and [createdAt] matter whenever a test revises a match it has
+    /// already pushed: a revision only supersedes the held one if it is newer,
+    /// or equal and lower-id. Reusing the defaults would have the feed drop the
+    /// second push and leave a test asserting against the first.
+    Future<void> push(
+      Match match, {
+      int? createdAt,
+      String eventId = 'e1',
+    }) async {
+      nostr.controller.add(
+        _eventOf(match, pubkey: watched, createdAt: createdAt, id: eventId),
+      );
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    test('is not live with nothing on the board', () {
+      // Arrange + Act + Assert
+      expect(container.read(scoreboardIsLiveProvider), isFalse);
+    });
+
+    test('is live while a fight is in progress', () async {
+      // Arrange + Act
+      await push(_match());
+
+      // Assert
+      expect(container.read(scoreboardIsLiveProvider), isTrue);
+    });
+
+    test('is live while a fight is only waiting to start', () async {
+      // Arrange + Act — the card is posted, the mat has not begun
+      await push(_match().copyWith(status: MatchStatus.waiting));
+
+      // Assert
+      expect(container.read(scoreboardIsLiveProvider), isTrue);
+    });
+
+    test('stays live in the gap between two fights', () async {
+      // Arrange
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      await push(_match(id: 'aaa1'), createdAt: now);
+      await push(
+        _match(id: 'bbb2').copyWith(status: MatchStatus.waiting),
+        createdAt: now,
+        eventId: 'e2',
+      );
+
+      // Act — the running one ends, the queued one has not started
+      await push(
+        _match(id: 'aaa1').copyWith(status: MatchStatus.finished, endedAt: now),
+        createdAt: now + 1,
+        eventId: 'e3',
+      );
+
+      // Assert — this gap is the whole reason the hold exists
+      expect(
+        container.read(scoreboardMatchesProvider).map((m) => m.status),
+        containsAll([MatchStatus.finished, MatchStatus.waiting]),
+        reason: 'the revision has to have landed for this to mean anything',
+      );
+      expect(container.read(scoreboardIsLiveProvider), isTrue);
+    });
+
+    test('goes quiet once every fight is finished', () async {
+      // Arrange
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      await push(_match(id: 'aaa1'), createdAt: now);
+      expect(container.read(scoreboardIsLiveProvider), isTrue);
+
+      // Act
+      await push(
+        _match(id: 'aaa1').copyWith(status: MatchStatus.finished, endedAt: now),
+        createdAt: now + 1,
+        eventId: 'e2',
+      );
+
+      // Assert
+      expect(container.read(scoreboardIsLiveProvider), isFalse);
+    });
+
+    test('goes quiet for a board of canceled fights', () async {
+      // Arrange + Act
+      await push(_match().copyWith(status: MatchStatus.canceled));
+
+      // Assert — canceled is as over as finished: nothing is coming
+      expect(container.read(scoreboardIsLiveProvider), isFalse);
+    });
+
+    test('ignores the status filter the list is showing', () async {
+      // Arrange
+      await push(_match());
+
+      // Act — the spectator narrows the list to today's results
+      container.read(scoreboardStatusFilterProvider.notifier).state = {
+        MatchStatus.finished,
+      };
+
+      // Assert — the chips are a display choice; the event is still running
+      expect(container.read(scoreboardFilteredMatchesProvider), isEmpty);
+      expect(container.read(scoreboardIsLiveProvider), isTrue);
+    });
+
+    test('goes quiet when the board ages out under the viewer', () async {
+      // The case the hold exists to bound. A spectator sitting on a board whose
+      // organizer stopped publishing must not keep the display pinned once that
+      // board is a day old — and nothing is going to arrive to make it notice.
+      //
+      // Arrange — live when first read, one second short of the limit
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      await push(
+        _match().copyWith(status: MatchStatus.waiting),
+        createdAt: now - scoreboardMaxAgeSeconds + 1,
+      );
+      expect(container.read(scoreboardIsLiveProvider), isTrue);
+
+      // Act
+      await Future<void>.delayed(const Duration(seconds: 2));
+
+      // Assert
+      expect(container.read(scoreboardIsLiveProvider), isFalse);
+    });
+
+    test('goes quiet when the only waiting fight ages out', () async {
+      // Arrange — a card whose organizer never closed it must not read as live
+      // forever
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      // Act
+      await push(
+        _match().copyWith(status: MatchStatus.waiting),
+        createdAt: now - scoreboardMaxAgeSeconds - 60,
+      );
+
+      // Assert
+      expect(container.read(scoreboardIsLiveProvider), isFalse);
     });
   });
 }
