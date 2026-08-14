@@ -4,5 +4,19 @@
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
+	<!-- Outbound sockets to the Nostr relays; the sandbox denies all network
+	     access without it, so the app would build fine and then sit forever
+	     on "connecting". -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<!-- mobile_scanner reads QR codes through the camera. -->
+	<key>com.apple.security.device.camera</key>
+	<true/>
+	<!-- flutter_secure_storage stores the Nostr key in the Keychain; a
+	     sandboxed app needs an explicit access group to touch it. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)io.protolayer.choke</string>
+	</array>
 </dict>
 </plist>

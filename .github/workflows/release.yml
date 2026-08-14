@@ -13,15 +13,38 @@ permissions:
   contents: read
 
 jobs:
+  # Resolves "stable" once, so every platform job pins the exact same Flutter
+  # version. Three runners resolving "stable" independently can disagree when
+  # a Flutter release lands mid-workflow — and one app release must not ship
+  # two frameworks.
+  resolve-flutter:
+    runs-on: ubuntu-latest
+    outputs:
+      flutter-version: ${{ steps.flutter.outputs.version }}
+    steps:
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      # The bare `flutter --version` first is load-bearing. The first flutter
+      # invocation on a fresh runner bootstraps the tool (Dart SDK download,
+      # pub upgrade), spraying non-JSON progress output. Piped into jq, that
+      # noise makes jq bail and close the pipe — bootstrap with nobody reading
+      # the pipe, so the --machine call below emits clean JSON.
+      - name: Report Flutter version
+        id: flutter
+        run: |
+          flutter --version
+          echo "version=$(flutter --version --machine | jq -r .frameworkVersion)" \
+            >> $GITHUB_OUTPUT
+
   # Windows cannot be cross-compiled from the Linux runner — flutter build
   # windows needs MSVC — so it builds on its own runner and hands the archive
   # to the release job as an artifact.
   build-windows:
+    needs: resolve-flutter
     runs-on: windows-latest
-    outputs:
-      # Consumed by the release job's Flutter setup, so one workflow cannot
-      # build its platforms on two different framework versions.
-      flutter-version: ${{ steps.flutter.outputs.version }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -85,25 +108,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-
-      # Recorded so the release job can install the same version. Two
-      # independent "stable" resolutions can disagree when a Flutter release
-      # lands between them, and one app release must not ship two frameworks.
-      #
-      # The bare `flutter --version` first is load-bearing. The first flutter
-      # invocation on a fresh runner bootstraps the tool (Dart SDK download,
-      # pub upgrade), spraying non-JSON progress output. Piped into jq, that
-      # noise makes jq bail and close the pipe — and on Windows the tool then
-      # dies writing to the closed pipe (errno 232), and its retry loop hangs
-      # the job forever. Bootstrap with nobody reading the pipe, so the
-      # --machine call below emits clean JSON.
-      - name: Report Flutter version
-        id: flutter
-        shell: bash
-        run: |
-          flutter --version
-          echo "version=$(flutter --version --machine | jq -r .frameworkVersion)" \
-            >> $GITHUB_OUTPUT
+          flutter-version: ${{ needs.resolve-flutter.outputs.flutter-version }}
 
       - name: Install dependencies
         run: flutter pub get
@@ -151,11 +156,135 @@ jobs:
           # 1-day window turns a Monday retry into a missing-artifact failure.
           retention-days: 7
 
+  # macOS, like Windows, cannot be cross-compiled from the Linux runner —
+  # flutter build macos needs Xcode — so it builds on its own runner and hands
+  # the archive to the release job as an artifact.
+  build-macos:
+    needs: resolve-flutter
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The version bump below derives the build number from the commit
+          # count, and a shallow clone counts 1 — which would stamp this
+          # platform +1 while the others carry the real count.
+          fetch-depth: 0
+          # This job never runs an authenticated git command — the count above
+          # is local. Leaving the token in .git/config would hand it to every
+          # cargo build script and Xcode script phase the build pulls in.
+          persist-credentials: false
+
+      # Same validation as the release job, and not negotiable here either: the
+      # tag flows into file names and shell.
+      - name: Extract version from tag
+        id: version
+        run: |
+          FULL_TAG=${GITHUB_REF#refs/tags/}
+          if ! printf '%s' "$FULL_TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Refusing to build: tag '$FULL_TAG' is not a plain vX.Y.Z tag."
+            exit 1
+          fi
+          echo "full_tag=$FULL_TAG" >> $GITHUB_OUTPUT
+          echo "tag=${FULL_TAG#v}" >> $GITHUB_OUTPUT
+
+      # Same bump as the other platform jobs, for the same reason: without it
+      # this build ships stamped with the previous release's version.
+      - name: Update version in pubspec.yaml
+        env:
+          VERSION: ${{ steps.version.outputs.tag }}
+        run: |
+          BUILD=$(git rev-list --count HEAD)
+          # BSD sed: -i needs an explicit (empty) backup suffix.
+          sed -i '' "s/^version: .*/version: ${VERSION}+${BUILD}/" pubspec.yaml
+          grep "^version:" pubspec.yaml
+
+      # Cargokit compiles the Nostr crate during flutter build macos. The
+      # release bundle is a universal binary, so Cargokit builds the crate for
+      # BOTH Darwin targets — and rust-toolchain.toml only pins the Android
+      # ones, so the non-host target must be installed explicitly here.
+      - name: Setup Rust
+        run: |
+          rustup show
+          rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - name: Cache cargo
+        uses: actions/cache@v6
+        with:
+          # Downloads only — never rust/target, and no restore-keys fallback.
+          # This job publishes signed binaries, and a prefix fallback accepts a
+          # cache written by any less-privileged workflow: a poisoned target/
+          # would compile straight into the release. Registry and git are
+          # content-addressed downloads keyed to the exact lockfile.
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-release-${{ runner.os }}-${{ hashFiles('rust/Cargo.lock') }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ needs.resolve-flutter.outputs.flutter-version }}
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      - name: Build macOS bundle
+        run: |
+          flutter config --enable-macos-desktop
+          flutter build macos --release
+
+      # A Flutter release build for macOS is a universal binary. If a
+      # toolchain change ever quietly drops an architecture, fail here with a
+      # readable error instead of shipping a zip that Apple Silicon or Intel
+      # users cannot open.
+      - name: Verify universal binary
+        run: |
+          BIN=build/macos/Build/Products/Release/choke.app/Contents/MacOS/choke
+          lipo -archs "$BIN"
+          for ARCH in arm64 x86_64; do
+            if ! lipo -archs "$BIN" | grep -qw "$ARCH"; then
+              echo "::error::choke binary is missing the $ARCH slice."
+              exit 1
+            fi
+          done
+          # The build is ad-hoc signed (no Developer ID cert in CI); verify
+          # the signature is at least internally consistent so the app can
+          # launch at all once the user clears quarantine.
+          codesign --verify --deep --strict \
+            build/macos/Build/Products/Release/choke.app
+
+      # ditto, not zip: a .app bundle's frameworks are full of symlinks
+      # (Versions/Current, etc.) that plain zip flattens into copies — and a
+      # framework with a broken Versions layout fails code signature checks
+      # and refuses to load. ditto -k writes a zip that preserves them.
+      - name: Package macOS bundle
+        env:
+          FULL_TAG: ${{ steps.version.outputs.full_tag }}
+        run: |
+          ditto -c -k --keepParent \
+            build/macos/Build/Products/Release/choke.app \
+            "choke-${FULL_TAG}-macos-universal.zip"
+
+      - name: Upload macOS bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-bundle
+          path: choke-${{ steps.version.outputs.full_tag }}-macos-universal.zip
+          if-no-files-found: error
+          # Long enough for a failed release to be re-run after a weekend; a
+          # 1-day window turns a Monday retry into a missing-artifact failure.
+          retention-days: 7
+
   build-and-release:
-    # The release attaches the Windows archive, so it has to exist first. This
-    # also makes the release all-or-nothing: a broken Windows build fails the
-    # whole release rather than quietly shipping one without it.
-    needs: build-windows
+    # The release attaches the Windows and macOS archives, so they have to
+    # exist first. This also makes the release all-or-nothing: a broken
+    # desktop build fails the whole release rather than quietly shipping one
+    # without it.
+    needs: [resolve-flutter, build-windows, build-macos]
     runs-on: ubuntu-latest
     # The one job that earns write: it commits the changelog and version bump
     # back to main, and publishes the release itself.
@@ -390,9 +519,9 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          # Whatever stable resolved to when the Windows job set up, minutes
-          # ago — not whatever it resolves to now.
-          flutter-version: ${{ needs.build-windows.outputs.flutter-version }}
+          # Whatever stable resolved to when the workflow started — not
+          # whatever it resolves to now.
+          flutter-version: ${{ needs.resolve-flutter.outputs.flutter-version }}
 
       - name: Install dependencies
         run: flutter pub get
@@ -560,6 +689,11 @@ jobs:
             echo ""
             echo "**Windows (x64):** download \`choke-${TAG}-windows-x64.zip\`, extract, and run \`choke.exe\` inside the folder."
             echo ""
+            echo "**macOS (Apple Silicon & Intel):** download \`choke-${TAG}-macos-universal.zip\`, extract, and move \`choke.app\` to Applications. The app is not notarized, so on first launch clear the quarantine flag:"
+            echo '```bash'
+            echo "xattr -d com.apple.quarantine /Applications/choke.app"
+            echo '```'
+            echo ""
             echo "### 📋 Full Changelog"
             echo "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for the complete history."
           } > RELEASE_BODY.md
@@ -571,6 +705,11 @@ jobs:
         with:
           name: windows-bundle
 
+      - name: Download macOS bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: macos-bundle
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -580,6 +719,7 @@ jobs:
             choke-${{ steps.version.outputs.full_tag }}.aab
             choke-${{ steps.version.outputs.full_tag }}-linux-x64.tar.gz
             choke-${{ steps.version.outputs.full_tag }}-windows-x64.zip
+            choke-${{ steps.version.outputs.full_tag }}-macos-universal.zip
           generate_release_notes: false
           draft: false
           prerelease: false

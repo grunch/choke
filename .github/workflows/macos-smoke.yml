@@ -1,0 +1,100 @@
+# TEMPORARY — verifies the macOS release build on a real macos runner before
+# the release.yml changes merge. Mirrors the build-macos job in release.yml
+# with a synthetic version (no tag exists on this branch). Delete this file
+# once the macOS job has gone green.
+name: macOS smoke build
+
+on:
+  push:
+    branches: [feat/macos-release-build]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Update version in pubspec.yaml
+        run: |
+          BUILD=$(git rev-list --count HEAD)
+          sed -i '' "s/^version: .*/version: 0.0.0+${BUILD}/" pubspec.yaml
+          grep "^version:" pubspec.yaml
+
+      - name: Setup Rust
+        run: |
+          rustup show
+          rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - name: Cache cargo
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-release-${{ runner.os }}-${{ hashFiles('rust/Cargo.lock') }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      - name: Build macOS bundle
+        run: |
+          flutter config --enable-macos-desktop
+          flutter build macos --release
+
+      - name: Verify universal binary
+        run: |
+          BIN=build/macos/Build/Products/Release/choke.app/Contents/MacOS/choke
+          lipo -archs "$BIN"
+          for ARCH in arm64 x86_64; do
+            if ! lipo -archs "$BIN" | grep -qw "$ARCH"; then
+              echo "::error::choke binary is missing the $ARCH slice."
+              exit 1
+            fi
+          done
+          codesign --verify --deep --strict \
+            build/macos/Build/Products/Release/choke.app
+
+      # Beyond release.yml: check the entitlements actually landed in the
+      # signed bundle, and that the app process can start at all under the
+      # sandbox (headless runner, so it cannot open a window — launching and
+      # surviving a few seconds is the strongest smoke test available here).
+      - name: Verify entitlements and launch
+        run: |
+          APP=build/macos/Build/Products/Release/choke.app
+          codesign -d --entitlements - "$APP" | tee /tmp/entitlements.out
+          for KEY in com.apple.security.app-sandbox \
+                     com.apple.security.network.client \
+                     com.apple.security.device.camera; do
+            grep -q "$KEY" /tmp/entitlements.out || {
+              echo "::error::missing entitlement $KEY in signed bundle"; exit 1; }
+          done
+          "$APP/Contents/MacOS/choke" & APP_PID=$!
+          sleep 10
+          if ! kill -0 "$APP_PID" 2>/dev/null; then
+            echo "::error::choke exited within 10s of launch"
+            exit 1
+          fi
+          kill "$APP_PID"
+          echo "Launch smoke test OK"
+
+      - name: Package macOS bundle
+        run: |
+          ditto -c -k --keepParent \
+            build/macos/Build/Products/Release/choke.app \
+            choke-smoke-macos-universal.zip
+          ls -la choke-smoke-macos-universal.zip

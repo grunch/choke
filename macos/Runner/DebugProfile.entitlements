@@ -8,5 +8,15 @@
 	<true/>
 	<key>com.apple.security.network.server</key>
 	<true/>
+	<!-- Same runtime entitlements as Release.entitlements, so a debug run
+	     exercises the same sandbox the shipped app lives in. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.security.device.camera</key>
+	<true/>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)io.protolayer.choke</string>
+	</array>
 </dict>
 </plist>
