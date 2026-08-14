@@ -4,5 +4,18 @@
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
+	<!-- Outbound sockets to the Nostr relays; the sandbox denies all network
+	     access without it, so the app would build fine and then sit forever
+	     on "connecting". -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<!-- mobile_scanner reads QR codes through the camera. -->
+	<key>com.apple.security.device.camera</key>
+	<true/>
+	<!-- No keychain-access-groups here on purpose: it is a restricted
+	     entitlement that needs a provisioning profile, and the CI build is
+	     ad-hoc signed — AMFI SIGKILLs the app at launch if it is present.
+	     flutter_secure_storage works against the app's own default Keychain
+	     access without it. -->
 </dict>
 </plist>

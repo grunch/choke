@@ -8,5 +8,11 @@
 	<true/>
 	<key>com.apple.security.network.server</key>
 	<true/>
+	<!-- Same runtime entitlements as Release.entitlements, so a debug run
+	     exercises the same sandbox the shipped app lives in. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.security.device.camera</key>
+	<true/>
 </dict>
 </plist>
