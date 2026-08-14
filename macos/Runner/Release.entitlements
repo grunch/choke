@@ -12,11 +12,10 @@
 	<!-- mobile_scanner reads QR codes through the camera. -->
 	<key>com.apple.security.device.camera</key>
 	<true/>
-	<!-- flutter_secure_storage stores the Nostr key in the Keychain; a
-	     sandboxed app needs an explicit access group to touch it. -->
-	<key>keychain-access-groups</key>
-	<array>
-		<string>$(AppIdentifierPrefix)io.protolayer.choke</string>
-	</array>
+	<!-- No keychain-access-groups here on purpose: it is a restricted
+	     entitlement that needs a provisioning profile, and the CI build is
+	     ad-hoc signed — AMFI SIGKILLs the app at launch if it is present.
+	     flutter_secure_storage works against the app's own default Keychain
+	     access without it. -->
 </dict>
 </plist>
