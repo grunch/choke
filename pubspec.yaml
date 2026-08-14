@@ -2,7 +2,7 @@ name: choke
 description: "A modern decentralized BJJ match scoring and publishing app via Nostr."
 publish_to: 'none'
 
-version: 2.1.0+507
+version: 2.1.1+517
 
 environment:
   # flutter_rust_bridge's generated web bindings use extension types (Dart

@@ -1,5 +1,23 @@
 # Changelog
 
+## [v2.1.1] - 2026-08-14
+
+### Added
+- feat: build a universal macOS bundle on every release (9d458eb)
+- feat: keep the screen awake between fights on a watched board (97d8ef4)
+
+### Fixed
+- fix: drop keychain-access-groups from macOS entitlements (359430c)
+- fix: expire a scoreboard match when its freshness window passes (7d0082e)
+
+### Documentation
+- docs: add Play Store badge and demo video (5311226)
+
+### Changed
+- chore: remove temporary macOS smoke workflow (f49e9eb)
+- chore: update changelog and version for v2.1.0 (da64092)
+
+
 ## [v2.1.0] - 2026-08-05
 
 ### Added
